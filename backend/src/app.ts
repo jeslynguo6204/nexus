@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./modules/auth/auth.routes";
 import userRoutes from "./modules/users/users.routes";
+import profileRoutes from "./modules/profiles/profiles.routes";
 import { errorHandler } from "./middleware/errorHandler";
 
 export const app = express();
@@ -19,6 +20,7 @@ app.use("/auth", authRoutes);
 
 // Authed routes
 app.use("/users", userRoutes);
+app.use("/profiles", profileRoutes);
 
 // Global error handler (last)
 app.use(errorHandler);
