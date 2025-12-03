@@ -1,34 +1,21 @@
+// src/modules/profiles/profiles.service.ts
 import {
   getProfileByUserId,
   updateProfileByUserId,
   ProfileRow,
-  ProfileUpdateInput,
+  ProfileUpdateInput as ProfileUpdateDbInput,
 } from "./profiles.dao";
+import { ProfileUpdateBody } from "./profiles.validation";
 
 export async function getMyProfile(userId: number): Promise<ProfileRow | null> {
   return getProfileByUserId(userId);
 }
 
-export interface ProfileUpdateRequest {
-  displayName?: string;
-  bio?: string;
-  major?: string;
-  graduationYear?: number;
-  isDatingEnabled?: boolean;
-  isFriendsEnabled?: boolean;
-  datingGenderPreference?: string;
-  friendsGenderPreference?: string;
-  minAgePreference?: number;
-  maxAgePreference?: number;
-  maxDistanceKm?: number;
-  showMeInDiscovery?: boolean;
-}
-
 export async function updateMyProfile(
   userId: number,
-  input: ProfileUpdateRequest
+  input: ProfileUpdateBody
 ): Promise<ProfileRow | null> {
-  const updates: ProfileUpdateInput = {};
+  const updates: ProfileUpdateDbInput = {};
 
   if (input.displayName !== undefined) updates.display_name = input.displayName;
   if (input.bio !== undefined) updates.bio = input.bio;
@@ -57,18 +44,20 @@ export async function updateMyProfile(
   if (input.showMeInDiscovery !== undefined)
     updates.show_me_in_discovery = input.showMeInDiscovery;
 
-  // simple age range sanity
+  // (optional) you can also wire locationDescription to a DB column later
+
+  // additional sanity checks if you want them here
   if (
     updates.min_age_preference != null &&
     updates.max_age_preference != null &&
     updates.min_age_preference > updates.max_age_preference
   ) {
-    const err = new Error("minAgePreference cannot be greater than maxAgePreference");
+    const err = new Error(
+      "minAgePreference cannot be greater than maxAgePreference"
+    );
     (err as any).statusCode = 400;
     throw err;
   }
-
-  // add more constraints later (maxDistanceKm range, allowed gender values, etc.)
 
   return updateProfileByUserId(userId, updates);
 }

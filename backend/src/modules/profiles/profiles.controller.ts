@@ -1,6 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+// src/modules/profiles/profiles.controller.ts
+import { Response, NextFunction } from "express";
 import { AuthedRequest } from "../../middleware/auth";
 import * as ProfileService from "./profiles.service";
+import { ProfileUpdateBody } from "./profiles.validation";
 
 export async function getMe(
   req: AuthedRequest,
@@ -33,35 +35,9 @@ export async function updateMe(
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const {
-      displayName,
-      bio,
-      major,
-      graduationYear,
-      isDatingEnabled,
-      isFriendsEnabled,
-      datingGenderPreference,
-      friendsGenderPreference,
-      minAgePreference,
-      maxAgePreference,
-      maxDistanceKm,
-      showMeInDiscovery,
-    } = req.body;
+    const body = req.body as ProfileUpdateBody;
 
-    const updated = await ProfileService.updateMyProfile(req.userId, {
-      displayName,
-      bio,
-      major,
-      graduationYear,
-      isDatingEnabled,
-      isFriendsEnabled,
-      datingGenderPreference,
-      friendsGenderPreference,
-      minAgePreference,
-      maxAgePreference,
-      maxDistanceKm,
-      showMeInDiscovery,
-    });
+    const updated = await ProfileService.updateMyProfile(req.userId, body);
 
     if (!updated) {
       return res.status(404).json({ error: "Profile not found" });

@@ -33,9 +33,27 @@ export default function App() {
   return (
     <NavigationContainer>
       {token ? (
-        <BottomTabs onSignOut={() => setToken(null)} />
+        <BottomTabs
+          onSignOut={async () => {
+            // App-level sign out: clear token in storage + state
+            await AsyncStorage.removeItem('token');
+            setToken(null);
+          }}
+        />
       ) : (
-        <AuthScreen onAuth={() => setToken('placeholder')} />
+        <AuthScreen
+          onSignedIn={async (authResponse) => {
+            // adapt this to whatever your backend returns
+            // earlier your backend was returning { userId, token }
+            const { token } = authResponse;
+            if (token) {
+              await AsyncStorage.setItem('token', token);
+              setToken(token);
+            } else {
+              console.warn('No token in auth response', authResponse);
+            }
+          }}
+        />
       )}
     </NavigationContainer>
   );

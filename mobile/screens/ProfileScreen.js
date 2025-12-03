@@ -1,3 +1,4 @@
+// mobile/screens/ProfileScreen.js
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,11 +17,10 @@ export default function ProfileScreen({ onSignOut }) {
         const res = await fetch(`${API_BASE}/profiles/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        const json = await res.json();
         if (!res.ok) {
-          const json = await res.json();
           throw new Error(json.error || 'Failed to fetch profile');
         }
-        const json = await res.json();
         setProfile(json.profile);
       } catch (e) {
         console.warn(e);
@@ -64,7 +64,13 @@ export default function ProfileScreen({ onSignOut }) {
       )}
 
       <View style={{ padding: 16 }}>
-        <Button title="Sign out" onPress={async () => { await AsyncStorage.removeItem('token'); onSignOut(); }} />
+        <Button
+          title="Sign out"
+          onPress={async () => {
+            await AsyncStorage.removeItem('token');
+            onSignOut();
+          }}
+        />
       </View>
     </View>
   );
