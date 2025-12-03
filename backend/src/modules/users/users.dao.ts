@@ -1,0 +1,95 @@
+import { pool, dbQuery } from "../../db/pool";
+
+export interface UserRow {
+  id: number;
+  email: string;
+  password_hash: string | null;
+  full_name: string | null;
+  school_id: number;
+}
+
+export async function findUserByEmail(email: string): Promise<UserRow | null> {
+  const rows = await dbQuery<UserRow>(
+    "SELECT id, email, password_hash, full_name, school_id FROM users WHERE email = $1",
+    [email]
+  );
+  return rows[0] ?? null;
+}
+
+export async function findUserWithProfileById(userId: number) {
+  const rows = await dbQuery(
+    `
+    SELECT
+      u.id,
+      u.email,
+      u.full_name,
+      u.school_id,
+      p.display_name,
+      p.bio,
+      p.major,
+      p.graduation_year
+    FROM users u
+    LEFT JOIN profiles p ON p.user_id = u.id
+    WHERE u.id = $1
+    `,
+    [userId]
+  );
+  return rows[0] ?? null;
+}
+
+// user + profile + settings in one transaction
+export async function createUserWithDefaults(params: {
+  schoolId: number;
+  email: string;
+  passwordHash: string;
+  fullName: string;
+  dateOfBirth: string; // 'YYYY-MM-DD'
+  gender?: string | null;
+}): Promise<number> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const userRes = await client.query<{ id: number }>(
+      `
+      INSERT INTO users (school_id, email, password_hash, full_name, date_of_birth, gender)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id
+      `,
+      [
+        params.schoolId,
+        params.email,
+        params.passwordHash,
+        params.fullName,
+        params.dateOfBirth,
+        params.gender ?? null,
+      ]
+    );
+
+    const userId = userRes.rows[0].id;
+
+    await client.query(
+      `
+      INSERT INTO profiles (user_id, display_name, show_me_in_discovery)
+      VALUES ($1, $2, TRUE)
+      `,
+      [userId, params.fullName]
+    );
+
+    await client.query(
+      `
+      INSERT INTO settings (user_id)
+      VALUES ($1)
+      `,
+      [userId]
+    );
+
+    await client.query("COMMIT");
+    return userId;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
