@@ -14,6 +14,13 @@ function Placeholder({ name }) {
   );
 }
 
+const ICON_MAP = {
+  Home: "home",
+  Likes: "heart",
+  Chat: "comments",
+  Profile: "user",
+};
+
 export default function BottomTabs({ onSignOut }) {
   return (
     <Tab.Navigator
@@ -24,13 +31,7 @@ export default function BottomTabs({ onSignOut }) {
         tabBarInactiveTintColor: '#888',   // inactive icon color
 
         tabBarIcon: ({ color, size }) => {
-          let iconName;
-
-          if (route.name === 'Home') iconName = 'home';
-          else if (route.name === 'Likes') iconName = 'heart';
-          else if (route.name === 'Chat') iconName = 'comments';
-          else if (route.name === 'Profile') iconName = 'user';
-
+          const iconName = ICON_MAP[route.name];
           return <FontAwesome name={iconName} size={size} color={color} />;
         },
       })}
