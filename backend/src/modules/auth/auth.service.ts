@@ -1,7 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { config } from "../../config/env";
-import { findSchoolByDomain } from "../schools/schools.dao";
 import {
   findUserByEmail,
   createUserWithDefaults,
@@ -12,19 +11,14 @@ export async function signup(input: {
   email: string;
   password: string;
   fullName: string;
-  dateOfBirth: string;
+  dateOfBirth?: string | null;
   gender?: string;
 }) {
-  const domain = input.email.split("@")[1];
-  if (!domain) {
-    const err = new Error("Invalid email");
-    (err as any).statusCode = 400;
-    throw err;
-  }
-
-  const school = await findSchoolByDomain(domain);
-  if (!school) {
-    const err = new Error("This email domain is not supported");
+  const upennEmailRegex = /^[A-Za-z]+@(sas|seas|wharton)\.upenn\.edu$/i;
+  if (!upennEmailRegex.test(input.email)) {
+    const err = new Error(
+      "Email must be a UPenn address ending in @sas.upenn.edu, @seas.upenn.edu, or @wharton.upenn.edu"
+    );
     (err as any).statusCode = 400;
     throw err;
   }
@@ -39,11 +33,11 @@ export async function signup(input: {
   const passwordHash = await bcrypt.hash(input.password, 10);
 
   const userId = await createUserWithDefaults({
-    schoolId: school.id,
+    schoolId: null,
     email: input.email,
     passwordHash,
     fullName: input.fullName,
-    dateOfBirth: input.dateOfBirth,
+    dateOfBirth: input.dateOfBirth ?? null,
     gender: input.gender,
   });
 

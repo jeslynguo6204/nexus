@@ -5,7 +5,7 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password, fullName, dateOfBirth, gender } = req.body;
 
-    if (!email || !password || !fullName || !dateOfBirth) {
+    if (!email || !password || !fullName) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 

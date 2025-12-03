@@ -5,7 +5,7 @@ export interface UserRow {
   email: string;
   password_hash: string | null;
   full_name: string | null;
-  school_id: number;
+  school_id: number | null;
 }
 
 export async function findUserByEmail(email: string): Promise<UserRow | null> {
@@ -39,11 +39,11 @@ export async function findUserWithProfileById(userId: number) {
 
 // user + profile + settings in one transaction
 export async function createUserWithDefaults(params: {
-  schoolId: number;
+  schoolId: number | null;
   email: string;
   passwordHash: string;
   fullName: string;
-  dateOfBirth: string; // 'YYYY-MM-DD'
+  dateOfBirth?: string | null; // 'YYYY-MM-DD'
   gender?: string | null;
 }): Promise<number> {
   const client = await pool.connect();
@@ -61,7 +61,7 @@ export async function createUserWithDefaults(params: {
         params.email,
         params.passwordHash,
         params.fullName,
-        params.dateOfBirth,
+        params.dateOfBirth ?? null,
         params.gender ?? null,
       ]
     );
