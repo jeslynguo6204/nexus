@@ -44,6 +44,9 @@ export async function updateMyProfile(
   if (input.showMeInDiscovery !== undefined)
     updates.show_me_in_discovery = input.showMeInDiscovery;
 
+  if (input.interests !== undefined) updates.interests = input.interests;
+  if (input.photos !== undefined) updates.photos = input.photos;
+
   // (optional) you can also wire locationDescription to a DB column later
 
   // additional sanity checks if you want them here

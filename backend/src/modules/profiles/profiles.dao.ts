@@ -16,6 +16,8 @@ export interface ProfileRow {
   show_me_in_discovery: boolean;
   location_lat: string | null; // DECIMAL comes back as string from pg
   location_lon: string | null;
+  interests: string[] | null;
+  photos: string[] | null;
   updated_at: string;
 }
 
@@ -40,6 +42,8 @@ export async function getProfileByUserId(
       show_me_in_discovery,
       location_lat,
       location_lon,
+      interests,
+      photos,
       updated_at
     FROM profiles
     WHERE user_id = $1
@@ -62,6 +66,8 @@ export interface ProfileUpdateInput {
   max_age_preference?: number | null;
   max_distance_km?: number | null;
   show_me_in_discovery?: boolean;
+  interests?: string[] | null;
+  photos?: string[] | null;
 }
 
 // partial update builder
@@ -111,6 +117,8 @@ export async function updateProfileByUserId(
       show_me_in_discovery,
       location_lat,
       location_lon,
+      interests,
+      photos,
       updated_at
     `,
     values

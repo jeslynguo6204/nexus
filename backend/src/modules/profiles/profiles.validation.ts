@@ -29,6 +29,8 @@ export const profileUpdateSchema = z
     showMeInDiscovery: z.boolean().optional(),
 
     locationDescription: z.string().trim().max(500).optional(),
+    interests: z.array(z.string().trim().min(1).max(100)).max(50).optional(),
+    photos: z.array(z.string().trim().max(500)).max(6).optional(),
   })
   .refine(
     (data) =>
