@@ -1,3 +1,4 @@
+// mobile/screens/SignupScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -16,7 +17,8 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import styles from '../styles/AuthStyles';
 
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:4000';
+// ✅ use the shared auth API instead of defining API_BASE here
+import { signup } from '../api/authAPI';
 
 /**
  * Reusable select field:
@@ -28,7 +30,6 @@ function SelectField({ label, value, placeholder, options, onChange }) {
   const [tempValue, setTempValue] = useState(value || '');
 
   useEffect(() => {
-    // Sync temp value when opening the modal or when parent changes value
     if (visible) {
       setTempValue(value || '');
     }
@@ -124,9 +125,9 @@ export default function SignupScreen({ navigation, onSignedIn }) {
 
   async function handleSignup() {
     try {
-      setLoading(true);
       setError('');
 
+      // ✅ validate *before* setting loading
       if (!fullName?.trim()) {
         setError('Please enter your full name');
         return;
@@ -162,18 +163,12 @@ export default function SignupScreen({ navigation, onSignedIn }) {
         return;
       }
 
-      const body = { email, password, fullName, dateOfBirth, gender };
+      const payload = { email, password, fullName, dateOfBirth, gender };
 
-      const res = await fetch(`${API_BASE}/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      setLoading(true);
 
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || 'Auth failed');
-      }
+      // ✅ use shared API helper
+      const json = await signup(payload);
 
       onSignedIn(json);
     } catch (e) {
@@ -257,7 +252,7 @@ export default function SignupScreen({ navigation, onSignedIn }) {
               secureTextEntry
             />
 
-            {/* Gender (using reusable SelectField) */}
+            {/* Gender */}
             <SelectField
               label="Gender"
               value={gender}

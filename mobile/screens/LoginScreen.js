@@ -1,3 +1,4 @@
+// mobile/screens/LoginScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -13,7 +14,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../styles/AuthStyles';
 
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:4000';
+// ✅ use shared auth API
+import { login } from '../api/authAPI';
 
 export default function LoginScreen({ navigation, onSignedIn }) {
   const [email, setEmail] = useState('');
@@ -36,14 +38,7 @@ export default function LoginScreen({ navigation, onSignedIn }) {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Auth failed');
+      const json = await login({ email, password });
 
       onSignedIn(json);
     } catch (e) {
@@ -55,13 +50,14 @@ export default function LoginScreen({ navigation, onSignedIn }) {
 
   return (
     <SafeAreaView style={styles.loginContainer}>
-    {/* Back button */}
-     <TouchableOpacity
+      {/* Back button */}
+      <TouchableOpacity
         onPress={() => navigation.navigate('Entry')}
-        style={[styles.loginBackButton, { top: insets.top + 4 }]}  // 👈 use safe-area
-        >
+        style={[styles.loginBackButton, { top: insets.top + 4 }]}
+      >
         <Text style={styles.loginBackText}>← Back</Text>
-    </TouchableOpacity>
+      </TouchableOpacity>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
@@ -107,9 +103,12 @@ export default function LoginScreen({ navigation, onSignedIn }) {
             {/* Forgot password */}
             <TouchableOpacity
               style={styles.loginForgotWrapper}
-              onPress={() => Alert.alert(
-                'Coming soon!', 
-                'Forgot password flow is not implemented yet.')}
+              onPress={() =>
+                Alert.alert(
+                  'Coming soon!',
+                  'Forgot password flow is not implemented yet.'
+                )
+              }
             >
               <Text style={styles.loginForgotText}>Forgot password?</Text>
             </TouchableOpacity>
