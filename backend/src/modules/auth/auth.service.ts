@@ -4,8 +4,8 @@ import { config } from "../../config/env";
 import {
   findUserByEmail,
   createUserWithDefaults,
-  UserRow,
 } from "../users/users.dao";
+import { resolveSchoolForEmail } from "../schools/schools.service"; // ← new import
 
 export async function signup(input: {
   email: string;
@@ -14,31 +14,35 @@ export async function signup(input: {
   dateOfBirth?: string | null;
   gender?: string;
 }) {
-  const upennEmailRegex = /^[A-Za-z]+@(sas|seas|wharton)\.upenn\.edu$/i;
-  if (!upennEmailRegex.test(input.email)) {
-    const err = new Error(
-      "Email must be a UPenn address ending in @sas.upenn.edu, @seas.upenn.edu, or @wharton.upenn.edu"
-    );
+  const { email, password, fullName, dateOfBirth, gender } = input;
+
+  // (Basic required checks can also live in the controller; this is just extra safety)
+  if (!email || !password || !fullName) {
+    const err = new Error("Missing required fields");
     (err as any).statusCode = 400;
     throw err;
   }
 
-  const existing = await findUserByEmail(input.email);
+  const existing = await findUserByEmail(email);
   if (existing) {
     const err = new Error("Email is already registered");
     (err as any).statusCode = 409;
     throw err;
   }
 
-  const passwordHash = await bcrypt.hash(input.password, 10);
+  // 🔹 NEW: resolve the school from the email using the schools table
+  // This handles normal domains and the Penn special-case logic in schools.service.ts
+  const school = await resolveSchoolForEmail(email);
+
+  const passwordHash = await bcrypt.hash(password, 10);
 
   const userId = await createUserWithDefaults({
-    schoolId: null,
-    email: input.email,
+    schoolId: school.id,              // 🔹 no more null
+    email,
     passwordHash,
-    fullName: input.fullName,
-    dateOfBirth: input.dateOfBirth ?? null,
-    gender: input.gender,
+    fullName,
+    dateOfBirth: dateOfBirth ?? null,
+    gender,
   });
 
   const token = jwt.sign({ userId }, config.jwtSecret, { expiresIn: "7d" });
@@ -61,7 +65,9 @@ export async function login(input: { email: string; password: string }) {
     throw err;
   }
 
-  const token = jwt.sign({ userId: user.id }, config.jwtSecret, { expiresIn: "7d" });
+  const token = jwt.sign({ userId: user.id }, config.jwtSecret, {
+    expiresIn: "7d",
+  });
 
   return { userId: user.id, token };
 }
