@@ -3,7 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomTabs from './navigation/BottomTabs';
-import AuthScreen from './screens/AuthScreen';
+// import AuthScreen from './screens/AuthScreen';
+import AuthStack from './navigation/AuthStack';
 
 export default function App() {
   const [checking, setChecking] = useState(true);
@@ -41,7 +42,7 @@ export default function App() {
           }}
         />
       ) : (
-        <AuthScreen
+        <AuthStack
           onSignedIn={async (authResponse) => {
             // adapt this to whatever your backend returns
             // earlier your backend was returning { userId, token }
