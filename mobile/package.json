@@ -29,5 +29,8 @@
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "rimraf": "^6.1.2"
+  },
+  "devDependencies": {
+    "expo-module-scripts": "^5.0.7"
   }
 }
