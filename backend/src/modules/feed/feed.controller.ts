@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { AuthedRequest } from "../../middleware/auth";
+import { AuthedRequest } from "../../middleware/authMiddleware";
 import * as FeedService from "./feed.service";
 
 export async function getFeed(req: AuthedRequest, res: Response) {

@@ -3,7 +3,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomTabs from './navigation/BottomTabs';
-// import AuthScreen from './screens/AuthScreen';
 import AuthStack from './navigation/AuthStack';
 
 export default function App() {

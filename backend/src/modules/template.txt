@@ -1,0 +1,147 @@
+2.1 DAO – modules/thing/thing.dao.ts
+
+Data access only, uses dbQuery / pool:
+
+// src/modules/thing/thing.dao.ts
+import { dbQuery } from "../../db/pool";
+
+export type ThingRow = {
+  id: number;
+  user_id: number;
+  name: string;
+  created_at: string;
+};
+
+export async function getThingsForUser(userId: number): Promise<ThingRow[]> {
+  return dbQuery<ThingRow>(
+    `
+    SELECT id, user_id, name, created_at
+    FROM things
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+    `,
+    [userId]
+  );
+}
+
+export async function createThingForUser(input: {
+  userId: number;
+  name: string;
+}): Promise<ThingRow> {
+  const rows = await dbQuery<ThingRow>(
+    `
+    INSERT INTO things (user_id, name)
+    VALUES ($1, $2)
+    RETURNING id, user_id, name, created_at
+    `,
+    [input.userId, input.name]
+  );
+  return rows[0];
+}
+
+
+2.2 Service – modules/thing/thing.service.ts
+
+Business logic, no Express stuff:
+
+// src/modules/thing/thing.service.ts
+import {
+  getThingsForUser,
+  createThingForUser,
+  ThingRow,
+} from "./thing.dao";
+
+export async function listMyThings(userId: number): Promise<ThingRow[]> {
+  return getThingsForUser(userId);
+}
+
+export async function addThingForUser(userId: number, name: string) {
+  if (!name || name.trim().length === 0) {
+    const err = new Error("Name is required");
+    (err as any).statusCode = 400;
+    throw err;
+  }
+
+  return createThingForUser({ userId, name: name.trim() });
+}
+
+
+2.3 Controller – modules/thing/thing.controller.ts
+
+Takes req/res, calls service, handles errors:
+
+// src/modules/thing/thing.controller.ts
+import type { Response } from "express";
+import type { AuthedRequest } from "../../middleware/authMiddleware";
+import { listMyThings, addThingForUser } from "./thing.service";
+
+export async function getMyThingsController(req: AuthedRequest, res: Response) {
+  try {
+    const things = await listMyThings(req.userId!);
+    res.json({ things });
+  } catch (err: any) {
+    console.error("GET /things/me error:", err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+}
+
+export async function addThingController(req: AuthedRequest, res: Response) {
+  try {
+    const { name } = req.body;
+    const thing = await addThingForUser(req.userId!, name);
+    res.status(201).json({ thing });
+  } catch (err: any) {
+    console.error("POST /things/me error:", err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+}
+
+
+2.4 Routes – modules/thing/thing.routes.ts
+
+Pure Express router:
+
+// src/modules/thing/thing.routes.ts
+import { Router } from "express";
+import { authMiddleware } from "../../middleware/authMiddleware";
+import {
+  getMyThingsController,
+  addThingController,
+} from "./thing.controller";
+
+const router = Router();
+
+// all routes here require auth
+router.use(authMiddleware);
+
+router.get("/me", getMyThingsController);
+router.post("/me", addThingController);
+
+export default router;
+
+
+2.5 Optional validation – validation/thingSchema.ts
+
+If you want Zod:
+
+// src/validation/thingSchema.ts
+import { z } from "zod";
+
+export const createThingSchema = z.object({
+  body: z.object({
+    name: z.string().min(1, "Name is required"),
+  }),
+});
+
+
+3️⃣ Wire a new module into app.ts
+
+In src/app.ts:
+
+import thingRoutes from "./modules/thing/thing.routes";
+import photosRoutes from "./modules/photos/photos.routes";
+import authRoutes from "./modules/auth/auth.routes";
+
+app.use("/auth", authRoutes);
+app.use("/things", thingRoutes);
+app.use("/photos", photosRoutes);

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware, AuthedRequest } from "../../middleware/auth";
+import { authMiddleware, AuthedRequest } from "../../middleware/authMiddleware";
 import { findUserWithProfileById } from "./users.dao";
 
 const router = Router();

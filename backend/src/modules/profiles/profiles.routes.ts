@@ -1,7 +1,7 @@
 // src/modules/profiles/profiles.routes.ts
 import { Router } from "express";
-import { authMiddleware } from "../../middleware/auth";
-import { validateBody } from "../../middleware/validate";
+import { authMiddleware } from "../../middleware/authMiddleware";
+import { validateBody } from "../../middleware/validationMiddleware";
 import * as ProfilesController from "./profiles.controller";
 import { profileUpdateSchema } from "./profiles.validation";
 

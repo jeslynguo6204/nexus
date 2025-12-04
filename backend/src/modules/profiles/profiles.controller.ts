@@ -1,6 +1,6 @@
 // src/modules/profiles/profiles.controller.ts
 import { Response, NextFunction } from "express";
-import { AuthedRequest } from "../../middleware/auth";
+import { AuthedRequest } from "../../middleware/authMiddleware";
 import * as ProfileService from "./profiles.service";
 import { ProfileUpdateBody } from "./profiles.validation";
 
