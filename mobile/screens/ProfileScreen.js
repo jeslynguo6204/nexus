@@ -25,8 +25,8 @@ import { COLORS } from '../styles/ProfileFormStyles';
 import styles from '../styles/ProfileScreenStyles';
 
 // ✅ API helpers
-import { fetchMyPhotos, addPhoto, deletePhoto } from '../api/photos';
-import { getMyProfile, updateMyProfile } from '../api/profile';
+import { fetchMyPhotos, addPhoto, deletePhoto } from '../api/photosAPI';
+import { getMyProfile, updateMyProfile } from '../api/profileAPI';
 
 const MAX_INTERESTS = 6;
 
