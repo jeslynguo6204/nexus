@@ -5,9 +5,9 @@ import {
   Text,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SwipeDeck from '../components/SwipeDeck';
 import { getFeedProfiles } from '../api/feedAPI';
@@ -124,7 +124,7 @@ export default function HomeScreen() {
 
       {/* Action buttons (X and Check) */}
       {current && (
-        <View style={styles.actionBar}>
+        <View style={styles.actionBar} pointerEvents="box-none">
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => handleSwipeLeft(current)}
