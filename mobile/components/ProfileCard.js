@@ -64,7 +64,7 @@ export default function ProfileCard({ profile, photos }) {
           style={styles.gradient}
           pointerEvents="none" // let taps go through to tap zones
         >
-          <View style={styles.headerRow}>
+          {/* <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.nameText}>
                 {profile?.display_name || 'Your name'}
@@ -74,6 +74,20 @@ export default function ProfileCard({ profile, photos }) {
                 {profile?.graduation_year
                   ? ` · '${String(profile.graduation_year).slice(-2)}`
                   : ''}
+              </Text>
+            </View> */}
+            <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.nameText}>
+                {profile?.display_name || 'Your name'}
+              </Text>
+              <Text style={styles.metaText}>
+                {(profile?.school?.short_name || profile?.school?.name || '') &&
+                  `${profile?.school?.short_name || profile?.school?.name}`}
+                {profile?.graduation_year
+                  ? ` '${String(profile.graduation_year).slice(-2)}`
+                  : ''}
+                {profile?.major ? ` · ${profile.major}` : ''}
               </Text>
             </View>
 

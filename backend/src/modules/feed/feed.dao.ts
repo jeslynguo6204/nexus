@@ -17,6 +17,9 @@ export interface FeedProfileRow {
   graduation_year: number | null;
   interests?: string[] | null;
   photos?: PhotoRow[];
+  school_id: number | null;
+  school_name: string | null;
+  school_short_name: string | null;
 }
 
 export async function getSimpleFeed(): Promise<FeedProfileRow[]> {
@@ -24,15 +27,20 @@ export async function getSimpleFeed(): Promise<FeedProfileRow[]> {
   const profiles = await dbQuery<FeedProfileRow>(
     `
     SELECT
-      user_id,
-      display_name,
-      bio,
-      major,
-      graduation_year,
-      interests
-    FROM profiles
-    WHERE show_me_in_discovery = TRUE
-    ORDER BY updated_at DESC
+      p.user_id,
+      p.display_name,
+      p.bio,
+      p.major,
+      p.graduation_year,
+      p.interests,
+      u.school_id,
+      s.name AS school_name,
+      s.short_name AS school_short_name
+    FROM profiles p
+    JOIN users u ON u.id = p.user_id
+    LEFT JOIN schools s ON s.id = u.school_id
+    WHERE p.show_me_in_discovery = TRUE
+    ORDER BY p.updated_at DESC
     LIMIT 25
     `
   );

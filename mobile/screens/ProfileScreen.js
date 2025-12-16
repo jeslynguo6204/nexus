@@ -226,10 +226,12 @@ export default function ProfileScreen({ onSignOut }) {
                     {profile.display_name || 'Add your name'}
                   </Text>
                   <Text style={styles.metaText}>
-                    {profile.major || 'Major TBD'}
+                    {(profile?.school?.short_name || profile?.school?.name || '') &&
+                      `${profile?.school?.short_name || profile?.school?.name}`}
                     {profile.graduation_year
-                      ? ` · '${String(profile.graduation_year).slice(-2)}`
+                      ? ` '${String(profile.graduation_year).slice(-2)}`
                       : ''}
+                    {profile.major ? ` · ${profile.major}` : ''}
                   </Text>
                 </View>
               </View>

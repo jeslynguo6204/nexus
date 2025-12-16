@@ -13,6 +13,12 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     profile.graduation_year ? String(profile.graduation_year) : ''
   );
 
+  const schoolLabel =
+    profile?.school?.name ||
+    profile?.school_name ||
+    profile?.school?.short_name ||
+    'School not set';
+
   function submit() {
     const gradYearNum = graduationYear ? Number(graduationYear) : undefined;
     onSave({
@@ -61,6 +67,11 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           placeholder="e.g. Computer Science"
           placeholderTextColor={COLORS.muted}
         />
+
+        <Text style={styles.label}>School</Text>
+        <View style={styles.readonlyField}>
+          <Text style={styles.readonlyText}>{schoolLabel}</Text>
+        </View>
 
         <Text style={styles.label}>Graduation year</Text>
         <ScrollView

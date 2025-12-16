@@ -24,12 +24,15 @@ export async function findUserWithProfileById(userId: number) {
       u.email,
       u.full_name,
       u.school_id,
+        s.name AS school_name,
+        s.short_name AS school_short_name,
       p.display_name,
       p.bio,
       p.major,
       p.graduation_year
     FROM users u
     LEFT JOIN profiles p ON p.user_id = u.id
+    LEFT JOIN schools s ON s.id = u.school_id
     WHERE u.id = $1
     `,
     [userId]

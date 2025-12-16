@@ -67,6 +67,20 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     backgroundColor: '#FFFFFF',
   },
+  readonlyField: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 4,
+    backgroundColor: '#F8FAFC',
+  },
+  readonlyText: {
+    fontSize: 15,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
