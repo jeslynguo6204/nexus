@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   photoContainer: {
     width: '100%',
-    height: 360,
+    height: 500,
     backgroundColor: '#E5E7EB',
     position: 'relative',
   },
