@@ -20,11 +20,14 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     'School not set';
 
   function submit() {
-    const gradYearNum = graduationYear ? Number(graduationYear) : undefined;
+    const gradYearNum = graduationYear ? Number(graduationYear) : null;
+    const nextBio = bio.trim() === '' ? null : bio;
+    const nextMajor = major.trim() === '' ? null : major;
+    const nextDisplayName = displayName.trim() === '' ? null : displayName;
     onSave({
-      displayName: displayName || undefined,
-      bio: bio || undefined,
-      major: major || undefined,
+      displayName: nextDisplayName,
+      bio: nextBio,
+      major: nextMajor,
       graduationYear: gradYearNum,
     });
   }

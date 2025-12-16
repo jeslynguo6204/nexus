@@ -63,8 +63,9 @@ export async function updateMyProfile(
     throw err;
   }
 
-  const row = await updateProfileByUserId(userId, updates);
-  return row ? mapProfileRow(row) : null;
+  await updateProfileByUserId(userId, updates);
+  const fresh = await getProfileByUserId(userId);
+  return fresh ? mapProfileRow(fresh) : null;
 }
 
 // shape DB row for API consumers
