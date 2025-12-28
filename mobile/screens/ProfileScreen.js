@@ -395,7 +395,14 @@ export default function ProfileScreen({ onSignOut }) {
       </Modal>
 
       <Modal visible={interestVisible} animationType="slide">
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F7FC' }} edges={['top', 'bottom']}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#F3F7FC',
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom,
+          }}
+        >
           <View style={{ padding: 16, flex: 1 }}>
             <View style={styles.headerRow}>
               <Text style={styles.title}>Add Interest</Text>
@@ -424,7 +431,7 @@ export default function ProfileScreen({ onSignOut }) {
               )}
             </ScrollView>
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
 
       <PreviewModal
