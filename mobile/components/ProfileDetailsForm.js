@@ -21,11 +21,13 @@
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles, { COLORS } from '../styles/ProfileFormStyles';
 
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 
 export default function ProfileDetailsForm({ profile, onSave, onClose }) {
+  const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState(profile.display_name || '');
   const [bio, setBio] = useState(profile.bio || '');
   const [major, setMajor] = useState(profile.major || '');
@@ -53,6 +55,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
   }
 
   return (
+    <View style={{ flex: 1, backgroundColor: COLORS.background, paddingTop: insets.top }}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -137,5 +140,6 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 }

@@ -42,7 +42,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm';
@@ -77,6 +77,7 @@ const INTEREST_OPTIONS = [
 ];
 
 export default function ProfileScreen({ onSignOut }) {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [editVisible, setEditVisible] = useState(false);
@@ -223,7 +224,7 @@ export default function ProfileScreen({ onSignOut }) {
   const primaryPhotoUrl = photos[0]?.url;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -368,7 +369,6 @@ export default function ProfileScreen({ onSignOut }) {
 
       {/* Modals */}
       <Modal visible={editVisible} animationType="slide">
-        <SafeAreaView style={{ flex: 1 }}>
           {profile && (
             <ProfileDetailsForm
               profile={profile}
@@ -379,11 +379,9 @@ export default function ProfileScreen({ onSignOut }) {
               onClose={() => setEditVisible(false)}
             />
           )}
-        </SafeAreaView>
       </Modal>
 
       <Modal visible={prefsVisible} animationType="slide">
-        <SafeAreaView style={{ flex: 1 }}>
           {profile && (
             <ProfilePreferencesForm
               profile={profile}
@@ -394,11 +392,10 @@ export default function ProfileScreen({ onSignOut }) {
               onClose={() => setPrefsVisible(false)}
             />
           )}
-        </SafeAreaView>
       </Modal>
 
       <Modal visible={interestVisible} animationType="slide">
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F7FC' }} edges={['top', 'bottom']}>
           <View style={{ padding: 16, flex: 1 }}>
             <View style={styles.headerRow}>
               <Text style={styles.title}>Add Interest</Text>
@@ -438,6 +435,6 @@ export default function ProfileScreen({ onSignOut }) {
         <ProfileCard profile={profile} photos={photos} />
       </PreviewModal>
 
-    </SafeAreaView>
+    </View>
   );
 }
