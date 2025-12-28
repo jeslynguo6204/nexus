@@ -21,6 +21,7 @@
 
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Switch, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import styles, { COLORS } from '../styles/ProfileFormStyles';
@@ -28,6 +29,7 @@ import styles, { COLORS } from '../styles/ProfileFormStyles';
 const GENDER_OPTIONS = ['male', 'female', 'non-binary', 'everyone'];
 
 export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
+  const insets = useSafeAreaInsets();
   const [isDatingEnabled, setIsDatingEnabled] = useState(
     profile.is_dating_enabled ?? true
   );
@@ -80,6 +82,7 @@ export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
   }
 
   return (
+    <View style={{ flex: 1, backgroundColor: COLORS.background, paddingTop: insets.top }}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -237,5 +240,6 @@ export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 }
