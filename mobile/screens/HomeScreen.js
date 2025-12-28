@@ -1,17 +1,12 @@
 // mobile/screens/HomeScreen.js
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  Alert,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, ActivityIndicator, Alert, TouchableOpacity, Button } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SwipeDeck from '../components/SwipeDeck';
 import { getFeedProfiles } from '../api/feedAPI';
 import styles from '../styles/HomeStyles';
+
 
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
@@ -26,7 +21,6 @@ export default function HomeScreen() {
           throw new Error('Not signed in');
         }
 
-        // Fetch feed profiles from backend
         const fetchedProfiles = await getFeedProfiles(token);
         setProfiles(fetchedProfiles);
       } catch (e) {
@@ -39,22 +33,10 @@ export default function HomeScreen() {
   }, []);
 
   async function handleSwipeRight(profile) {
-    // Like or match action
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
-
       // TODO: POST /swipes with userId and likedUserId
-      // const res = await fetch(`${API_BASE}/swipes`, {
-      //   method: 'POST',
-      //   headers: {
-      //     Authorization: `Bearer ${token}`,
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({ likedUserId: profile.id, direction: 'right' }),
-      // });
-      // if (!res.ok) throw new Error('Failed to record swipe');
-
       console.log('Liked profile:', profile.user_id);
       moveToNextCard();
     } catch (e) {
@@ -64,11 +46,9 @@ export default function HomeScreen() {
   }
 
   async function handleSwipeLeft(profile) {
-    // Pass action
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
-
       // TODO: POST /swipes with direction: 'left'
       console.log('Passed on profile:', profile.user_id);
       moveToNextCard();
@@ -116,13 +96,41 @@ export default function HomeScreen() {
             onNext={moveToNextCard}
           />
         ) : (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ fontSize: 16, color: '#999' }}>No more profiles</Text>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 24,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: '#E9F4FF',
+                borderRadius: 18,
+                paddingVertical: 18,
+                paddingHorizontal: 20,
+                shadowColor: '#000',
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 6 },
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#0F172A',
+                  textAlign: 'center',
+                }}
+              >
+                That&apos;s all for now!{"\n"}Check back later for new profiles.
+              </Text>
+            </View>
           </View>
         )}
       </View>
 
-      {/* Action buttons (X and Check) */}
       {current && (
         <View style={styles.actionBar} pointerEvents="box-none">
           <TouchableOpacity

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomTabs from './navigation/BottomTabs';
 import AuthStack from './navigation/AuthStack';
@@ -31,30 +32,32 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      {token ? (
-        <BottomTabs
-          onSignOut={async () => {
-            // App-level sign out: clear token in storage + state
-            await AsyncStorage.removeItem('token');
-            setToken(null);
-          }}
-        />
-      ) : (
-        <AuthStack
-          onSignedIn={async (authResponse) => {
-            // adapt this to whatever your backend returns
-            // earlier your backend was returning { userId, token }
-            const { token } = authResponse;
-            if (token) {
-              await AsyncStorage.setItem('token', token);
-              setToken(token);
-            } else {
-              console.warn('No token in auth response', authResponse);
-            }
-          }}
-        />
-      )}
-    </NavigationContainer>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        {token ? (
+          <BottomTabs
+            onSignOut={async () => {
+              // App-level sign out: clear token in storage + state
+              await AsyncStorage.removeItem('token');
+              setToken(null);
+            }}
+          />
+        ) : (
+          <AuthStack
+            onSignedIn={async (authResponse) => {
+              // adapt this to whatever your backend returns
+              // earlier your backend was returning { userId, token }
+              const { token } = authResponse;
+              if (token) {
+                await AsyncStorage.setItem('token', token);
+                setToken(token);
+              } else {
+                console.warn('No token in auth response', authResponse);
+              }
+            }}
+          />
+        )}
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
