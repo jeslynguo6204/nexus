@@ -1,4 +1,24 @@
 // mobile/components/ProfilePreferencesForm.js
+
+/**
+ * ProfilePreferencesForm is a reusable form component for editing a user's profile 
+ * preferences, such as their dating and friends modes, gender preferences, age 
+ * range, and maximum distance.
+ * 
+ * Like the ProfileDetailsForm, it is used within the ProfileScreen to allow users 
+ * to edit a specific section of their profile. When the form is submitted, it calls
+ * the onSave prop with the updated preference fields, which the ProfileScreen 
+ * handles by making an API call to update the user's profile on the server.
+ * 
+ * The form is pre-populated with the user's current preferences, which are passed 
+ * in as the profile prop. It uses various input components like switches, sliders, 
+ * and buttons to provide an intuitive interface for adjusting these settings.
+ * 
+ * By allowing users to control their discovery preferences, this form component 
+ * helps to tailor the user's experience on the app and improve the relevance of the
+ * potential matches they see on the HomeScreen.
+ */
+
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Switch, TouchableOpacity } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';

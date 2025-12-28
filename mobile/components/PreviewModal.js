@@ -1,4 +1,24 @@
 // mobile/components/PreviewModal.js
+
+/**
+ * PreviewModal is a reusable modal component for displaying full-screen previews of
+ * content, such as a user's profile. It is used in the ProfileScreen to allow users
+ * to see how their profile will appear to others after editing.
+ * 
+ * The component takes a title and onClose function as props to configure the modal's
+ * header, and it uses the children prop to render the content of the modal, which 
+ * in the case of the ProfileScreen is a ProfileCard.
+ * 
+ * The PreviewModal provides a consistent, branded interface for presenting focused 
+ * content to the user, with a fixed header featuring the title and a close button. 
+ * The actual content is rendered in a scrollable area below the header, allowing 
+ * for flexibility in what is displayed.
+ * 
+ * By leveraging the PreviewModal, the ProfileScreen (and potentially other screens 
+ * in the app) can easily present users with a clean, immersive view of important 
+ * content without needing to implement the surrounding modal interface each time.
+ */
+
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';

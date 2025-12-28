@@ -1,4 +1,23 @@
 // mobile/screens/HomeScreen.js
+
+/**
+ * HomeScreen is the main screen of the app where users can swipe through potential
+ * matches. It fetches a list of profiles to display using the `getFeedProfiles` API 
+ * call and renders them in a `SwipeDeck` component.
+ * 
+ * When a user swipes right or left on a profile, the corresponding handler function
+ * is called to register the swipe with the server (to be implemented) and move to 
+ * the next profile card.
+ * 
+ * The screen displays a loading state while fetching profiles, and a message when 
+ * there are no more profiles to show. It also includes a header with the app logo
+ * and title.
+ * 
+ * The `SwipeDeck` component is responsible for rendering the actual profile cards 
+ * and handling the swiping interactions. The `ProfileCard` component is used within
+ * `SwipeDeck` to display each individual profile.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Alert, TouchableOpacity, Button } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

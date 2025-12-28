@@ -1,3 +1,32 @@
+// mobile/screens/ProfileScreen.js
+
+/**
+ * ProfileScreen allows users to view and edit their own profile information, 
+ * including basic details, preferences, interests, and photos.
+ * 
+ * The screen fetches the user's profile and photos on mount using the `getMyProfile` 
+ * and `fetchMyPhotos` API calls. It displays this data in a scrollable view with 
+ * sections for each type of information.
+ * 
+ * Users can tap buttons to open modal forms to edit their basic profile details 
+ * (`ProfileDetailsForm`) or preferences (`ProfilePreferencesForm`). They can also 
+ * add or remove interests and photos directly on the screen.
+ * 
+ * The `PreviewModal` component is used to display a full-screen preview of the user's
+ * profile as it would appear to others, using the `ProfileCard` component.
+ * 
+ * The screen also includes a button to sign out of the app, which removes the user's
+ * token from local storage.
+ * 
+ * Overall, this screen uses many of the other components in the app, including:
+ * - `ProfileDetailsForm` and `ProfilePreferencesForm` for editing profile data
+ * - `ProfileCard` for previewing the user's profile
+ * - `PreviewModal` for displaying the profile preview in a modal
+ * 
+ * It also makes use of several API calls to fetch and update the user's profile and 
+ * photo data.
+ */
+
 import React, { useEffect, useState } from 'react';
 import {
   View,

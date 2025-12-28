@@ -1,4 +1,29 @@
 // mobile/components/ProfileForm.js
+
+/**
+ * ProfileForm is a comprehensive form component for managing a user's profile in a 
+ * college social app. It combines the functionality of the ProfileDetailsForm and 
+ * ProfilePreferencesForm components into a single form.
+ * 
+ * The form is divided into several sections:
+ * - Basic profile details: display name, bio, major, graduation year
+ * - Modes: toggles for enabling/disabling dating and friends modes
+ * - Gender preferences: options for who the user wants to see in each mode
+ * - Age range: sliders for setting minimum and maximum age preferences
+ * - Distance: slider for setting maximum search distance
+ * - Location: freeform text input for user's description of their location
+ * 
+ * The component is pre-populated with the user's existing profile data passed in via 
+ * props. It provides an onSave callback which is triggered when the form is submitted
+ * after passing validation checks.
+ * 
+ * Reusable UI components and styles are imported from ../styles/ProfileFormStyles.
+ * 
+ * This form is designed to be used in the initial profile setup flow for new users, 
+ * but can also be adapted for the profile edit screen by pre-populating the form 
+ * fields with the user's existing data.
+ */
+
 import React, { useState } from 'react';
 import {
   View,
