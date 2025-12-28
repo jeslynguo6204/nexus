@@ -1,7 +1,21 @@
 // mobile/styles/ProfileScreenStyles.js
 import { COLORS } from "./ProfileFormStyles";
 
+const BUTTON_BORDER_RADIUS = 12;
+const AVATAR_SIZE = 64;
+
 const styles = {
+  container: {
+    flex: 1,
+    backgroundColor: '#F3F7FC',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 16,
+    paddingBottom: 0, // Ensure bottom padding is set to 0
+  },
+
+  // Card styles
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
@@ -12,6 +26,8 @@ const styles = {
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
+
+  // Header styles
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -19,84 +35,71 @@ const styles = {
     paddingHorizontal: 4,
   },
   title: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: COLORS.text,
+    fontSize: 22, fontWeight: "800", color: COLORS.text,
   },
   subtitle: {
-    fontSize: 13,
-    color: "#6B7280",
+    fontSize: 13, color: "#6B7280",
   },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 36, height: 36, borderRadius: 18,
     backgroundColor: "#EEF2FF",
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center", justifyContent: "center",
     marginLeft: 8,
   },
+
+  // Profile styles
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 8,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2,
     backgroundColor: "#E1E8F5",
     marginRight: 12,
   },
   avatarImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2,
     marginRight: 12,
   },
   nameText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.text,
+    fontSize: 20, fontWeight: "700", color: COLORS.text,
   },
   metaText: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 2,
+    fontSize: 14, color: "#6B7280", marginTop: 2,
   },
+
+  // Button styles
   actionsRow: {
     flexDirection: "row",
     marginTop: 16,
   },
   primaryButton: {
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
+    borderRadius: BUTTON_BORDER_RADIUS,
     paddingVertical: 12,
     alignItems: "center",
   },
   primaryButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 15,
+    color: "#FFFFFF", fontWeight: "700", fontSize: 15,
   },
   secondaryButton: {
-    borderRadius: 12,
+    borderRadius: BUTTON_BORDER_RADIUS,
     paddingVertical: 12,
     alignItems: "center",
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   secondaryButtonText: {
-    color: COLORS.text,
-    fontWeight: "600",
-    fontSize: 15,
+    color: COLORS.text, fontWeight: "600", fontSize: 15,
   },
+
+  // Section styles
   sectionHeader: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.text,
-    marginBottom: 6,
+    fontSize: 18, fontWeight: "700", color: COLORS.text, marginBottom: 6,
   },
+
+  // Chip styles
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -118,14 +121,14 @@ const styles = {
     backgroundColor: "#FFFFFF",
   },
   chipText: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: "600",
+    color: COLORS.text, fontSize: 14, fontWeight: "600",
   },
   addChip: {
     borderColor: COLORS.primary,
     backgroundColor: "#E9F4FF",
   },
+
+  // Photo grid styles
   photoGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -133,8 +136,8 @@ const styles = {
     marginTop: 10,
   },
   photoSlot: {
-    width: 100,
-    height: 100,
+    width: 110,
+    height: 110,
     borderRadius: 16,
     backgroundColor: "#E8EDF6",
     alignItems: "center",
@@ -151,6 +154,8 @@ const styles = {
     color: "#9CA3AF",
     fontWeight: "700",
   },
+
+  // Preview styles
   previewContainer: {
     flex: 1,
     backgroundColor: "#1F6299", // brand color

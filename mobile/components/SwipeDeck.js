@@ -1,81 +1,121 @@
 // mobile/components/SwipeDeck.js
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useRef, useState } from 'react';
+import {
+  View,
+  Animated,
+  PanResponder,
+  Dimensions,
+  StyleSheet,
+} from 'react-native';
 import ProfileCard from './ProfileCard';
 
-const API_BASE = 'http://localhost:4000'; // or your IP
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SWIPE_THRESHOLD = 0.25 * SCREEN_WIDTH; // swipe if moved 25% of screen
 
-export default function SwipeDeck() {
-  const [profiles, setProfiles] = useState([]);
-  const [index, setIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+export default function SwipeDeck({
+  profile,
+  photos,
+  onSwipeRight,
+  onSwipeLeft,
+  onNext,
+}) {
+  const pan = useRef(new Animated.ValueXY()).current;
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  async function loadProfiles() {
-    try {
-      setLoading(true);
-      const token = await AsyncStorage.getItem('token');
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
+        useNativeDriver: false,
+      }),
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dx } = gestureState;
 
-      const res = await fetch(`${API_BASE}/feed`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        if (Math.abs(dx) > SWIPE_THRESHOLD) {
+          if (dx > 0) {
+            // Swipe right
+            animateOut(true);
+            onSwipeRight?.();
+          } else {
+            // Swipe left
+            animateOut(false);
+            onSwipeLeft?.();
+          }
+        } else {
+          // Snap back
+          resetPosition();
+        }
+      },
+    })
+  ).current;
 
-      const json = await res.json();
+  function animateOut(isRight) {
+    if (isAnimating) return;
+    setIsAnimating(true);
 
-      if (!res.ok) {
-        console.warn(json);
-        return;
-      }
-
-      setProfiles(json.profiles || []);
-      setIndex(0);
-    } catch (e) {
-      console.warn('Failed to load feed', e);
-    } finally {
-      setLoading(false);
-    }
+    const finalX = isRight ? SCREEN_WIDTH : -SCREEN_WIDTH;
+    Animated.timing(pan, {
+      toValue: { x: finalX, y: 0 },
+      duration: 300,
+      useNativeDriver: false,
+    }).start(() => {
+      resetCard();
+    });
   }
 
-  useEffect(() => {
-    loadProfiles();
-  }, []);
-
-  if (loading) {
-    return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
+  function resetPosition() {
+    Animated.spring(pan, {
+      toValue: { x: 0, y: 0 },
+      useNativeDriver: false,
+    }).start();
   }
 
-  if (profiles.length === 0) {
-    return (
-      <View style={{ alignItems: 'center', marginTop: 40 }}>
-        <Text>No more profiles.</Text>
-        <TouchableOpacity onPress={loadProfiles}>
-          <Text style={{ color: 'blue', marginTop: 12 }}>Reload</Text>
-        </TouchableOpacity>
-      </View>
-    );
+  function resetCard() {
+    pan.setValue({ x: 0, y: 0 });
+    setIsAnimating(false);
+    onNext?.();
   }
 
-  const current = profiles[index];
+  const rotation = pan.x.interpolate({
+    inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+    outputRange: ['-30deg', '0deg', '30deg'],
+  });
+
+  const opacity = pan.x.interpolate({
+    inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
+    outputRange: [0.5, 1, 0.5],
+  });
 
   return (
-    <View>
-      <ProfileCard profile={current} />
-
-      {/* temporary next button for testing */}
-      <TouchableOpacity
-        style={{ marginTop: 20, alignSelf: 'center' }}
-        onPress={() => {
-          if (index < profiles.length - 1) {
-            setIndex(index + 1);
-          } else {
-            setProfiles([]);
-          }
-        }}
+    <View style={styles.container} {...panResponder.panHandlers}>
+      <Animated.View
+        style={[
+          styles.cardContainer,
+          {
+            transform: [
+              { translateX: pan.x },
+              { translateY: pan.y },
+              { rotate: rotation },
+            ],
+            opacity,
+          },
+        ]}
       >
-        <Text style={{ color: 'blue' }}>Next</Text>
-      </TouchableOpacity>
+        <ProfileCard profile={profile} photos={photos} />
+      </Animated.View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardContainer: {
+    width: SCREEN_WIDTH - 32,
+    height: '100%',
+  },
+});

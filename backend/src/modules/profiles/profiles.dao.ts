@@ -6,6 +6,14 @@ export interface ProfileRow {
   bio: string | null;
   major: string | null;
   graduation_year: number | null;
+  school_id?: number | null;
+  school_name?: string | null;
+  school_short_name?: string | null;
+  school?: {
+    id: number | null;
+    name: string | null;
+    short_name: string | null;
+  };
   is_dating_enabled: boolean;
   is_friends_enabled: boolean;
   dating_gender_preference: string | null;
@@ -27,26 +35,31 @@ export async function getProfileByUserId(
   const rows = await dbQuery<ProfileRow>(
     `
     SELECT
-      user_id,
-      display_name,
-      bio,
-      major,
-      graduation_year,
-      is_dating_enabled,
-      is_friends_enabled,
-      dating_gender_preference,
-      friends_gender_preference,
-      min_age_preference,
-      max_age_preference,
-      max_distance_km,
-      show_me_in_discovery,
-      location_lat,
-      location_lon,
-      interests,
-      photos,
-      updated_at
-    FROM profiles
-    WHERE user_id = $1
+      p.user_id,
+      p.display_name,
+      p.bio,
+      p.major,
+      p.graduation_year,
+      p.is_dating_enabled,
+      p.is_friends_enabled,
+      p.dating_gender_preference,
+      p.friends_gender_preference,
+      p.min_age_preference,
+      p.max_age_preference,
+      p.max_distance_km,
+      p.show_me_in_discovery,
+      p.location_lat,
+      p.location_lon,
+      p.interests,
+      p.photos,
+      p.updated_at,
+      u.school_id,
+      s.name AS school_name,
+      s.short_name AS school_short_name
+    FROM profiles p
+    JOIN users u ON u.id = p.user_id
+    LEFT JOIN schools s ON s.id = u.school_id
+    WHERE p.user_id = $1
     `,
     [userId]
   );

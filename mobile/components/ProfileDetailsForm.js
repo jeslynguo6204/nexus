@@ -13,12 +13,21 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     profile.graduation_year ? String(profile.graduation_year) : ''
   );
 
+  const schoolLabel =
+    profile?.school?.name ||
+    profile?.school_name ||
+    profile?.school?.short_name ||
+    'School not set';
+
   function submit() {
-    const gradYearNum = graduationYear ? Number(graduationYear) : undefined;
+    const gradYearNum = graduationYear ? Number(graduationYear) : null;
+    const nextBio = bio.trim() === '' ? null : bio;
+    const nextMajor = major.trim() === '' ? null : major;
+    const nextDisplayName = displayName.trim() === '' ? null : displayName;
     onSave({
-      displayName: displayName || undefined,
-      bio: bio || undefined,
-      major: major || undefined,
+      displayName: nextDisplayName,
+      bio: nextBio,
+      major: nextMajor,
       graduationYear: gradYearNum,
     });
   }
@@ -61,6 +70,11 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           placeholder="e.g. Computer Science"
           placeholderTextColor={COLORS.muted}
         />
+
+        <Text style={styles.label}>School</Text>
+        <View style={styles.readonlyField}>
+          <Text style={styles.readonlyText}>{schoolLabel}</Text>
+        </View>
 
         <Text style={styles.label}>Graduation year</Text>
         <ScrollView

@@ -8,7 +8,8 @@ import {
 import { ProfileUpdateBody } from "./profiles.validation";
 
 export async function getMyProfile(userId: number): Promise<ProfileRow | null> {
-  return getProfileByUserId(userId);
+  const row = await getProfileByUserId(userId);
+  return row ? mapProfileRow(row) : null;
 }
 
 export async function updateMyProfile(
@@ -62,5 +63,19 @@ export async function updateMyProfile(
     throw err;
   }
 
-  return updateProfileByUserId(userId, updates);
+  await updateProfileByUserId(userId, updates);
+  const fresh = await getProfileByUserId(userId);
+  return fresh ? mapProfileRow(fresh) : null;
+}
+
+// shape DB row for API consumers
+function mapProfileRow(row: ProfileRow): ProfileRow {
+  return {
+    ...row,
+    school: {
+      id: (row as any).school_id ?? null,
+      name: (row as any).school_name ?? null,
+      short_name: (row as any).school_short_name ?? null,
+    },
+  } as ProfileRow;
 }

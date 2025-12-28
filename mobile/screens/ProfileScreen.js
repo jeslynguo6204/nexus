@@ -1,4 +1,3 @@
-// mobile/screens/ProfileScreen.js
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -195,146 +194,148 @@ export default function ProfileScreen({ onSignOut }) {
   const primaryPhotoUrl = photos[0]?.url;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F3F7FC' }}>
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>My Profile</Text>
+    <SafeAreaView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>My Profile</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setPrefsVisible(true)}
+              style={styles.iconButton}
+            >
+              <FontAwesome name="cog" size={18} color={COLORS.text} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => setPrefsVisible(true)}
-            style={styles.iconButton}
-          >
-            <FontAwesome name="cog" size={18} color={COLORS.text} />
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.card}>
-          {profile ? (
-            <>
-              <View style={styles.profileRow}>
-                {primaryPhotoUrl ? (
-                  <Image source={{ uri: primaryPhotoUrl }} style={styles.avatarImage} />
-                ) : (
-                  <View style={styles.avatar} />
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.nameText}>
-                    {profile.display_name || 'Add your name'}
-                  </Text>
-                  <Text style={styles.metaText}>
-                    {profile.major || 'Major TBD'}
-                    {profile.graduation_year
-                      ? ` · '${String(profile.graduation_year).slice(-2)}`
-                      : ''}
-                  </Text>
+          <View style={styles.card}>
+            {profile ? (
+              <>
+                <View style={styles.profileRow}>
+                  {primaryPhotoUrl ? (
+                    <Image source={{ uri: primaryPhotoUrl }} style={styles.avatarImage} />
+                  ) : (
+                    <View style={styles.avatar} />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.nameText}>
+                      {profile.display_name || 'Add your name'}
+                    </Text>
+                    <Text style={styles.metaText}>
+                      {(profile?.school?.short_name || profile?.school?.name || '') &&
+                        `${profile?.school?.short_name || profile?.school?.name}`}
+                      {profile.graduation_year
+                        ? ` '${String(profile.graduation_year).slice(-2)}`
+                        : ''}
+                      {profile.major ? ` · ${profile.major}` : ''}
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <Text style={[styles.metaText, { marginTop: 8 }]}>
-                {profile.bio ? profile.bio : 'Add a short bio'}
-              </Text>
-
-              <View style={styles.actionsRow}>
-                <TouchableOpacity
-                  style={[styles.primaryButton, { flex: 1, marginRight: 8 }]}
-                  onPress={() => setEditVisible(true)}
-                >
-                  <Text style={styles.primaryButtonText}>Edit Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.secondaryButton, { flex: 1, marginLeft: 8 }]}
-                  onPress={() => setPreviewVisible(true)}
-                >
-                  <Text style={styles.secondaryButtonText}>Preview Profile</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <Text style={styles.metaText}>No profile found.</Text>
-          )}
-        </View>
-
-        {/* Interests */}
-        <View style={{ marginTop: 20 }}>
-          <Text style={styles.sectionHeader}>My Interests</Text>
-          <Text style={styles.metaText}>Add interests to show more about you.</Text>
-          <View style={styles.chipRow}>
-            {selectedInterests.length === 0 ? (
-              <Text style={styles.metaText}>No interests yet.</Text>
-            ) : (
-              selectedInterests.map((interest) => (
-                <TouchableOpacity
-                  key={interest}
-                  style={styles.chip}
-                  onPress={() => removeInterest(interest)}
-                >
-                  <Text style={styles.chipText}>{interest}</Text>
-                </TouchableOpacity>
-              ))
-            )}
-            {selectedInterests.length < MAX_INTERESTS && (
-              <TouchableOpacity
-                style={[styles.chip, styles.addChip]}
-                onPress={() => setInterestVisible(true)}
-              >
-                <Text style={[styles.chipText, { color: COLORS.primary }]}>
-                  + Add interest
+                <Text style={[styles.metaText, { marginTop: 8 }]}>
+                  {profile.bio ? profile.bio : 'Add a short bio'}
                 </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          <Text style={styles.metaText}>
-            Up to {MAX_INTERESTS} interests. Tap an interest to remove it.
-          </Text>
-        </View>
 
-        {/* Photos */}
-        <View style={{ marginTop: 16 }}>
-          <Text style={styles.sectionHeader}>My Photos</Text>
-          <Text style={styles.metaText}>Show who you are with a few photos.</Text>
-
-          <View style={styles.photoGrid}>
-            {photos.map((photo) => (
-              <TouchableOpacity
-                key={photo.id}
-                style={styles.photoSlot}
-                onLongPress={() => removePhoto(photo.id)}
-                disabled={photoBusy}
-              >
-                <Image source={{ uri: photo.url }} style={styles.photoImage} />
-              </TouchableOpacity>
-            ))}
-
-            {photos.length < 6 && (
-              <TouchableOpacity
-                style={styles.photoSlot}
-                onPress={pickPhoto}
-                disabled={photoBusy}
-              >
-                <Text style={styles.photoPlaceholder}>+</Text>
-              </TouchableOpacity>
+                <View style={styles.actionsRow}>
+                  <TouchableOpacity
+                    style={[styles.primaryButton, { flex: 1, marginRight: 8 }]}
+                    onPress={() => setEditVisible(true)}
+                  >
+                    <Text style={styles.primaryButtonText}>Edit Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.secondaryButton, { flex: 1, marginLeft: 8 }]}
+                    onPress={() => setPreviewVisible(true)}
+                  >
+                    <Text style={styles.secondaryButtonText}>Preview Profile</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <Text style={styles.metaText}>No profile found.</Text>
             )}
           </View>
 
-          <Text style={styles.metaText}>
-            Tap + to add photos (up to 6). First photo becomes your avatar. Long press a photo to remove it.
-          </Text>
-        </View>
+          {/* Interests */}
+          <View style={{ marginTop: 20 }}>
+            <Text style={styles.sectionHeader}>My Interests</Text>
+            <Text style={styles.metaText}>Add interests to show more about you.</Text>
+            <View style={styles.chipRow}>
+              {selectedInterests.length === 0 ? (
+                <Text style={styles.metaText}>No interests yet.</Text>
+              ) : (
+                selectedInterests.map((interest) => (
+                  <TouchableOpacity
+                    key={interest}
+                    style={styles.chip}
+                    onPress={() => removeInterest(interest)}
+                  >
+                    <Text style={styles.chipText}>{interest}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+              {selectedInterests.length < MAX_INTERESTS && (
+                <TouchableOpacity
+                  style={[styles.chip, styles.addChip]}
+                  onPress={() => setInterestVisible(true)}
+                >
+                  <Text style={[styles.chipText, { color: COLORS.primary }]}>
+                    + Add interest
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={styles.metaText}>
+              Up to {MAX_INTERESTS} interests. Tap an interest to remove it.
+            </Text>
+          </View>
 
-        <View style={{ marginTop: 16 }}>
-          <Button
-            title="Sign out"
-            onPress={async () => {
-              await AsyncStorage.removeItem('token');
-              onSignOut();
-            }}
-          />
-        </View>
-      </ScrollView>
+          {/* Photos */}
+          <View style={{ marginTop: 16 }}>
+            <Text style={styles.sectionHeader}>My Photos</Text>
+            <Text style={styles.metaText}>Show who you are with a few photos.</Text>
+
+            <View style={styles.photoGrid}>
+              {photos.map((photo) => (
+                <TouchableOpacity
+                  key={photo.id}
+                  style={styles.photoSlot}
+                  onLongPress={() => removePhoto(photo.id)}
+                  disabled={photoBusy}
+                >
+                  <Image source={{ uri: photo.url }} style={styles.photoImage} />
+                </TouchableOpacity>
+              ))}
+
+              {photos.length < 6 && (
+                <TouchableOpacity
+                  style={styles.photoSlot}
+                  onPress={pickPhoto}
+                  disabled={photoBusy}
+                >
+                  <Text style={styles.photoPlaceholder}>+</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Text style={styles.metaText}>
+              Tap + to add photos (up to 6). First photo becomes your avatar. Long press a photo to remove it.
+            </Text>
+          </View>
+
+          <View style={{ marginTop: 16 }}>
+            <Button
+              title="Sign out"
+              onPress={async () => {
+                await AsyncStorage.removeItem('token');
+                onSignOut();
+              }}
+            />
+          </View>
+        </ScrollView>
 
       {/* Modals */}
       <Modal visible={editVisible} animationType="slide">
@@ -407,6 +408,7 @@ export default function ProfileScreen({ onSignOut }) {
       >
         <ProfileCard profile={profile} photos={photos} />
       </PreviewModal>
+
     </SafeAreaView>
   );
 }
