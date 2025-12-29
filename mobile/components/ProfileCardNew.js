@@ -1,19 +1,16 @@
 // mobile/components/ProfileCardNew.js
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
   Image,
   TouchableOpacity,
   Pressable,
-  StyleSheet,
   Modal,
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../styles/themeNEW';
-
-const CARD_RADIUS = 26;
+import styles from '../styles/ProfileCardStylesNew';
 
 function normalizePhotos(photos) {
   const safe = Array.isArray(photos) ? photos : [];
@@ -80,20 +77,10 @@ function PhotoProgressBar({ count, activeIndex }) {
   );
 }
 
-function DetailRow({ label, value }) {
-  if (!value) return null;
-  return (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{String(value)}</Text>
-    </View>
-  );
-}
-
 function ChipList({ title, items }) {
   if (!items || items.length === 0) return null;
   return (
-    <View style={{ marginTop: 16 }}>
+    <View style={styles.sheetSection}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.chipWrap}>
         {items.map((it) => (
@@ -106,14 +93,34 @@ function ChipList({ title, items }) {
   );
 }
 
-export default function ProfileCardNew({ profile, photos, onLike, onPass }) {
+/**
+ * Main card:
+ * 1) Name + age
+ * 2) Context line (year · featured/affils · mutuals)
+ * 3) Bio (1 line)
+ * Small button: top-right "i" pill (clickable) to open details.
+ *
+ * Expanded: bottom sheet
+ */
+export default function ProfileCardNew({ profile, photos, onDetailsOpenChange }) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
 
   const [photoIndex, setPhotoIndex] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
 
+  useEffect(() => {
+    onDetailsOpenChange?.(moreOpen);
+  }, [moreOpen, onDetailsOpenChange]);
+
+  useEffect(() => {
+    // if profile changes (new card), reset photo index
+    setPhotoIndex(0);
+  }, [profile?.id]);
+
   const currentUri = hasPhotos ? safePhotos[photoIndex]?.uri : null;
+
+  const OVERLAY_DEADZONE = 150; // prevents photo tap zones from stealing overlay/button taps
 
   function handleNextPhoto() {
     if (!hasPhotos) return;
@@ -124,31 +131,57 @@ export default function ProfileCardNew({ profile, photos, onLike, onPass }) {
     setPhotoIndex((prev) => (prev - 1 + safePhotos.length) % safePhotos.length);
   }
 
-  // --- Public “main card” fields ---
   const displayName = coalesce(profile?.display_name, profile?.name, 'Your name');
   const firstName = getFirstName(displayName) || displayName;
-
   const age = getAge(profile);
 
-  const schoolName = coalesce(profile?.school?.short_name, profile?.school?.name);
-  const gradYear = profile?.graduation_year ? `'${String(profile.graduation_year).slice(-2)}` : '';
-  const major = coalesce(profile?.major);
+  const educationLevel = toTitleCase(coalesce(profile?.education_level, profile?.student_type));
+  const yearLabel = coalesce(
+    profile?.year_label,
+    profile?.class_year_label,
+    profile?.yearLabel,
+    educationLevel
+  );
+
   const bio = coalesce(profile?.bio);
 
-  const educationLevel = toTitleCase(coalesce(profile?.education_level, profile?.student_type));
+  const mutualCount =
+    typeof profile?.mutual_count === 'number'
+      ? profile.mutual_count
+      : typeof profile?.mutuals_count === 'number'
+        ? profile.mutuals_count
+        : typeof profile?.mutuals === 'number'
+          ? profile.mutuals
+          : null;
 
-  // --- Expanded profile fields ---
+  const mutualLabel = mutualCount !== null ? `🤝 ${mutualCount} mutuals` : '';
+
   const affiliations = normalizeList(profile?.affiliations || profile?.clubs || profile?.organizations);
+
+  const featuredRaw = normalizeList(
+    profile?.featured_affiliations || profile?.featuredAffiliations || profile?.featured
+  ).slice(0, 2);
+
+  // IMPORTANT: show something even if "featured" isn't wired yet
+  const featuredAffiliations = featuredRaw.length ? featuredRaw : affiliations.slice(0, 2);
+
+  const contextParts = [yearLabel, ...featuredAffiliations, mutualLabel].filter(Boolean);
+
+  const schoolName = coalesce(profile?.school?.short_name, profile?.school?.name);
+  const major = coalesce(profile?.major);
   const schoolAffiliations = normalizeList(
     profile?.school_affiliations || profile?.residential_house || profile?.college_affiliation
   );
   const interests = normalizeList(profile?.interests);
 
-  const headerLine = [schoolName, gradYear].filter(Boolean).join(' ');
-  const metaLine = [educationLevel, major].filter(Boolean).join(' · ');
+  const expandedMetaLine = [yearLabel, major].filter(Boolean).join(' · ');
+
+  const openMore = () => setMoreOpen(true);
+  const closeMore = () => setMoreOpen(false);
 
   return (
     <View style={styles.card}>
+      {/* PHOTO AREA */}
       <View style={styles.photoContainer}>
         <PhotoProgressBar count={safePhotos.length} activeIndex={photoIndex} />
 
@@ -160,501 +193,130 @@ export default function ProfileCardNew({ profile, photos, onLike, onPass }) {
           </View>
         )}
 
-        {/* Tap zones (still for testing; we keep them) */}
-        <TouchableOpacity style={styles.leftTapZone} onPress={handlePrevPhoto} activeOpacity={0.2} />
-        <TouchableOpacity style={styles.rightTapZone} onPress={handleNextPhoto} activeOpacity={0.2} />
+        {/* Tap zones: ONLY photo area */}
+<TouchableOpacity
+  style={[styles.leftTapZone, { bottom: OVERLAY_DEADZONE }]}
+  onPress={handlePrevPhoto}
+  activeOpacity={0.15}
+/>
+<TouchableOpacity
+  style={[styles.rightTapZone, { bottom: OVERLAY_DEADZONE }]}
+  onPress={handleNextPhoto}
+  activeOpacity={0.15}
+/>
 
-        {/* Bottom overlay (story caption) */}
+        {/* CAPTION OVERLAY */}
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.74)']}
+          colors={['transparent', 'rgba(0,0,0,0.55)']}
           style={styles.captionGradient}
           pointerEvents="box-none"
         >
           <View style={styles.handlePill} pointerEvents="none" />
 
-          {/* Quick-test More button (center) */}
-          <Pressable onPress={() => setMoreOpen(true)} style={styles.moreButtonCenter} hitSlop={10}>
-            <Text style={styles.moreButtonText}>More</Text>
-          </Pressable>
-
-          <Text style={styles.nameText}>
-            {firstName}
-            {age ? <Text style={styles.ageText}>{`  ${age}`}</Text> : null}
-          </Text>
-
-          {!!headerLine && <Text style={styles.metaText}>{headerLine}</Text>}
-          {!!metaLine && <Text style={styles.metaTextSecondary}>{metaLine}</Text>}
-
-          {!!bio && (
-            <Text style={styles.bioText} numberOfLines={2}>
-              {bio}
+          {/* Caption tap area: open sheet */}
+          <Pressable onPress={openMore} style={styles.captionTapArea} hitSlop={6}>
+            <Text style={styles.nameText}>
+              {firstName}
+              {age ? <Text style={styles.ageText}>{`  ${age}`}</Text> : null}
             </Text>
-          )}
-        </LinearGradient>
 
-        {/* Floating actions */}
-        <View style={styles.floatingActions} pointerEvents="box-none">
-          <Pressable
-            onPress={onPass}
-            style={({ pressed }) => [styles.floatingButton, pressed && styles.floatingButtonPressed]}
-            hitSlop={10}
-          >
-            <Text style={styles.floatingIcon}>×</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={onLike}
-            style={({ pressed }) => [
-              styles.floatingButton,
-              pressed && styles.floatingButtonPressed,
-            ]}
-            hitSlop={10}
-          >
-            <Text style={[styles.floatingIcon, { color: COLORS.accent }]}>♡</Text>
-          </Pressable>
-        </View>
-
-        {/* Expanded profile (photo-backed background, unified scroll) */}
-        <Modal
-          visible={moreOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setMoreOpen(false)}
-        >
-          <View style={styles.expandedRoot}>
-            {/* Blurred photo background */}
-            {currentUri ? (
-              <Image
-                source={{ uri: currentUri }}
-                style={styles.expandedBgImage}
-                blurRadius={28}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={styles.expandedBgFallback} />
+            {!!contextParts.length && (
+              <Text style={styles.contextLine} numberOfLines={1}>
+                {contextParts.join(' · ')}
+              </Text>
             )}
 
-            {/* Soft wash to keep text readable + cohesive */}
-            <LinearGradient
-              colors={[
-                'rgba(10,10,10,0.35)',
-                'rgba(250,250,250,0.88)',
-                'rgba(250,250,250,0.96)',
-              ]}
-              style={styles.expandedBgWash}
-              pointerEvents="none"
-            />
+            {!!bio && (
+              <Text style={styles.bioText} numberOfLines={1}>
+                {bio}
+              </Text>
+            )}
+          </Pressable>
+          <Pressable
+  onPress={openMore}
+  style={({ pressed }) => [styles.moreChevronBtn, pressed && { transform: [{ scale: 0.98 }] }]}
+  hitSlop={12}
+>
+  <Text style={styles.moreChevronText}>⌃</Text>
+</Pressable>
 
-            {/* Close */}
-            <Pressable
-              onPress={() => setMoreOpen(false)}
-              style={({ pressed }) => [styles.expandedClose, pressed && { opacity: 0.75 }]}
-              hitSlop={10}
-            >
-              <Text style={styles.expandedCloseText}>×</Text>
-            </Pressable>
-
-            {/* One scroll view: hero + details scroll together */}
-            <ScrollView
-              style={styles.expandedScroll}
-              contentContainerStyle={styles.expandedContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.expandedHero}>
-                {currentUri ? (
-                  <Image
-                    source={{ uri: currentUri }}
-                    style={styles.expandedHeroImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={styles.expandedHeroPlaceholder} />
-                )}
-
-                {/* Hero readability fade */}
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.45)', 'transparent', 'rgba(0,0,0,0.55)']}
-                  style={styles.expandedHeroFade}
-                  pointerEvents="none"
-                />
-
-                <View style={styles.expandedHeroText}>
-                  <Text style={styles.expandedTitle}>
-                    {firstName}
-                    {age ? ` ${age}` : ''}
-                  </Text>
-                  {!!headerLine && <Text style={styles.expandedSub}>{headerLine}</Text>}
-                  {!!metaLine && <Text style={styles.expandedSubMuted}>{metaLine}</Text>}
-                </View>
-              </View>
-
-              {/* Translucent panel so the blur shows through */}
-              <View style={styles.expandedPanel}>
-                <DetailRow label="School" value={schoolName} />
-                <DetailRow label="Year" value={profile?.graduation_year || ''} />
-                <DetailRow label="Student" value={educationLevel} />
-                <DetailRow label="Major" value={major} />
-
-                {!!bio && (
-                  <View style={{ marginTop: 16 }}>
-                    <Text style={styles.sectionTitle}>Bio</Text>
-                    <Text style={styles.expandedParagraph}>{bio}</Text>
-                  </View>
-                )}
-
-                <ChipList title="Affiliations" items={affiliations} />
-                <ChipList title="School" items={schoolAffiliations} />
-                <ChipList title="Interests" items={interests} />
-
-                <View style={{ height: 28 }} />
-              </View>
-            </ScrollView>
-          </View>
-        </Modal>
+        </LinearGradient>
       </View>
+
+{/* EXPANDED — Tinder-style full profile (same card top, info scrolls below) */}
+<Modal visible={moreOpen} transparent animationType="fade" onRequestClose={closeMore}>
+  <View style={styles.expandedRoot}>
+    {/* Backdrop */}
+    <Pressable style={styles.expandedBackdrop} onPress={closeMore} />
+
+    {/* Foreground "expanded card" */}
+    <View style={styles.expandedCard}>
+      {/* Close */}
+      <Pressable onPress={closeMore} style={styles.expandedClose} hitSlop={10}>
+        <Text style={styles.expandedCloseText}>×</Text>
+      </Pressable>
+
+      <ScrollView
+        style={styles.expandedScroll}
+        contentContainerStyle={styles.expandedContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* HERO: same photo vibe as preview */}
+        <View style={styles.expandedHero}>
+          {currentUri ? (
+            <Image source={{ uri: currentUri }} style={styles.expandedHeroImage} />
+          ) : (
+            <View style={styles.expandedHeroPlaceholder} />
+          )}
+
+          {/* Gradient + overlay text, like preview */}
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.62)']}
+            style={styles.expandedHeroGradient}
+            pointerEvents="none"
+          />
+
+          <View style={styles.expandedHeroText}>
+            <Text style={styles.expandedTitle}>
+              {firstName}
+              {age ? ` ${age}` : ''}
+            </Text>
+
+            {!!contextParts.length && (
+              <Text style={styles.expandedContextLine} numberOfLines={2}>
+                {contextParts.join(' · ')}
+              </Text>
+            )}
+
+            {!!bio && (
+              <Text style={styles.expandedBioPreview} numberOfLines={2}>
+                {bio}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* BELOW: all the extra info */}
+        <View style={styles.expandedBody}>
+          {!!bio && (
+            <View style={styles.expandedSection}>
+              <Text style={styles.sectionTitle}>Bio</Text>
+              <Text style={styles.expandedParagraph}>{bio}</Text>
+            </View>
+          )}
+
+          {/* If you have these */}
+          <ChipList title="Featured" items={featuredRaw} />
+          <ChipList title="Affiliations" items={affiliations} />
+          <ChipList title="School" items={schoolAffiliations} />
+          <ChipList title="Interests" items={interests} />
+
+          <View style={{ height: 28 }} />
+        </View>
+      </ScrollView>
+    </View>
+  </View>
+</Modal>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  // --- Base card ---
-  card: {
-    height: '100%',
-    borderRadius: CARD_RADIUS,
-    overflow: 'hidden',
-    backgroundColor: COLORS.surface,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 3,
-  },
-
-  photoContainer: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundSubtle,
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
-  },
-  photoPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoPlaceholderText: {
-    color: COLORS.textDisabled,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-
-  // Story progress bar
-  progressWrap: {
-    position: 'absolute',
-    top: 12,
-    left: 14,
-    right: 14,
-    zIndex: 20,
-    flexDirection: 'row',
-    gap: 4,
-  },
-  progressTrack: {
-    flex: 1,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    width: '0%',
-  },
-
-  // Caption overlay
-  captionGradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 14,
-  },
-  handlePill: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    marginBottom: 10,
-  },
-
-  // Quick test “More” button
-  moreButtonCenter: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -40 }, { translateY: -20 }],
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    zIndex: 999,
-  },
-  moreButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-
-  nameText: {
-    color: COLORS.textInverse,
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: -0.2,
-  },
-  ageText: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  metaText: {
-    color: 'rgba(255,255,255,0.82)',
-    fontSize: 13,
-    marginTop: 4,
-    letterSpacing: 0.2,
-  },
-  metaTextSecondary: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 13,
-    marginTop: 2,
-    letterSpacing: 0.2,
-  },
-  bioText: {
-    color: 'rgba(255,255,255,0.86)',
-    fontSize: 13,
-    marginTop: 10,
-    lineHeight: 18,
-    letterSpacing: 0.1,
-  },
-
-  // Floating actions
-  floatingActions: {
-    position: 'absolute',
-    right: 12,
-    bottom: 12,
-    zIndex: 40,
-    elevation: 4,
-    flexDirection: 'row',
-    gap: 10,
-  },
-  floatingButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.70)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  floatingButtonPressed: {
-    transform: [{ scale: 0.96 }],
-    backgroundColor: 'rgba(255,255,255,0.78)',
-  },
-  floatingIcon: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginTop: -1,
-  },
-
-  leftTapZone: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: '40%',
-    zIndex: 10,
-  },
-  rightTapZone: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: '40%',
-    zIndex: 10,
-  },
-
-  // --- Expanded profile (photo-backed, scrolls as one) ---
-  expandedRoot: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  expandedBgImage: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    transform: [{ scale: 1.08 }],
-  },
-  expandedBgFallback: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: COLORS.backgroundSubtle,
-  },
-  expandedBgWash: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-  },
-
-  expandedClose: {
-    position: 'absolute',
-    top: 52,
-    right: 16,
-    width: 34,
-    height: 34,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.55)',
-    zIndex: 50,
-    elevation: 10,
-  },
-  expandedCloseText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginTop: -2,
-  },
-
-  expandedScroll: {
-    flex: 1,
-  },
-  expandedContent: {
-    paddingBottom: 24,
-  },
-
-  expandedHero: {
-    height: 420,
-    width: '100%',
-    overflow: 'hidden',
-  },
-  expandedHeroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  expandedHeroPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: COLORS.backgroundSubtle,
-  },
-  expandedHeroFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-  },
-  expandedHeroText: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 18,
-  },
-  expandedTitle: {
-    color: COLORS.textInverse,
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: -0.3,
-  },
-  expandedSub: {
-    marginTop: 5,
-    color: 'rgba(255,255,255,0.86)',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.1,
-  },
-  expandedSubMuted: {
-    marginTop: 2,
-    color: 'rgba(255,255,255,0.70)',
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.1,
-  },
-
-  // Translucent panel = not sterile
-  expandedPanel: {
-    marginTop: -14,
-    paddingTop: 14,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(255,252,248,0.78)', // slightly warm
-    borderTopWidth: 1,
-    borderColor: 'rgba(229,231,235,0.65)',
-  },
-  expandedParagraph: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORS.textBody,
-  },
-
-  // Detail + chips (shared styles)
-  detailRow: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(229,231,235,0.65)',
-  },
-  detailLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.textMuted,
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    letterSpacing: -0.1,
-  },
-
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.textMuted,
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-    marginBottom: 10,
-  },
-
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.55)',
-    borderWidth: 1,
-    borderColor: 'rgba(229,231,235,0.65)',
-  },
-  chipText: {
-    fontSize: 13,
-    color: COLORS.textPrimary,
-    fontWeight: '700',
-  },
-});

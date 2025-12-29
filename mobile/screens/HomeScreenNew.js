@@ -28,10 +28,9 @@ export default function HomeScreenNew() {
   const [scope, setScope] = useState('school'); // school | league | area
   const [mode, setMode] = useState('romantic'); // romantic | platonic
 
-  // Menu
+  // Mode menu (popover)
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
-
   const modeChipRef = useRef(null);
 
   const modeGlyph = mode === 'romantic' ? '♡' : '⟡';
@@ -41,7 +40,6 @@ export default function HomeScreenNew() {
   const EDGE = 12;
 
   const openModeMenu = () => {
-    // Measure chip location in window coordinates, then place popover under it.
     requestAnimationFrame(() => {
       if (!modeChipRef.current?.measureInWindow) {
         setModeMenuOpen(true);
@@ -51,11 +49,11 @@ export default function HomeScreenNew() {
       modeChipRef.current.measureInWindow((x, y, w, h) => {
         const { width: winW, height: winH } = Dimensions.get('window');
 
-        // Prefer: align popover right edge with chip right edge
+        // Align popover right edge with chip right edge
         let left = x + w - POPOVER_W;
         let top = y + h + 8;
 
-        // Clamp inside visible area (respect safe area top)
+        // Clamp inside visible area (respect safe areas)
         left = clamp(left, EDGE, winW - POPOVER_W - EDGE);
         top = clamp(top, insets.top + EDGE, winH - POPOVER_H - EDGE);
 
@@ -73,6 +71,7 @@ export default function HomeScreenNew() {
 
         const fetchedProfiles = await getFeedProfiles(token);
         setProfiles(Array.isArray(fetchedProfiles) ? fetchedProfiles : []);
+        setCurrentIndex(0);
       } catch (e) {
         console.warn(e);
         Alert.alert('Error', String(e.message || e));
@@ -90,7 +89,7 @@ export default function HomeScreenNew() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
-      console.log('Liked profile:', profile.user_id);
+      console.log('Liked profile:', profile?.user_id);
       moveToNextCard();
     } catch (e) {
       console.warn(e);
@@ -102,7 +101,7 @@ export default function HomeScreenNew() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
-      console.log('Passed on profile:', profile.user_id);
+      console.log('Passed on profile:', profile?.user_id);
       moveToNextCard();
     } catch (e) {
       console.warn(e);
@@ -179,18 +178,12 @@ export default function HomeScreenNew() {
         animationType="fade"
         onRequestClose={() => setModeMenuOpen(false)}
       >
-        {/* tap outside closes */}
         <Pressable style={styles.popoverOverlay} onPress={() => setModeMenuOpen(false)}>
-          {/* popover itself */}
           <Pressable
             onPress={() => {}}
             style={[
               styles.modePopover,
-              {
-                width: POPOVER_W,
-                top: popoverPos.top,
-                left: popoverPos.left,
-              },
+              { width: POPOVER_W, top: popoverPos.top, left: popoverPos.left },
             ]}
           >
             <Text style={styles.popoverTitle}>Mode</Text>
@@ -251,13 +244,11 @@ export default function HomeScreenNew() {
       <View style={styles.content}>
         {current ? (
           <SwipeDeckNew
-            profile={current}
-            photos={current.photos || []}
-            onSwipeRight={() => handleSwipeRight(current)}
-            onSwipeLeft={() => handleSwipeLeft(current)}
+            profiles={profiles}
+            currentIndex={currentIndex}
+            onSwipeRight={handleSwipeRight}
+            onSwipeLeft={handleSwipeLeft}
             onNext={moveToNextCard}
-            onLike={() => handleSwipeRight(current)}
-            onPass={() => handleSwipeLeft(current)}
           />
         ) : (
           <View style={styles.emptyWrap}>

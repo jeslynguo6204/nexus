@@ -1,5 +1,5 @@
 // mobile/components/SwipeDeckNew.js
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { View, Animated, PanResponder, Dimensions, StyleSheet } from 'react-native';
 import ProfileCardNew from './ProfileCardNew';
 
@@ -13,44 +13,59 @@ const CARD_HEIGHT = Math.min(IDEAL_HEIGHT, SCREEN_HEIGHT * 0.78);
 const SWIPE_THRESHOLD = 0.25 * SCREEN_WIDTH;
 
 export default function SwipeDeckNew({
-  profile,
-  photos,
+  profiles = [],
+  currentIndex = 0,
   onSwipeRight,
   onSwipeLeft,
   onNext,
-  onLike,
-  onPass,
 }) {
   const pan = useRef(new Animated.ValueXY()).current;
   const [isAnimating, setIsAnimating] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const visible = useMemo(
+    () => profiles.slice(currentIndex, currentIndex + 3),
+    [profiles, currentIndex]
+  );
+
+  const swipeEnabled = !detailsOpen;
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        // keep vertical movement subtle so it feels “premium”
+      onStartShouldSetPanResponder: () => swipeEnabled,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        if (!swipeEnabled) return false;
+        // avoid hijacking taps; only start responder if there's meaningful horizontal intent
+        return Math.abs(gestureState.dx) > 6;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (!swipeEnabled) return;
         pan.setValue({ x: gestureState.dx, y: gestureState.dy * 0.12 });
       },
-      onPanResponderRelease: (evt, gestureState) => {
+      onPanResponderRelease: (_, gestureState) => {
+        if (!swipeEnabled) return;
+
         const { dx } = gestureState;
 
         if (Math.abs(dx) > SWIPE_THRESHOLD) {
+          const topProfile = visible[0];
           if (dx > 0) {
-            animateOut(true);
-            onSwipeRight?.();
+            animateOut(true, topProfile);
           } else {
-            animateOut(false);
-            onSwipeLeft?.();
+            animateOut(false, topProfile);
           }
         } else {
           resetPosition();
         }
       },
+      onPanResponderTerminate: () => {
+        if (!swipeEnabled) return;
+        resetPosition();
+      },
     })
   ).current;
 
-  function animateOut(isRight) {
+  function animateOut(isRight, topProfile) {
     if (isAnimating) return;
     setIsAnimating(true);
 
@@ -59,7 +74,13 @@ export default function SwipeDeckNew({
       toValue: { x: finalX, y: 0 },
       duration: 240,
       useNativeDriver: false,
-    }).start(() => resetCard());
+    }).start(() => {
+      // callbacks
+      if (isRight) onSwipeRight?.(topProfile);
+      else onSwipeLeft?.(topProfile);
+
+      resetCard();
+    });
   }
 
   function resetPosition() {
@@ -87,34 +108,78 @@ export default function SwipeDeckNew({
     outputRange: [0.85, 1, 0.85],
   });
 
+  if (!visible.length) return null;
+
   return (
-    <View style={styles.container} {...panResponder.panHandlers}>
-      <Animated.View
-        style={[
-          styles.cardContainer,
-          {
-            transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate: rotation }],
-            opacity,
-          },
-        ]}
-      >
-        <ProfileCardNew profile={profile} photos={photos} onLike={onLike} onPass={onPass} />
-      </Animated.View>
+    <View style={styles.container}>
+      {/* Render back cards first (absolute) */}
+      {visible
+        .map((p, i) => ({ p, i }))
+        .reverse()
+        .map(({ p, i }) => {
+          const isTop = i === 0;
+          const key = p?.user_id ?? `${currentIndex}-${i}`;
+
+          if (!isTop) {
+            // Back card styling: slight scale + vertical offset
+            const depth = i; // 1,2...
+            return (
+              <View
+                key={key}
+                style={[
+                  styles.cardContainer,
+                  styles.cardAbsolute,
+                  {
+                    transform: [{ scale: 1 - 0.04 * depth }, { translateY: 10 * depth }],
+                    opacity: 1 - 0.08 * depth,
+                  },
+                ]}
+                pointerEvents="none"
+              >
+                <ProfileCardNew profile={p} photos={p?.photos || []} />
+              </View>
+            );
+          }
+
+          return (
+            <Animated.View
+              key={key}
+              {...panResponder.panHandlers}
+              style={[
+                styles.cardContainer,
+                styles.cardAbsolute,
+                {
+                  transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate: rotation }],
+                  opacity,
+                },
+              ]}
+            >
+              <ProfileCardNew
+                profile={p}
+                photos={p?.photos || []}
+                onDetailsOpenChange={setDetailsOpen}
+              />
+            </Animated.View>
+          );
+        })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Centering fixes the huge “white dead zone” under the card
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 18, // nudge up slightly since the tab bar exists
+    paddingBottom: 18, // tab bar nudge
   },
 
   cardContainer: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
+  },
+
+  cardAbsolute: {
+    position: 'absolute',
   },
 });
