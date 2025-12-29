@@ -1,4 +1,26 @@
 // mobile/components/ProfileCard.js
+
+/**
+ * ProfileCard is a reusable component that displays a user's profile information 
+ * in a compact, card-based format. It is a central component in the app, used in 
+ * both the HomeScreen (within the SwipeDeck) to display potential matches, and in
+ * the ProfileScreen to preview the user's own profile.
+ * 
+ * The component receives the user's profile data and photos through props and 
+ * conditionally renders the available information, such as their name, school, 
+ * graduation year, major, bio, and interests. It also includes a swipeable photo 
+ * carousel to display the user's photos.
+ * 
+ * The ProfileCard's design is optimized for readability and engagement, with clear 
+ * typography, appealing colors, and a balanced layout. Its reusability across key 
+ * screens in the app ensures a consistent and recognizable interface for presenting
+ * user profiles.
+ * 
+ * By encapsulating the display of user profiles, the ProfileCard component makes it
+ * easier to manage and update the presentation of this critical data throughout the
+ * app.
+ */
+
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';

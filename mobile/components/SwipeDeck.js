@@ -1,4 +1,28 @@
 // mobile/components/SwipeDeck.js
+
+/**
+ * SwipeDeck is a component used on the HomeScreen to display a stack of ProfileCards
+ * that the user can swipe left or right on to dismiss or like potential matches.
+ * 
+ * The component receives an array of user profiles and their photos through props, 
+ * along with callback functions to handle the swiping interactions (onSwipeLeft, 
+ * onSwipeRight) and moving to the next card (onNext).
+ * 
+ * Internally, SwipeDeck uses the React Native PanResponder to track the user's touch
+ * interactions and determine the direction and distance of their swipe. When a swipe
+ * exceeds a certain threshold, the corresponding callback function is triggered and 
+ * the current card is animated off the screen.
+ * 
+ * The ProfileCard component is rendered within SwipeDeck to display each user's 
+ * profile information. SwipeDeck dynamically styles the ProfileCard to create the 
+ * illusion of a stack of cards and to provide visual feedback during swiping.
+ * 
+ * By encapsulating the complex swiping interaction and the rendering of the profile 
+ * cards, SwipeDeck provides a reusable and modular component for implementing a core
+ * feature of the dating app. It is used on the HomeScreen to facilitate the user's 
+ * discovery and selection of potential matches.
+ */
+
 import React, { useRef, useState } from 'react';
 import {
   View,

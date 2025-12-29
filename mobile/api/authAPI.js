@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 
 const API_BASE = Constants.expoConfig.extra.apiBaseUrl;
 
-console.log("📡 API Base URL:", API_BASE);
+console.log("📡 Auth API Base URL:", API_BASE);
 
 async function request(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {

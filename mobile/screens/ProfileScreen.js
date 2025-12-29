@@ -1,3 +1,32 @@
+// mobile/screens/ProfileScreen.js
+
+/**
+ * ProfileScreen allows users to view and edit their own profile information, 
+ * including basic details, preferences, interests, and photos.
+ * 
+ * The screen fetches the user's profile and photos on mount using the `getMyProfile` 
+ * and `fetchMyPhotos` API calls. It displays this data in a scrollable view with 
+ * sections for each type of information.
+ * 
+ * Users can tap buttons to open modal forms to edit their basic profile details 
+ * (`ProfileDetailsForm`) or preferences (`ProfilePreferencesForm`). They can also 
+ * add or remove interests and photos directly on the screen.
+ * 
+ * The `PreviewModal` component is used to display a full-screen preview of the user's
+ * profile as it would appear to others, using the `ProfileCard` component.
+ * 
+ * The screen also includes a button to sign out of the app, which removes the user's
+ * token from local storage.
+ * 
+ * Overall, this screen uses many of the other components in the app, including:
+ * - `ProfileDetailsForm` and `ProfilePreferencesForm` for editing profile data
+ * - `ProfileCard` for previewing the user's profile
+ * - `PreviewModal` for displaying the profile preview in a modal
+ * 
+ * It also makes use of several API calls to fetch and update the user's profile and 
+ * photo data.
+ */
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -11,9 +40,10 @@ import {
   Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm';
@@ -24,7 +54,7 @@ import { COLORS } from '../styles/ProfileFormStyles';
 import styles from '../styles/ProfileScreenStyles';
 
 // ✅ API helpers
-import { fetchMyPhotos, addPhoto, deletePhoto } from '../api/photosAPI';
+import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../api/photosAPI';
 import { getMyProfile, updateMyProfile } from '../api/profileAPI';
 
 const MAX_INTERESTS = 6;
@@ -48,6 +78,7 @@ const INTEREST_OPTIONS = [
 ];
 
 export default function ProfileScreen({ onSignOut }) {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [editVisible, setEditVisible] = useState(false);
@@ -191,10 +222,70 @@ export default function ProfileScreen({ onSignOut }) {
     }
   }
 
+  async function handlePhotoReorder(data, from, to) {
+    const next = data.filter((item) => !item.isAdd);
+
+    const unchanged =
+      next.length === photos.length &&
+      next.every((p, idx) => photos[idx]?.id === p.id);
+
+    if (from === to || next.length !== photos.length || unchanged) {
+      setPhotoBusy(false);
+      return;
+    }
+
+    const previous = photos;
+    setPhotos(next);
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not signed in');
+
+      await reorderPhotos(
+        token,
+        next.map((p) => p.id)
+      );
+    } catch (e) {
+      console.warn(e);
+      setPhotos(previous);
+      Alert.alert('Error', String(e.message || e));
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
   const primaryPhotoUrl = photos[0]?.url;
+  const photoListData =
+    photos.length < 6 ? [...photos, { id: 'add-tile', isAdd: true }] : photos;
+
+  const renderPhotoItem = ({ item, drag, isActive }) => {
+    if (item.isAdd) {
+      return (
+        <TouchableOpacity
+          style={[styles.photoSlot, styles.addPhotoSlot]}
+          onPress={pickPhoto}
+          disabled={photoBusy}
+        >
+          <Text style={styles.photoPlaceholder}>+</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={[styles.photoSlot, isActive && styles.photoSlotActive]}
+        onLongPress={drag}
+        delayLongPress={120}
+        onPress={() => removePhoto(item.id)}
+        disabled={photoBusy}
+      >
+        <Image source={{ uri: item.url }} style={styles.photoImage} />
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -298,31 +389,21 @@ export default function ProfileScreen({ onSignOut }) {
             <Text style={styles.sectionHeader}>My Photos</Text>
             <Text style={styles.metaText}>Show who you are with a few photos.</Text>
 
-            <View style={styles.photoGrid}>
-              {photos.map((photo) => (
-                <TouchableOpacity
-                  key={photo.id}
-                  style={styles.photoSlot}
-                  onLongPress={() => removePhoto(photo.id)}
-                  disabled={photoBusy}
-                >
-                  <Image source={{ uri: photo.url }} style={styles.photoImage} />
-                </TouchableOpacity>
-              ))}
-
-              {photos.length < 6 && (
-                <TouchableOpacity
-                  style={styles.photoSlot}
-                  onPress={pickPhoto}
-                  disabled={photoBusy}
-                >
-                  <Text style={styles.photoPlaceholder}>+</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <DraggableFlatList
+              data={photoListData}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={renderPhotoItem}
+              numColumns={3}
+              scrollEnabled={false}
+              activationDistance={12}
+              contentContainerStyle={styles.photoGrid}
+              columnWrapperStyle={styles.photoRow}
+              onDragBegin={() => setPhotoBusy(true)}
+              onDragEnd={({ data, from, to }) => handlePhotoReorder(data, from, to)}
+            />
 
             <Text style={styles.metaText}>
-              Tap + to add photos (up to 6). First photo becomes your avatar. Long press a photo to remove it.
+              Long press to drag and reorder. Tap a photo to remove it. Tap + to add up to 6 photos. First photo becomes your avatar.
             </Text>
           </View>
 
@@ -339,7 +420,6 @@ export default function ProfileScreen({ onSignOut }) {
 
       {/* Modals */}
       <Modal visible={editVisible} animationType="slide">
-        <SafeAreaView style={{ flex: 1 }}>
           {profile && (
             <ProfileDetailsForm
               profile={profile}
@@ -350,11 +430,9 @@ export default function ProfileScreen({ onSignOut }) {
               onClose={() => setEditVisible(false)}
             />
           )}
-        </SafeAreaView>
       </Modal>
 
       <Modal visible={prefsVisible} animationType="slide">
-        <SafeAreaView style={{ flex: 1 }}>
           {profile && (
             <ProfilePreferencesForm
               profile={profile}
@@ -365,11 +443,17 @@ export default function ProfileScreen({ onSignOut }) {
               onClose={() => setPrefsVisible(false)}
             />
           )}
-        </SafeAreaView>
       </Modal>
 
       <Modal visible={interestVisible} animationType="slide">
-        <SafeAreaView style={{ flex: 1 }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#F3F7FC',
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom,
+          }}
+        >
           <View style={{ padding: 16, flex: 1 }}>
             <View style={styles.headerRow}>
               <Text style={styles.title}>Add Interest</Text>
@@ -398,7 +482,7 @@ export default function ProfileScreen({ onSignOut }) {
               )}
             </ScrollView>
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
 
       <PreviewModal
@@ -409,6 +493,6 @@ export default function ProfileScreen({ onSignOut }) {
         <ProfileCard profile={profile} photos={photos} />
       </PreviewModal>
 
-    </SafeAreaView>
+    </View>
   );
 }

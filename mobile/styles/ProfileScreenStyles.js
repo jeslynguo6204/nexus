@@ -130,10 +130,12 @@ const styles = {
 
   // Photo grid styles
   photoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  photoRow: {
     gap: 12,
-    marginTop: 10,
+    paddingBottom: 12,
   },
   photoSlot: {
     width: 110,
@@ -148,6 +150,16 @@ const styles = {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
+  },
+  photoSlotActive: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  addPhotoSlot: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: COLORS.primary,
+    backgroundColor: "#E9F4FF",
   },
   photoPlaceholder: {
     fontSize: 32,

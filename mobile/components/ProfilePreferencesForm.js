@@ -1,6 +1,27 @@
 // mobile/components/ProfilePreferencesForm.js
+
+/**
+ * ProfilePreferencesForm is a reusable form component for editing a user's profile 
+ * preferences, such as their dating and friends modes, gender preferences, age 
+ * range, and maximum distance.
+ * 
+ * Like the ProfileDetailsForm, it is used within the ProfileScreen to allow users 
+ * to edit a specific section of their profile. When the form is submitted, it calls
+ * the onSave prop with the updated preference fields, which the ProfileScreen 
+ * handles by making an API call to update the user's profile on the server.
+ * 
+ * The form is pre-populated with the user's current preferences, which are passed 
+ * in as the profile prop. It uses various input components like switches, sliders, 
+ * and buttons to provide an intuitive interface for adjusting these settings.
+ * 
+ * By allowing users to control their discovery preferences, this form component 
+ * helps to tailor the user's experience on the app and improve the relevance of the
+ * potential matches they see on the HomeScreen.
+ */
+
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Switch, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import styles, { COLORS } from '../styles/ProfileFormStyles';
@@ -8,6 +29,7 @@ import styles, { COLORS } from '../styles/ProfileFormStyles';
 const GENDER_OPTIONS = ['male', 'female', 'non-binary', 'everyone'];
 
 export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
+  const insets = useSafeAreaInsets();
   const [isDatingEnabled, setIsDatingEnabled] = useState(
     profile.is_dating_enabled ?? true
   );
@@ -60,6 +82,7 @@ export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
   }
 
   return (
+    <View style={{ flex: 1, backgroundColor: COLORS.background, paddingTop: insets.top }}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -217,5 +240,6 @@ export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 }
