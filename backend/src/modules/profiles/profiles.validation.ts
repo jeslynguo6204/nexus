@@ -14,6 +14,7 @@ export const profileUpdateSchema = z
     bio: z.string().trim().max(2000).optional(),
     major: z.string().trim().max(255).optional(),
     graduationYear: z.number().int().min(2020).max(2040).optional(),
+    academicYear: z.enum(['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate']).optional(),
 
     isDatingEnabled: z.boolean().optional(),
     isFriendsEnabled: z.boolean().optional(),
@@ -28,9 +29,12 @@ export const profileUpdateSchema = z
 
     showMeInDiscovery: z.boolean().optional(),
 
+    locationLat: z.string().trim().optional().nullable(),
+    locationLon: z.string().trim().optional().nullable(),
     locationDescription: z.string().trim().max(500).optional(),
     interests: z.array(z.string().trim().min(1).max(100)).max(50).optional(),
     photos: z.array(z.string().trim().max(500)).max(6).optional(),
+    affiliations: z.array(z.number().int().positive()).max(20).optional(), // Array of affiliation IDs
   })
   .refine(
     (data) =>

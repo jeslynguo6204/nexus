@@ -6,6 +6,7 @@ export interface ProfileRow {
   bio: string | null;
   major: string | null;
   graduation_year: number | null;
+  academic_year: string | null; // ENUM: 'Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'
   school_id?: number | null;
   school_name?: string | null;
   school_short_name?: string | null;
@@ -24,8 +25,10 @@ export interface ProfileRow {
   show_me_in_discovery: boolean;
   location_lat: string | null; // DECIMAL comes back as string from pg
   location_lon: string | null;
+  location_description: string | null;
   interests: string[] | null;
   photos: string[] | null;
+  affiliations: number[] | null; // Array of affiliation IDs
   updated_at: string;
 }
 
@@ -40,6 +43,7 @@ export async function getProfileByUserId(
       p.bio,
       p.major,
       p.graduation_year,
+      p.academic_year,
       p.is_dating_enabled,
       p.is_friends_enabled,
       p.dating_gender_preference,
@@ -50,8 +54,10 @@ export async function getProfileByUserId(
       p.show_me_in_discovery,
       p.location_lat,
       p.location_lon,
+      p.location_description,
       p.interests,
       p.photos,
+      p.affiliations,
       p.updated_at,
       u.school_id,
       s.name AS school_name,
@@ -71,6 +77,7 @@ export interface ProfileUpdateInput {
   bio?: string | null;
   major?: string | null;
   graduation_year?: number | null;
+  academic_year?: string | null; // ENUM: 'Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'
   is_dating_enabled?: boolean;
   is_friends_enabled?: boolean;
   dating_gender_preference?: string | null;
@@ -79,8 +86,12 @@ export interface ProfileUpdateInput {
   max_age_preference?: number | null;
   max_distance_km?: number | null;
   show_me_in_discovery?: boolean;
+  location_lat?: string | null;
+  location_lon?: string | null;
+  location_description?: string | null;
   interests?: string[] | null;
   photos?: string[] | null;
+  affiliations?: number[] | null; // Array of affiliation IDs
 }
 
 // partial update builder
@@ -120,6 +131,7 @@ export async function updateProfileByUserId(
       bio,
       major,
       graduation_year,
+      academic_year,
       is_dating_enabled,
       is_friends_enabled,
       dating_gender_preference,
@@ -130,8 +142,10 @@ export async function updateProfileByUserId(
       show_me_in_discovery,
       location_lat,
       location_lon,
+      location_description,
       interests,
       photos,
+      affiliations,
       updated_at
     `,
     values

@@ -35,12 +35,19 @@ export default function SwipeDeckNew({
       onStartShouldSetPanResponder: () => swipeEnabled,
       onMoveShouldSetPanResponder: (_, gestureState) => {
         if (!swipeEnabled) return false;
-        // avoid hijacking taps; only start responder if there's meaningful horizontal intent
-        return Math.abs(gestureState.dx) > 6;
+        // Only respond to horizontal swipes, not vertical scrolling
+        // Require significantly more horizontal movement than vertical to avoid hijacking scroll
+        const horizontalIntent = Math.abs(gestureState.dx);
+        const verticalIntent = Math.abs(gestureState.dy);
+        // More strict: require 2x horizontal movement to initiate swipe
+        return horizontalIntent > 15 && horizontalIntent > verticalIntent * 2;
       },
       onPanResponderMove: (_, gestureState) => {
         if (!swipeEnabled) return;
-        pan.setValue({ x: gestureState.dx, y: gestureState.dy * 0.12 });
+        // Only move if horizontal movement is clearly dominant (2x threshold)
+        if (Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 2) {
+          pan.setValue({ x: gestureState.dx, y: gestureState.dy * 0.12 });
+        }
       },
       onPanResponderRelease: (_, gestureState) => {
         if (!swipeEnabled) return;
@@ -122,6 +129,10 @@ export default function SwipeDeckNew({
 
           if (!isTop) {
             // Back card styling: slight scale + vertical offset
+            // Hide back cards when details are open
+            if (detailsOpen) {
+              return null;
+            }
             const depth = i; // 1,2...
             return (
               <View
@@ -144,13 +155,14 @@ export default function SwipeDeckNew({
           return (
             <Animated.View
               key={key}
-              {...panResponder.panHandlers}
+              {...(swipeEnabled ? panResponder.panHandlers : {})}
               style={[
                 styles.cardContainer,
                 styles.cardAbsolute,
                 {
                   transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate: rotation }],
                   opacity,
+                  zIndex: detailsOpen ? 999 : 1, // Lower z-index when expanded so backdrop can show
                 },
               ]}
             >
@@ -172,6 +184,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingBottom: 18, // tab bar nudge
+    position: 'relative',
   },
 
   cardContainer: {

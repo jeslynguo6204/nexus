@@ -16,12 +16,24 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 10 },
     elevation: 3,
+    flexDirection: 'column', // Stack photo and expanded content vertically
+  },
+  cardExpanded: {
+    borderRadius: RADIUS, // Keep rounded corners
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
   },
 
   photoContainer: {
-    flex: 1,
     position: 'relative',
     backgroundColor: COLORS.backgroundSubtle,
+    width: '100%',
+    // Height is animated in component
+  },
+  photoContainerExpanded: {
+    borderTopLeftRadius: RADIUS,
+    borderTopRightRadius: RADIUS,
+    overflow: 'hidden',
   },
 
   photo: {
@@ -66,12 +78,13 @@ const styles = StyleSheet.create({
   },
 
   // Tap zones for photo cycling (we'll clamp their bottom in the component via inline style)
+  // Made larger for easier tapping
   leftTapZone: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: '42%',
+    width: '50%', // Increased from 42% for easier tapping
     zIndex: 10,
   },
   rightTapZone: {
@@ -79,7 +92,7 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
-    width: '42%',
+    width: '50%', // Increased from 42% for easier tapping
     zIndex: 10,
   },
 
@@ -122,12 +135,32 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
+  contextLineContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 6,
+  },
   contextLine: {
     color: 'rgba(255,255,255,0.78)',
     fontSize: 13,
-    marginTop: 6,
     letterSpacing: 0.1,
     fontWeight: '700',
+  },
+  mutualsChip: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.30)',
+  },
+  mutualsChipText: {
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
 
   bioText: {
@@ -301,129 +334,46 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.04)',
+    backgroundColor: COLORS.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(229,231,235,0.95)',
+    borderColor: COLORS.accentBorder,
   },
   chipText: {
     fontSize: 13,
-    color: COLORS.textPrimary,
-    fontWeight: '700',
+    color: COLORS.textBody,
+    fontWeight: '600',
   },
-  expandedRoot: {
-  flex: 1,
-  justifyContent: 'flex-end',
-},
+  // Expanded content container (appears below photo)
+  expandedContent: {
+    overflow: 'hidden',
+    backgroundColor: COLORS.surface,
+  },
 
-expandedBackdrop: {
-  ...StyleSheet.absoluteFillObject,
-  backgroundColor: 'rgba(0,0,0,0.45)',
-},
+  // Expanded scroll content
+  expandedScrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    backgroundColor: COLORS.surface,
+  },
 
-expandedCard: {
-  height: '92%',
-  backgroundColor: COLORS.surface,
-  borderTopLeftRadius: 26,
-  borderTopRightRadius: 26,
-  overflow: 'hidden',
-},
+  // Backdrop when expanded
+  expandedBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 998, // Below card but above everything else
+  },
 
-expandedClose: {
-  position: 'absolute',
-  top: 14,
-  right: 14,
-  width: 36,
-  height: 36,
-  borderRadius: 999,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: 'rgba(0,0,0,0.25)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.18)',
-  zIndex: 50,
-},
-
-expandedCloseText: {
-  color: 'rgba(255,255,255,0.95)',
-  fontSize: 22,
-  fontWeight: '900',
-  marginTop: -2,
-},
-
-expandedScroll: {
-  flex: 1,
-},
-
-expandedContent: {
-  paddingBottom: 18,
-},
-
-expandedHero: {
-  height: 440,
-  width: '100%',
-  backgroundColor: COLORS.backgroundSubtle,
-},
-
-expandedHeroImage: {
-  width: '100%',
-  height: '100%',
-},
-
-expandedHeroPlaceholder: {
-  width: '100%',
-  height: '100%',
-  backgroundColor: COLORS.backgroundSubtle,
-},
-
-expandedHeroGradient: {
-  position: 'absolute',
-  left: 0,
-  right: 0,
-  bottom: 0,
-  height: 180,
-},
-
-expandedHeroText: {
-  position: 'absolute',
-  left: 16,
-  right: 16,
-  bottom: 16,
-},
-
-expandedTitle: {
-  color: COLORS.textInverse,
-  fontSize: 28,
-  fontWeight: '900',
-  letterSpacing: -0.3,
-},
-
-expandedContextLine: {
-  marginTop: 6,
-  color: 'rgba(255,255,255,0.78)',
-  fontSize: 14,
-  fontWeight: '700',
-},
-
-expandedBioPreview: {
-  marginTop: 8,
-  color: 'rgba(255,255,255,0.88)',
-  fontSize: 14,
-  lineHeight: 20,
-  fontWeight: '600',
-},
-
-expandedBody: {
-  paddingHorizontal: 16,
-  paddingTop: 14,
-  backgroundColor: COLORS.surface,
-},
-
-expandedSection: {
-  marginTop: 10,
-},
+  expandedSection: {
+    marginTop: 20,
+  },
 
 expandedParagraph: {
   fontSize: 14,
