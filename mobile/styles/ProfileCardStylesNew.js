@@ -346,18 +346,9 @@ const styles = StyleSheet.create({
     color: COLORS.textBody,
     fontWeight: '600',
   },
-  // Expanded content container (appears below photo)
-  expandedContent: {
-    overflow: 'hidden',
-    backgroundColor: COLORS.surface,
-  },
-
-  // Expanded scroll content
+  // Expanded scroll content (contains photo + all content)
   expandedScrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
     paddingBottom: 24,
-    backgroundColor: COLORS.surface,
   },
 
   // Backdrop when expanded

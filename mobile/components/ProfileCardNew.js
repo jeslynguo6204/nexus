@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import styles from '../styles/ProfileCardStylesNew';
+import { COLORS } from '../styles/themeNEW';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -268,108 +269,103 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
           },
         ]}
       >
-      {/* PHOTO AREA - same in both modes, just different height */}
+      {/* Photo container - always rendered, height animates */}
       <Animated.View
         style={[
           styles.photoContainer,
           {
             height: expansionHeight.interpolate({
               inputRange: [0, 1],
-              outputRange: [
-                DEFAULT_CARD_HEIGHT, // Photo fills card when collapsed
-                PHOTO_HEIGHT_EXPANDED // Fixed height when expanded
-              ],
+              outputRange: [DEFAULT_CARD_HEIGHT, PHOTO_HEIGHT_EXPANDED],
             }),
           },
           moreOpen && styles.photoContainerExpanded,
         ]}
       >
-            <PhotoProgressBar count={safePhotos.length} activeIndex={photoIndex} />
+        <PhotoProgressBar count={safePhotos.length} activeIndex={photoIndex} />
 
-            {currentUri ? (
-              <Image source={{ uri: currentUri }} style={styles.photo} />
-            ) : (
-              <View style={styles.photoPlaceholder}>
-                <Text style={styles.photoPlaceholderText}>Add a photo</Text>
-              </View>
-            )}
+        {currentUri ? (
+          <Image source={{ uri: currentUri }} style={styles.photo} />
+        ) : (
+          <View style={styles.photoPlaceholder}>
+            <Text style={styles.photoPlaceholderText}>Add a photo</Text>
+          </View>
+        )}
 
-            {/* Tap zones: ONLY photo area */}
-            <TouchableOpacity
-              style={[styles.leftTapZone, { bottom: OVERLAY_DEADZONE }]}
-              onPress={handlePrevPhoto}
-              activeOpacity={0.15}
-            />
-            <TouchableOpacity
-              style={[styles.rightTapZone, { bottom: OVERLAY_DEADZONE }]}
-              onPress={handleNextPhoto}
-              activeOpacity={0.15}
-            />
+        {/* Tap zones: ONLY photo area */}
+        <TouchableOpacity
+          style={[styles.leftTapZone, { bottom: OVERLAY_DEADZONE }]}
+          onPress={handlePrevPhoto}
+          activeOpacity={0.15}
+        />
+        <TouchableOpacity
+          style={[styles.rightTapZone, { bottom: OVERLAY_DEADZONE }]}
+          onPress={handleNextPhoto}
+          activeOpacity={0.15}
+        />
 
-            {/* CAPTION OVERLAY */}
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.55)']}
-              style={styles.captionGradient}
-              pointerEvents="box-none"
-            >
-              <View style={styles.handlePill} pointerEvents="none" />
+        {/* CAPTION OVERLAY */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.55)']}
+          style={styles.captionGradient}
+          pointerEvents="box-none"
+        >
+          <View style={styles.handlePill} pointerEvents="none" />
 
-              {/* Caption tap area: toggle expansion */}
-              <Pressable onPress={toggleMore} style={styles.captionTapArea} hitSlop={6}>
-                <Text style={styles.nameText}>
-                  {firstName}
-                  {age ? <Text style={styles.ageText}>{`  ${age}`}</Text> : null}
+          {/* Caption tap area: toggle expansion */}
+          <Pressable onPress={toggleMore} style={styles.captionTapArea} hitSlop={6}>
+            <Text style={styles.nameText}>
+              {firstName}
+              {age ? <Text style={styles.ageText}>{`  ${age}`}</Text> : null}
+            </Text>
+
+            <View style={styles.contextLineContainer}>
+              {!!previewContextParts.length && (
+                <Text style={styles.contextLine} numberOfLines={1}>
+                  {previewContextParts.join(' · ')}
                 </Text>
-
-                <View style={styles.contextLineContainer}>
-                  {!!previewContextParts.length && (
-                    <Text style={styles.contextLine} numberOfLines={1}>
-                      {previewContextParts.join(' · ')}
-                    </Text>
-                  )}
-                  {mutualCount !== null && mutualCount > 0 && (
-                    <View style={styles.mutualsChip}>
-                      <Text style={styles.mutualsChipText}>
-                        {mutualCount} mutual{mutualCount !== 1 ? 's' : ''}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Bio in overlay */}
-                {!!bio && (
-                  <Text style={styles.bioText} numberOfLines={moreOpen ? 3 : 2}>
-                    {bio}
+              )}
+              {mutualCount !== null && mutualCount > 0 && (
+                <View style={styles.mutualsChip}>
+                  <Text style={styles.mutualsChipText}>
+                    {mutualCount} mutual{mutualCount !== 1 ? 's' : ''}
                   </Text>
-                )}
-              </Pressable>
-              <Pressable
-                onPress={toggleMore}
-                style={({ pressed }) => [styles.moreChevronBtn, pressed && { transform: [{ scale: 0.98 }] }]}
-                hitSlop={12}
-              >
-                <Animated.Text
-                  style={[
-                    styles.moreChevronText,
-                    { transform: [{ rotate: chevronRotate }] },
-                  ]}
-                >
-                  ⌃
-                </Animated.Text>
-              </Pressable>
-            </LinearGradient>
+                </View>
+              )}
+            </View>
+
+            {/* Bio in overlay */}
+            {!!bio && (
+              <Text style={styles.bioText} numberOfLines={moreOpen ? 3 : 2}>
+                {bio}
+              </Text>
+            )}
+          </Pressable>
+          <Pressable
+            onPress={toggleMore}
+            style={({ pressed }) => [styles.moreChevronBtn, pressed && { transform: [{ scale: 0.98 }] }]}
+            hitSlop={12}
+          >
+            <Animated.Text
+              style={[
+                styles.moreChevronText,
+                { transform: [{ rotate: chevronRotate }] },
+              ]}
+            >
+              ⌃
+            </Animated.Text>
+          </Pressable>
+        </LinearGradient>
       </Animated.View>
 
-      {/* EXPANDABLE CONTENT - appears below photo when expanded */}
+      {/* Expanded content - always rendered, revealed as card height grows */}
       <Animated.View
         style={[
-          styles.expandedContent,
           {
             height: expansionHeight.interpolate({
               inputRange: [0, 1],
               outputRange: [0, EXPANDED_CARD_HEIGHT - PHOTO_HEIGHT_EXPANDED],
             }),
-            opacity: expansionHeight,
             overflow: 'hidden',
           },
         ]}
@@ -377,7 +373,7 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
       >
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={styles.expandedScrollContent}
+          contentContainerStyle={[styles.expandedScrollContent, { backgroundColor: COLORS.surface }]}
           showsVerticalScrollIndicator={true}
           scrollEnabled={moreOpen}
           bounces={true}
@@ -385,106 +381,108 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
           directionalLockEnabled={false}
           nestedScrollEnabled={false}
         >
-            {/* CONTENT BELOW PHOTO - scrolls with photo */}
-          {/* Academic Year */}
-          {!!academicYear && (
-            <View style={styles.expandedSection}>
-              <Text style={styles.sectionTitle}>Year</Text>
-              <Text style={styles.expandedParagraph}>{academicYear}</Text>
-            </View>
-          )}
-
-          {/* Location */}
-          {!!locationDescription && (
-            <View style={styles.expandedSection}>
-              <Text style={styles.sectionTitle}>Location</Text>
-              <Text style={styles.expandedParagraph}>{locationDescription}</Text>
-            </View>
-          )}
-
-          {/* Graduation Year */}
-          {!!graduationYear && (
-            <View style={styles.expandedSection}>
-              <Text style={styles.sectionTitle}>Graduation</Text>
-              <Text style={styles.expandedParagraph}>{graduationYear}</Text>
-            </View>
-          )}
-
-          {/* Major */}
-          {!!major && (
-            <View style={styles.expandedSection}>
-              <Text style={styles.sectionTitle}>Major</Text>
-              <Text style={styles.expandedParagraph}>{major}</Text>
-            </View>
-          )}
-
-          {/* School */}
-          {!!schoolName && (
-            <View style={styles.expandedSection}>
-              <Text style={styles.sectionTitle}>School</Text>
-              <Text style={styles.expandedParagraph}>{schoolName}</Text>
-            </View>
-          )}
-
-          {/* Featured affiliations (if any) */}
-          {featuredRaw.length > 0 && (
-            <View style={styles.expandedSection}>
-              <Text style={styles.sectionTitle}>Featured</Text>
-              <View style={styles.chipWrap}>
-                {featuredRaw.map((item) => (
-                  <View key={`featured-${item}`} style={styles.chip}>
-                    <Text style={styles.chipText}>{item}</Text>
-                  </View>
-                ))}
+          {/* CONTENT BELOW PHOTO - scrolls */}
+          <View style={{ paddingHorizontal: 20, paddingTop: 20, backgroundColor: COLORS.surface }}>
+            {/* Academic Year */}
+            {!!academicYear && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Year</Text>
+                <Text style={styles.expandedParagraph}>{academicYear}</Text>
               </View>
-            </View>
-          )}
-          
-          {/* All affiliations */}
-          {affiliations.length > 0 && (
-            <View style={styles.expandedSection}>
-              <Text style={styles.sectionTitle}>Affiliations</Text>
-              <View style={styles.chipWrap}>
-                {affiliations.map((item) => (
-                  <View key={`affil-${item}`} style={styles.chip}>
-                    <Text style={styles.chipText}>{item}</Text>
-                  </View>
-                ))}
+            )}
+
+            {/* Location */}
+            {!!locationDescription && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Location</Text>
+                <Text style={styles.expandedParagraph}>{locationDescription}</Text>
               </View>
-            </View>
-          )}
-          
-          {/* School/residential affiliations */}
-          {schoolAffiliations.length > 0 && (
-            <View style={styles.expandedSection}>
-              <Text style={styles.sectionTitle}>School</Text>
-              <View style={styles.chipWrap}>
-                {schoolAffiliations.map((item) => (
-                  <View key={`school-${item}`} style={styles.chip}>
-                    <Text style={styles.chipText}>{item}</Text>
-                  </View>
-                ))}
+            )}
+
+            {/* Graduation Year */}
+            {!!graduationYear && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Graduation</Text>
+                <Text style={styles.expandedParagraph}>{graduationYear}</Text>
               </View>
-            </View>
-          )}
-          
-          {/* Interests */}
-          {interests.length > 0 && (
-            <View style={styles.expandedSection}>
-              <Text style={styles.sectionTitle}>Interests</Text>
-              <View style={styles.chipWrap}>
-                {interests.map((item) => (
-                  <View key={`interest-${item}`} style={styles.chip}>
-                    <Text style={styles.chipText}>{item}</Text>
-                  </View>
-                ))}
+            )}
+
+            {/* Major */}
+            {!!major && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Major</Text>
+                <Text style={styles.expandedParagraph}>{major}</Text>
               </View>
-            </View>
-          )}
+            )}
+
+            {/* School */}
+            {!!schoolName && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>School</Text>
+                <Text style={styles.expandedParagraph}>{schoolName}</Text>
+              </View>
+            )}
+
+            {/* Featured affiliations (if any) */}
+            {featuredRaw.length > 0 && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Featured</Text>
+                <View style={styles.chipWrap}>
+                  {featuredRaw.map((item) => (
+                    <View key={`featured-${item}`} style={styles.chip}>
+                      <Text style={styles.chipText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+            
+            {/* All affiliations */}
+            {affiliations.length > 0 && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Affiliations</Text>
+                <View style={styles.chipWrap}>
+                  {affiliations.map((item) => (
+                    <View key={`affil-${item}`} style={styles.chip}>
+                      <Text style={styles.chipText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+            
+            {/* School/residential affiliations */}
+            {schoolAffiliations.length > 0 && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>School</Text>
+                <View style={styles.chipWrap}>
+                  {schoolAffiliations.map((item) => (
+                    <View key={`school-${item}`} style={styles.chip}>
+                      <Text style={styles.chipText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+            
+            {/* Interests */}
+            {interests.length > 0 && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Interests</Text>
+                <View style={styles.chipWrap}>
+                  {interests.map((item) => (
+                    <View key={`interest-${item}`} style={styles.chip}>
+                      <Text style={styles.chipText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
 
             <View style={{ height: 32 }} />
-          </ScrollView>
-        </Animated.View>
+          </View>
+        </ScrollView>
+      </Animated.View>
     </Animated.View>
     </>
   );
