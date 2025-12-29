@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
+import HomeScreenNew from '../screens/HomeScreenNew';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -37,7 +38,7 @@ export default function BottomTabs({ onSignOut }) {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={HomeScreenNew} />
       <Tab.Screen name="Likes" children={() => <Placeholder name="Likes" />} />
       <Tab.Screen name="Chat" children={() => <Placeholder name="Chat" />} />
       <Tab.Screen
