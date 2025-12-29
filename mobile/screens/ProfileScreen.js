@@ -40,9 +40,10 @@ import {
   Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm';
@@ -53,7 +54,7 @@ import { COLORS } from '../styles/ProfileFormStyles';
 import styles from '../styles/ProfileScreenStyles';
 
 // ✅ API helpers
-import { fetchMyPhotos, addPhoto, deletePhoto } from '../api/photosAPI';
+import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../api/photosAPI';
 import { getMyProfile, updateMyProfile } from '../api/profileAPI';
 
 const MAX_INTERESTS = 6;
@@ -221,7 +222,67 @@ export default function ProfileScreen({ onSignOut }) {
     }
   }
 
+  async function handlePhotoReorder(data, from, to) {
+    const next = data.filter((item) => !item.isAdd);
+
+    const unchanged =
+      next.length === photos.length &&
+      next.every((p, idx) => photos[idx]?.id === p.id);
+
+    if (from === to || next.length !== photos.length || unchanged) {
+      setPhotoBusy(false);
+      return;
+    }
+
+    const previous = photos;
+    setPhotos(next);
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not signed in');
+
+      await reorderPhotos(
+        token,
+        next.map((p) => p.id)
+      );
+    } catch (e) {
+      console.warn(e);
+      setPhotos(previous);
+      Alert.alert('Error', String(e.message || e));
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
   const primaryPhotoUrl = photos[0]?.url;
+  const photoListData =
+    photos.length < 6 ? [...photos, { id: 'add-tile', isAdd: true }] : photos;
+
+  const renderPhotoItem = ({ item, drag, isActive }) => {
+    if (item.isAdd) {
+      return (
+        <TouchableOpacity
+          style={[styles.photoSlot, styles.addPhotoSlot]}
+          onPress={pickPhoto}
+          disabled={photoBusy}
+        >
+          <Text style={styles.photoPlaceholder}>+</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={[styles.photoSlot, isActive && styles.photoSlotActive]}
+        onLongPress={drag}
+        delayLongPress={120}
+        onPress={() => removePhoto(item.id)}
+        disabled={photoBusy}
+      >
+        <Image source={{ uri: item.url }} style={styles.photoImage} />
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -328,31 +389,21 @@ export default function ProfileScreen({ onSignOut }) {
             <Text style={styles.sectionHeader}>My Photos</Text>
             <Text style={styles.metaText}>Show who you are with a few photos.</Text>
 
-            <View style={styles.photoGrid}>
-              {photos.map((photo) => (
-                <TouchableOpacity
-                  key={photo.id}
-                  style={styles.photoSlot}
-                  onLongPress={() => removePhoto(photo.id)}
-                  disabled={photoBusy}
-                >
-                  <Image source={{ uri: photo.url }} style={styles.photoImage} />
-                </TouchableOpacity>
-              ))}
-
-              {photos.length < 6 && (
-                <TouchableOpacity
-                  style={styles.photoSlot}
-                  onPress={pickPhoto}
-                  disabled={photoBusy}
-                >
-                  <Text style={styles.photoPlaceholder}>+</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <DraggableFlatList
+              data={photoListData}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={renderPhotoItem}
+              numColumns={3}
+              scrollEnabled={false}
+              activationDistance={12}
+              contentContainerStyle={styles.photoGrid}
+              columnWrapperStyle={styles.photoRow}
+              onDragBegin={() => setPhotoBusy(true)}
+              onDragEnd={({ data, from, to }) => handlePhotoReorder(data, from, to)}
+            />
 
             <Text style={styles.metaText}>
-              Tap + to add photos (up to 6). First photo becomes your avatar. Long press a photo to remove it.
+              Long press to drag and reorder. Tap a photo to remove it. Tap + to add up to 6 photos. First photo becomes your avatar.
             </Text>
           </View>
 

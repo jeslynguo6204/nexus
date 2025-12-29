@@ -9,7 +9,7 @@ import Constants from "expo-constants";
 
 const API_BASE = Constants.expoConfig.extra.apiBaseUrl;
 
-console.log("📡 API Base URL:", API_BASE);
+console.log("📡 Photos API Base URL:", API_BASE);
   
 export async function fetchMyPhotos(token) {
   const res = await fetch(`${API_BASE}/photos/me`, {
@@ -58,6 +58,24 @@ export async function deletePhoto(token, photoId) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || "Failed to delete photo");
+  }
+
+  return true;
+}
+
+export async function reorderPhotos(token, order) {
+  const res = await fetch(`${API_BASE}/photos/me/reorder`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ order }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to reorder photos");
   }
 
   return true;
