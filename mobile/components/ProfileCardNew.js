@@ -305,7 +305,7 @@ const toggleMore = () => {
             !moreOpen && { paddingBottom: 0 },
           ]}
           scrollEnabled={scrollEnabled}
-          showsVerticalScrollIndicator={moreOpen}
+          showsVerticalScrollIndicator={false}
           bounces={moreOpen}
           scrollEventThrottle={16}
           removeClippedSubviews={false}

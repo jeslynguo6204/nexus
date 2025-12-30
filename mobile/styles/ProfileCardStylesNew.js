@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   },
   // Expanded scroll content (contains photo + all content)
   expandedScrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 50, // Extra padding to ensure content isn't cut off by nav bar
   },
 
   // Backdrop when expanded
