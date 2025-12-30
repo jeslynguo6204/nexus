@@ -35,26 +35,57 @@ try {
 
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 const ACADEMIC_YEARS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'];
+const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
+const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'He/They', 'She/They', 'Any pronouns'];
+const SEXUALITY_OPTIONS = ['Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Queer', 'Prefer not to say'];
+const DATING_INTENTIONS = ['Romantic', 'Platonic', 'Both'];
+const RELIGIOUS_OPTIONS = ['Christian', 'Catholic', 'Jewish', 'Muslim', 'Hindu', 'Buddhist', 'Agnostic', 'Atheist', 'Spiritual', 'Other', 'Prefer not to say'];
+const POLITICAL_OPTIONS = ['Very Liberal', 'Liberal', 'Moderate', 'Conservative', 'Very Conservative', 'Libertarian', 'Other', 'Prefer not to say'];
 
 export default function ProfileDetailsForm({ profile, onSave, onClose }) {
   const insets = useSafeAreaInsets();
-  const [displayName, setDisplayName] = useState(profile.display_name || '');
+  
+  // About Me
   const [bio, setBio] = useState(profile.bio || '');
-  const [major, setMajor] = useState(profile.major || '');
+  const [prompts, setPrompts] = useState(''); // Placeholder
+  
+  // Identity
+  const [displayName, setDisplayName] = useState(profile.display_name || '');
+  const [gender, setGender] = useState(profile.gender || ''); // Placeholder
+  const [pronouns, setPronouns] = useState(''); // Placeholder
+  const [sexuality, setSexuality] = useState(''); // Placeholder
+  
+  // Academics
+  const [academicYear, setAcademicYear] = useState(profile.academic_year || null);
   const [graduationYear, setGraduationYear] = useState(
     profile.graduation_year ? String(profile.graduation_year) : ''
   );
-  const [academicYear, setAcademicYear] = useState(profile.academic_year || null);
+  const [major, setMajor] = useState(profile.major || '');
+  
+  // Location & Background
   const [locationDescription, setLocationDescription] = useState(profile.location_description || '');
+  const [hometown, setHometown] = useState(''); // Placeholder
+  const [languages, setLanguages] = useState(''); // Placeholder
   const [locationLat, setLocationLat] = useState(profile.location_lat || '');
   const [locationLon, setLocationLon] = useState(profile.location_lon || '');
-  const [showMeInDiscovery, setShowMeInDiscovery] = useState(
-    profile.show_me_in_discovery ?? true
-  );
+  const [locationLoading, setLocationLoading] = useState(false);
+  
+  // Personal Details
+  const [height, setHeight] = useState(''); // Placeholder
+  const [religiousBeliefs, setReligiousBeliefs] = useState(''); // Placeholder
+  const [politicalAffiliation, setPoliticalAffiliation] = useState(''); // Placeholder
+  const [ethnicity, setEthnicity] = useState(''); // Placeholder
+  
+  // Affiliations (placeholder for now)
   const [affiliations, setAffiliations] = useState(
     profile.affiliations && Array.isArray(profile.affiliations) ? profile.affiliations : []
   );
-  const [locationLoading, setLocationLoading] = useState(false);
+  
+  // Interests
+  const [interests, setInterests] = useState(''); // Placeholder - will be handled separately later
+  
+  // Dating Intentions
+  const [datingIntentions, setDatingIntentions] = useState(''); // Placeholder
 
   const schoolLabel =
     profile?.school?.name ||
@@ -125,6 +156,8 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     const nextLocationLat = locationLat.trim() === '' ? null : locationLat.trim();
     const nextLocationLon = locationLon.trim() === '' ? null : locationLon.trim();
     
+    // For now, only save fields that exist in the backend
+    // Placeholder fields will be added later
     onSave({
       displayName: nextDisplayName,
       bio: nextBio,
@@ -134,7 +167,6 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
       locationDescription: nextLocationDesc,
       locationLat: nextLocationLat,
       locationLon: nextLocationLon,
-      showMeInDiscovery: showMeInDiscovery,
       affiliations: affiliations.length > 0 ? affiliations : null,
     });
   }
@@ -166,160 +198,415 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Display Name */}
+        {/* About Me */}
         <View style={[localStyles.section, { marginTop: 24 }]}>
-          <Text style={localStyles.label}>Display name</Text>
-          <TextInput
-            value={displayName}
-            onChangeText={setDisplayName}
-            style={localStyles.input}
-            placeholder="What should people see?"
-            placeholderTextColor={COLORS.textMuted}
-          />
-        </View>
+          <Text style={localStyles.sectionTitle}>About Me</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Bio</Text>
+            <TextInput
+              value={bio}
+              onChangeText={setBio}
+              multiline
+              style={[localStyles.input, localStyles.textArea]}
+              placeholder="Say something about yourself"
+              placeholderTextColor={COLORS.textMuted}
+            />
+          </View>
 
-        {/* Bio */}
-        <View style={localStyles.section}>
-          <Text style={localStyles.label}>About</Text>
-          <TextInput
-            value={bio}
-            onChangeText={setBio}
-            multiline
-            style={[localStyles.input, localStyles.textArea]}
-            placeholder="Say something about yourself"
-            placeholderTextColor={COLORS.textMuted}
-          />
-        </View>
-
-        {/* Major */}
-        <View style={localStyles.section}>
-          <Text style={localStyles.label}>Major</Text>
-          <TextInput
-            value={major}
-            onChangeText={setMajor}
-            style={localStyles.input}
-            placeholder="e.g. Computer Science"
-            placeholderTextColor={COLORS.textMuted}
-          />
-        </View>
-
-        {/* School */}
-        <View style={localStyles.section}>
-          <Text style={localStyles.label}>School</Text>
-          <View style={localStyles.readonlyField}>
-            <Text style={localStyles.readonlyText}>{schoolLabel}</Text>
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Prompts</Text>
+            <TextInput
+              value={prompts}
+              onChangeText={setPrompts}
+              multiline
+              style={[localStyles.input, localStyles.textArea]}
+              placeholder="Answer prompts to help others get to know you"
+              placeholderTextColor={COLORS.textMuted}
+            />
           </View>
         </View>
 
-        {/* Graduation Year */}
+        {/* Identity */}
         <View style={localStyles.section}>
-          <Text style={localStyles.label}>Graduation year</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={localStyles.chipRow}
-            contentContainerStyle={localStyles.chipRowContent}
-          >
-            {GRAD_YEARS.map((year) => {
-              const selected = graduationYear === String(year);
-              return (
-                <TouchableOpacity
-                  key={year}
-                  onPress={() => setGraduationYear(String(year))}
-                  style={[localStyles.chip, selected && localStyles.chipSelected]}
-                >
-                  <Text
-                    style={selected ? localStyles.chipTextSelected : localStyles.chipText}
-                  >
-                    {year}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+          <Text style={localStyles.sectionTitle}>Identity</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Name <Text style={localStyles.required}>*</Text></Text>
+            <TextInput
+              value={displayName}
+              onChangeText={setDisplayName}
+              style={localStyles.input}
+              placeholder="Your display name"
+              placeholderTextColor={COLORS.textMuted}
+            />
+          </View>
 
-        {/* Academic Year */}
-        <View style={localStyles.section}>
-          <Text style={localStyles.label}>Academic year</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={localStyles.chipRow}
-            contentContainerStyle={localStyles.chipRowContent}
-          >
-            {ACADEMIC_YEARS.map((year) => {
-              const selected = academicYear === year;
-              return (
-                <TouchableOpacity
-                  key={year}
-                  onPress={() => setAcademicYear(year)}
-                  style={[localStyles.chip, selected && localStyles.chipSelected]}
-                >
-                  <Text
-                    style={selected ? localStyles.chipTextSelected : localStyles.chipText}
-                  >
-                    {year}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* Location */}
-        <View style={localStyles.section}>
-          <Text style={localStyles.label}>Location</Text>
-          <TextInput
-            value={locationDescription}
-            onChangeText={setLocationDescription}
-            style={localStyles.input}
-            placeholder="e.g. New York, NY or On campus"
-            placeholderTextColor={COLORS.textMuted}
-          />
-          {Location && (
-            <TouchableOpacity
-              onPress={getCurrentLocation}
-              disabled={locationLoading}
-              style={localStyles.locationButton}
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Gender <Text style={localStyles.required}>*</Text></Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
             >
-              <Text style={localStyles.locationButtonText}>
-                {locationLoading ? 'Getting location...' : 'Use current location'}
-              </Text>
-            </TouchableOpacity>
-          )}
+              {GENDER_OPTIONS.map((option) => {
+                const selected = gender === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    onPress={() => setGender(option)}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Pronouns</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
+            >
+              {PRONOUN_OPTIONS.map((option) => {
+                const selected = pronouns === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    onPress={() => setPronouns(option)}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Sexuality</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
+            >
+              {SEXUALITY_OPTIONS.map((option) => {
+                const selected = sexuality === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    onPress={() => setSexuality(option)}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         </View>
 
-        {/* Discovery */}
+        {/* Academics */}
         <View style={localStyles.section}>
-          <View style={localStyles.switchRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={localStyles.switchLabel}>Show me in discovery</Text>
-              <Text style={localStyles.switchSubtext}>
-                Allow others to see your profile
-              </Text>
+          <Text style={localStyles.sectionTitle}>Academics</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>School <Text style={localStyles.required}>*</Text></Text>
+            <View style={localStyles.readonlyField}>
+              <Text style={localStyles.readonlyText}>{schoolLabel}</Text>
             </View>
-            <Switch
-              value={showMeInDiscovery}
-              onValueChange={setShowMeInDiscovery}
-              trackColor={{ false: COLORS.divider, true: COLORS.accentSoft }}
-              thumbColor={showMeInDiscovery ? COLORS.accent : COLORS.surface}
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Academic year <Text style={localStyles.required}>*</Text></Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
+            >
+              {ACADEMIC_YEARS.map((year) => {
+                const selected = academicYear === year;
+                return (
+                  <TouchableOpacity
+                    key={year}
+                    onPress={() => setAcademicYear(year)}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {year}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Graduation year</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
+            >
+              {GRAD_YEARS.map((year) => {
+                const selected = graduationYear === String(year);
+                return (
+                  <TouchableOpacity
+                    key={year}
+                    onPress={() => setGraduationYear(String(year))}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {year}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Major</Text>
+            <TextInput
+              value={major}
+              onChangeText={setMajor}
+              style={localStyles.input}
+              placeholder="e.g. Computer Science"
+              placeholderTextColor={COLORS.textMuted}
+            />
+          </View>
+        </View>
+
+        {/* Location & Background */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>Location & Background</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Location</Text>
+            <TextInput
+              value={locationDescription}
+              onChangeText={setLocationDescription}
+              style={localStyles.input}
+              placeholder="e.g. New York, NY or On campus"
+              placeholderTextColor={COLORS.textMuted}
+            />
+            {Location && (
+              <TouchableOpacity
+                onPress={getCurrentLocation}
+                disabled={locationLoading}
+                style={localStyles.locationButton}
+              >
+                <Text style={localStyles.locationButtonText}>
+                  {locationLoading ? 'Getting location...' : 'Use current location'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Hometown</Text>
+            <TextInput
+              value={hometown}
+              onChangeText={setHometown}
+              style={localStyles.input}
+              placeholder="Where are you from?"
+              placeholderTextColor={COLORS.textMuted}
+            />
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Languages</Text>
+            <TextInput
+              value={languages}
+              onChangeText={setLanguages}
+              style={localStyles.input}
+              placeholder="e.g. English, Spanish, French"
+              placeholderTextColor={COLORS.textMuted}
+            />
+          </View>
+        </View>
+
+        {/* Personal Details */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>Personal Details</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Height</Text>
+            <TextInput
+              value={height}
+              onChangeText={setHeight}
+              style={localStyles.input}
+              placeholder="e.g. 5'8 or 173 cm"
+              placeholderTextColor={COLORS.textMuted}
+            />
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Religious beliefs</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
+            >
+              {RELIGIOUS_OPTIONS.map((option) => {
+                const selected = religiousBeliefs === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    onPress={() => setReligiousBeliefs(option)}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Political affiliation</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
+            >
+              {POLITICAL_OPTIONS.map((option) => {
+                const selected = politicalAffiliation === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    onPress={() => setPoliticalAffiliation(option)}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Ethnicity</Text>
+            <TextInput
+              value={ethnicity}
+              onChangeText={setEthnicity}
+              style={localStyles.input}
+              placeholder="Optional"
+              placeholderTextColor={COLORS.textMuted}
             />
           </View>
         </View>
 
         {/* Affiliations */}
-        {profile.affiliations && profile.affiliations.length > 0 && (
-          <View style={localStyles.section}>
-            <Text style={localStyles.label}>Affiliations</Text>
-            <Text style={localStyles.affiliationText}>
-              {affiliations.length} selected
-            </Text>
-            <Text style={localStyles.affiliationSubtext}>
-              Affiliation management coming soon
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>Affiliations</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Greek life</Text>
+            <Text style={localStyles.placeholderText}>
+              Coming soon
             </Text>
           </View>
-        )}
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Athletics</Text>
+            <Text style={localStyles.placeholderText}>
+              Coming soon
+            </Text>
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Clubs & organizations</Text>
+            <Text style={localStyles.placeholderText}>
+              Coming soon
+            </Text>
+          </View>
+        </View>
+
+        {/* Interests */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>Interests</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Interests</Text>
+            <TextInput
+              value={interests}
+              onChangeText={setInterests}
+              style={localStyles.input}
+              placeholder="Add your interests"
+              placeholderTextColor={COLORS.textMuted}
+            />
+            <Text style={localStyles.placeholderText}>
+              Interest management coming soon
+            </Text>
+          </View>
+        </View>
+
+        {/* Dating Intentions */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>Dating Intentions</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Looking for</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
+            >
+              {DATING_INTENTIONS.map((option) => {
+                const selected = datingIntentions === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    onPress={() => setDatingIntentions(option)}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
 
         <View style={{ height: 60 }} />
       </ScrollView>
@@ -362,7 +649,16 @@ const localStyles = StyleSheet.create({
     paddingBottom: 40,
   },
   section: {
-    marginTop: 30, // Large spacing between sections (VSCO style)
+    marginTop: 40, // Large spacing between sections (VSCO style)
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+    letterSpacing: -0.2,
+  },
+  fieldGroup: {
+    marginTop: 20,
   },
   label: {
     fontSize: 12,
@@ -370,6 +666,9 @@ const localStyles = StyleSheet.create({
     color: COLORS.textMuted,
     marginBottom: 10,
     letterSpacing: 0,
+  },
+  required: {
+    color: COLORS.danger,
   },
   input: {
     backgroundColor: COLORS.backgroundSubtle, // Light gray rounded container
@@ -399,6 +698,7 @@ const localStyles = StyleSheet.create({
   },
   chipRow: {
     marginTop: 4,
+    marginBottom: 4,
   },
   chipRowContent: {
     paddingRight: 20,
@@ -462,5 +762,12 @@ const localStyles = StyleSheet.create({
     fontWeight: '400',
     marginTop: 2,
     lineHeight: 18,
+  },
+  placeholderText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: '400',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
