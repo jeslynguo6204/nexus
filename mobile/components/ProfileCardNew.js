@@ -200,11 +200,11 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
 
   const openMore = () => setMoreOpen(true);
 
-const closeMore = () => {
-  // snap to top BEFORE collapse begins (prevents grey flash)
-  scrollRef.current?.scrollTo?.({ y: 0, animated: false });
-  setMoreOpen(false);
-};
+ const closeMore = () => {
+   // snap to top BEFORE collapse begins (prevents grey flash)
+   scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+   setMoreOpen(false);
+ };
 
 const toggleMore = () => {
   if (moreOpen) closeMore();
@@ -263,22 +263,26 @@ const toggleMore = () => {
 
   return (
     <>
-      {/* Backdrop: ALWAYS mounted, just fades in/out (prevents "pop") */}
-      <Animated.View
-        style={[
-          styles.expandedBackdrop,
-          {
-            opacity: expansion,
-          },
-        ]}
-        pointerEvents={moreOpen ? 'auto' : 'none'}
-      >
-        <Pressable
-  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-  onPress={closeMore}
-/>
-
-      </Animated.View>
+       {/* Backdrop: ALWAYS mounted, but hides immediately when collapsing */}
+       <Animated.View
+         style={[
+           styles.expandedBackdrop,
+           {
+             opacity: moreOpen
+               ? expansion.interpolate({
+                   inputRange: [0, 0.3, 1],
+                   outputRange: [0, 1, 1],
+                 })
+               : 0,
+           },
+         ]}
+         pointerEvents={moreOpen ? 'auto' : 'none'}
+       >
+         <Pressable
+           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+           onPress={closeMore}
+         />
+       </Animated.View>
 
       <Animated.View
         style={[
@@ -341,8 +345,6 @@ const toggleMore = () => {
               style={styles.captionGradient}
               pointerEvents="box-none"
             >
-              {/* Optional: little handle pill in collapsed mode if you want */}
-              {!moreOpen ? <View style={styles.handlePill} pointerEvents="none" /> : null}
 
               <Pressable onPress={toggleMore} style={styles.captionTapArea} hitSlop={6}>
                 <Text style={styles.nameText}>
