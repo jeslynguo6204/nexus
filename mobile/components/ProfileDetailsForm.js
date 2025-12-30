@@ -20,10 +20,10 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Switch, Alert, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import styles, { COLORS } from '../styles/ProfileFormStyles';
+import { COLORS } from '../styles/themeNEW';
 
 // Optional location import - gracefully handle if not installed
 let Location = null;
@@ -140,213 +140,327 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.background, paddingTop: insets.top }}>
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.card}>
-        <Text style={[styles.sectionTitle, styles.firstSectionTitle]}>
-          Edit profile
-        </Text>
-
-        <Text style={styles.label}>Display name</Text>
-        <TextInput
-          value={displayName}
-          onChangeText={setDisplayName}
-          style={styles.input}
-          placeholder="What should people see?"
-          placeholderTextColor={COLORS.muted}
-        />
-
-        <Text style={styles.label}>Bio</Text>
-        <TextInput
-          value={bio}
-          onChangeText={setBio}
-          multiline
-          style={[styles.input, styles.textArea]}
-          placeholder="Say something about yourself"
-          placeholderTextColor={COLORS.muted}
-        />
-
-        <Text style={styles.label}>Major</Text>
-        <TextInput
-          value={major}
-          onChangeText={setMajor}
-          style={styles.input}
-          placeholder="e.g. Computer Science"
-          placeholderTextColor={COLORS.muted}
-        />
-
-        <Text style={styles.label}>School</Text>
-        <View style={styles.readonlyField}>
-          <Text style={styles.readonlyText}>{schoolLabel}</Text>
-        </View>
-
-        <Text style={styles.label}>Graduation year</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.gradYearRow}
+    <View style={[localStyles.container, { paddingTop: insets.top }]}>
+      {/* Minimal header */}
+      <View style={localStyles.header}>
+        <TouchableOpacity
+          onPress={onClose}
+          style={localStyles.headerButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          {GRAD_YEARS.map((year) => {
-            const selected = graduationYear === String(year);
-            return (
-              <TouchableOpacity
-                key={year}
-                onPress={() => setGraduationYear(String(year))}
-                style={[styles.chip, selected && styles.chipSelected]}
-              >
-                <Text
-                  style={selected ? styles.chipTextSelected : styles.chipText}
-                >
-                  {year}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        <Text style={styles.label}>Academic year</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.gradYearRow}
+          <FontAwesome name="times" size={18} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }} />
+        <TouchableOpacity
+          onPress={submit}
+          style={localStyles.saveButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          {ACADEMIC_YEARS.map((year) => {
-            const selected = academicYear === year;
-            return (
-              <TouchableOpacity
-                key={year}
-                onPress={() => setAcademicYear(year)}
-                style={[styles.chip, selected && styles.chipSelected]}
-              >
-                <Text
-                  style={selected ? styles.chipTextSelected : styles.chipText}
-                >
-                  {year}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          <Text style={localStyles.saveButtonText}>Save</Text>
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.sectionSpacer} />
-        <Text style={styles.sectionTitle}>Location</Text>
-
-        <Text style={styles.label}>Location description</Text>
-        <TextInput
-          value={locationDescription}
-          onChangeText={setLocationDescription}
-          style={styles.input}
-          placeholder="e.g. New York, NY or On campus"
-          placeholderTextColor={COLORS.muted}
-        />
-
-        {Location && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Coordinates (optional)</Text>
-            <TouchableOpacity
-              onPress={getCurrentLocation}
-              disabled={locationLoading}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                backgroundColor: COLORS.primarySoft,
-                borderRadius: 8,
-              }}
-            >
-              <FontAwesome
-                name="location-arrow"
-                size={14}
-                color={COLORS.primary}
-                style={{ marginRight: 6 }}
-              />
-              <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: '600' }}>
-                {locationLoading ? 'Getting...' : 'Use Current'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { fontSize: 12 }]}>Latitude</Text>
-            <TextInput
-              value={locationLat}
-              onChangeText={setLocationLat}
-              style={styles.input}
-              placeholder="40.7128"
-              placeholderTextColor={COLORS.muted}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { fontSize: 12 }]}>Longitude</Text>
-            <TextInput
-              value={locationLon}
-              onChangeText={setLocationLon}
-              style={styles.input}
-              placeholder="-74.0060"
-              placeholderTextColor={COLORS.muted}
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-
-        <View style={styles.sectionSpacer} />
-        <Text style={styles.sectionTitle}>Discovery</Text>
-
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Show me in discovery</Text>
-            <Text style={[styles.label, { fontSize: 12, marginTop: 2 }]}>
-              Allow others to see your profile
-            </Text>
-          </View>
-          <Switch
-            value={showMeInDiscovery}
-            onValueChange={setShowMeInDiscovery}
-            trackColor={{ false: '#CBD5E1', true: COLORS.primarySoft }}
-            thumbColor={showMeInDiscovery ? COLORS.primary : '#FFFFFF'}
+      <ScrollView
+        style={localStyles.scrollView}
+        contentContainerStyle={localStyles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Display Name */}
+        <View style={[localStyles.section, { marginTop: 24 }]}>
+          <Text style={localStyles.label}>Display name</Text>
+          <TextInput
+            value={displayName}
+            onChangeText={setDisplayName}
+            style={localStyles.input}
+            placeholder="What should people see?"
+            placeholderTextColor={COLORS.textMuted}
           />
         </View>
 
-        {/* Note: Affiliations will need an API endpoint to fetch available affiliations */}
-        {/* For now, we'll add a placeholder that can be enhanced later */}
-        {profile.affiliations && profile.affiliations.length > 0 && (
-          <>
-            <View style={styles.sectionSpacer} />
-            <Text style={styles.sectionTitle}>Affiliations</Text>
-            <Text style={styles.label}>
-              Selected: {affiliations.length} affiliation{affiliations.length !== 1 ? 's' : ''}
-            </Text>
-            <Text style={[styles.label, { fontSize: 12, marginTop: 2, color: COLORS.muted }]}>
-              (Affiliation management coming soon)
-            </Text>
-          </>
-        )}
+        {/* Bio */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.label}>About</Text>
+          <TextInput
+            value={bio}
+            onChangeText={setBio}
+            multiline
+            style={[localStyles.input, localStyles.textArea]}
+            placeholder="Say something about yourself"
+            placeholderTextColor={COLORS.textMuted}
+          />
+        </View>
 
-        <View style={styles.saveButtonContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={submit}>
-            <Text style={styles.primaryButtonText}>Save</Text>
-          </TouchableOpacity>
-          {onClose ? (
+        {/* Major */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.label}>Major</Text>
+          <TextInput
+            value={major}
+            onChangeText={setMajor}
+            style={localStyles.input}
+            placeholder="e.g. Computer Science"
+            placeholderTextColor={COLORS.textMuted}
+          />
+        </View>
+
+        {/* School */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.label}>School</Text>
+          <View style={localStyles.readonlyField}>
+            <Text style={localStyles.readonlyText}>{schoolLabel}</Text>
+          </View>
+        </View>
+
+        {/* Graduation Year */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.label}>Graduation year</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={localStyles.chipRow}
+            contentContainerStyle={localStyles.chipRowContent}
+          >
+            {GRAD_YEARS.map((year) => {
+              const selected = graduationYear === String(year);
+              return (
+                <TouchableOpacity
+                  key={year}
+                  onPress={() => setGraduationYear(String(year))}
+                  style={[localStyles.chip, selected && localStyles.chipSelected]}
+                >
+                  <Text
+                    style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                  >
+                    {year}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Academic Year */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.label}>Academic year</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={localStyles.chipRow}
+            contentContainerStyle={localStyles.chipRowContent}
+          >
+            {ACADEMIC_YEARS.map((year) => {
+              const selected = academicYear === year;
+              return (
+                <TouchableOpacity
+                  key={year}
+                  onPress={() => setAcademicYear(year)}
+                  style={[localStyles.chip, selected && localStyles.chipSelected]}
+                >
+                  <Text
+                    style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                  >
+                    {year}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Location */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.label}>Location</Text>
+          <TextInput
+            value={locationDescription}
+            onChangeText={setLocationDescription}
+            style={localStyles.input}
+            placeholder="e.g. New York, NY or On campus"
+            placeholderTextColor={COLORS.textMuted}
+          />
+          {Location && (
             <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: '#eef2f7', marginTop: 10 }]}
-              onPress={onClose}
+              onPress={getCurrentLocation}
+              disabled={locationLoading}
+              style={localStyles.locationButton}
             >
-              <Text style={[styles.primaryButtonText, { color: COLORS.text }]}>
-                Cancel
+              <Text style={localStyles.locationButtonText}>
+                {locationLoading ? 'Getting location...' : 'Use current location'}
               </Text>
             </TouchableOpacity>
-          ) : null}
+          )}
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Discovery */}
+        <View style={localStyles.section}>
+          <View style={localStyles.switchRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={localStyles.switchLabel}>Show me in discovery</Text>
+              <Text style={localStyles.switchSubtext}>
+                Allow others to see your profile
+              </Text>
+            </View>
+            <Switch
+              value={showMeInDiscovery}
+              onValueChange={setShowMeInDiscovery}
+              trackColor={{ false: COLORS.divider, true: COLORS.accentSoft }}
+              thumbColor={showMeInDiscovery ? COLORS.accent : COLORS.surface}
+            />
+          </View>
+        </View>
+
+        {/* Affiliations */}
+        {profile.affiliations && profile.affiliations.length > 0 && (
+          <View style={localStyles.section}>
+            <Text style={localStyles.label}>Affiliations</Text>
+            <Text style={localStyles.affiliationText}>
+              {affiliations.length} selected
+            </Text>
+            <Text style={localStyles.affiliationSubtext}>
+              Affiliation management coming soon
+            </Text>
+          </View>
+        )}
+
+        <View style={{ height: 60 }} />
+      </ScrollView>
     </View>
   );
 }
+
+const localStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.surface, // White background like VSCO
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.surface,
+  },
+  headerButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: COLORS.textPrimary,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 40,
+  },
+  section: {
+    marginTop: 30, // Large spacing between sections (VSCO style)
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: COLORS.textMuted,
+    marginBottom: 10,
+    letterSpacing: 0,
+  },
+  input: {
+    backgroundColor: COLORS.backgroundSubtle, // Light gray rounded container
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    borderWidth: 0, // No border
+    fontWeight: '400',
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+    paddingTop: 14,
+  },
+  readonlyField: {
+    backgroundColor: COLORS.backgroundSubtle,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  readonlyText: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontWeight: '400',
+  },
+  chipRow: {
+    marginTop: 4,
+  },
+  chipRowContent: {
+    paddingRight: 20,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 0,
+    backgroundColor: COLORS.backgroundSubtle,
+    marginRight: 8,
+  },
+  chipSelected: {
+    backgroundColor: COLORS.textPrimary,
+  },
+  chipText: {
+    fontSize: 15,
+    color: COLORS.textBody,
+    fontWeight: '400',
+  },
+  chipTextSelected: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: COLORS.surface,
+  },
+  locationButton: {
+    marginTop: 10,
+    paddingVertical: 4,
+  },
+  locationButtonText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    fontWeight: '400',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  switchLabel: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontWeight: '400',
+    marginBottom: 4,
+  },
+  switchSubtext: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: '400',
+    lineHeight: 18,
+  },
+  affiliationText: {
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    fontWeight: '400',
+    marginTop: 4,
+  },
+  affiliationSubtext: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: '400',
+    marginTop: 2,
+    lineHeight: 18,
+  },
+});
