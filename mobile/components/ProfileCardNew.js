@@ -6,7 +6,6 @@ import {
   Image,
   TouchableOpacity,
   Pressable,
-  Modal,
   ScrollView,
   Animated,
   Dimensions,
@@ -84,74 +83,94 @@ function PhotoProgressBar({ count, activeIndex }) {
   );
 }
 
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-/**
- * Main card:
- * 1) Name + age
- * 2) Context line (year · featured/affils · mutuals)
- * 3) Bio (1 line)
- * Small button: top-right "i" pill (clickable) to open details.
- *
- * Expanded: bottom sheet
- */
 export default function ProfileCardNew({ profile, photos, onDetailsOpenChange }) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
 
   const [photoIndex, setPhotoIndex] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
-  
+  const [scrollEnabled, setScrollEnabled] = useState(false);
+
+  const scrollRef = useRef(null);
+
   // Chevron rotation animation
   const chevronRotation = useRef(new Animated.Value(0)).current;
-  // Card expansion animation
-  const expansionHeight = useRef(new Animated.Value(0)).current;
+  // Expansion animation (0 collapsed -> 1 expanded)
+  const expansion = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    onDetailsOpenChange?.(moreOpen);
-    
-    // Smooth, premium animations with easing
-    Animated.parallel([
-      Animated.timing(chevronRotation, {
-        toValue: moreOpen ? 1 : 0,
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(expansionHeight, {
-        toValue: moreOpen ? 1 : 0,
-        duration: 450,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false, // height/position animations can't use native driver
-      }),
-    ]).start();
-  }, [moreOpen, onDetailsOpenChange, chevronRotation, expansionHeight]);
-
-  useEffect(() => {
-    // if profile changes (new card), reset photo index and close expansion
-    setPhotoIndex(0);
-    setMoreOpen(false);
-  }, [profile?.id]);
-
-  const currentUri = hasPhotos ? safePhotos[photoIndex]?.uri : null;
-  
-  // When expanded, card should fill screen (minus top bar and bottom nav)
-  // Top bar is ~60px, bottom nav is ~80px, so we use most of screen
+  // Layout constants (keep same as your current intent)
   const TOP_BAR_HEIGHT = 60;
   const BOTTOM_NAV_HEIGHT = 80;
   const EXPANDED_CARD_HEIGHT = SCREEN_HEIGHT - TOP_BAR_HEIGHT - BOTTOM_NAV_HEIGHT;
-  const PHOTO_HEIGHT_EXPANDED = 500; // Photo height when expanded (will scroll with content)
+
   // Default card height from SwipeDeckNew
-  const DEFAULT_CARD_HEIGHT = Math.min((Dimensions.get('window').width - 32) * 1.6, SCREEN_HEIGHT * 0.78);
-  
-  // Calculate how much to move up when expanding (slight upward movement)
-  const EXPAND_UPWARD_OFFSET = -20; // Move up 20px when expanding
-  
-  const OVERLAY_DEADZONE = 120; // prevents photo tap zones from stealing overlay/button taps
+  const DEFAULT_CARD_HEIGHT = Math.min(
+    (Dimensions.get('window').width - 32) * 1.6,
+    SCREEN_HEIGHT * 0.78
+  );
+
+  // Photo height in expanded mode (scrolls because it sits inside ScrollView)
+  const PHOTO_HEIGHT_EXPANDED = 500;
+
+  // Slight upward movement when expanding
+  const EXPAND_UPWARD_OFFSET = -20;
+
+  // Prevent photo tap zones from stealing overlay/button taps
+  const OVERLAY_DEADZONE = 120;
+
+  useEffect(() => {
+    // notify parent
+    onDetailsOpenChange?.(moreOpen);
+
+    // Disable scroll while animating (avoids jitter + weird gesture conflicts)
+    setScrollEnabled(false);
+
+    Animated.parallel([
+      Animated.timing(chevronRotation, {
+        toValue: moreOpen ? 1 : 0,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(expansion, {
+        toValue: moreOpen ? 1 : 0,
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false, // height/translateY need JS driver
+      }),
+    ]).start(({ finished }) => {
+      if (!finished) return;
+
+      // When collapsing, snap back to top so the next expand starts clean
+      if (!moreOpen) {
+        scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+      }
+
+      // Enable scroll only when expanded
+      setScrollEnabled(moreOpen);
+    });
+  }, [moreOpen, onDetailsOpenChange, chevronRotation, expansion]);
+
+  useEffect(() => {
+    // when profile changes, reset everything cleanly
+    setPhotoIndex(0);
+    setMoreOpen(false);
+    setScrollEnabled(false);
+    scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+    // (Also reset animation values instantly to avoid transitional artifacts)
+    chevronRotation.setValue(0);
+    expansion.setValue(0);
+  }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const currentUri = hasPhotos ? safePhotos[photoIndex]?.uri : null;
 
   function handleNextPhoto() {
     if (!hasPhotos) return;
     setPhotoIndex((prev) => (prev + 1) % safePhotos.length);
   }
+
   function handlePrevPhoto() {
     if (!hasPhotos) return;
     setPhotoIndex((prev) => (prev - 1 + safePhotos.length) % safePhotos.length);
@@ -162,10 +181,38 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
     outputRange: ['0deg', '180deg'],
   });
 
-  // Card height - use animated value for smooth transition
-  // Note: We'll handle the actual height in the style prop to avoid string/number interpolation issues
+  // Animate card height and translateY
+  const cardHeight = expansion.interpolate({
+    inputRange: [0, 1],
+    outputRange: [DEFAULT_CARD_HEIGHT, EXPANDED_CARD_HEIGHT],
+  });
 
-  // Get profile data
+  const cardTranslateY = expansion.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, EXPAND_UPWARD_OFFSET],
+  });
+
+  // Animate photo height (collapsed: photo fills card; expanded: fixed photo height)
+  const photoHeight = expansion.interpolate({
+    inputRange: [0, 1],
+    outputRange: [DEFAULT_CARD_HEIGHT, PHOTO_HEIGHT_EXPANDED],
+  });
+
+  const openMore = () => setMoreOpen(true);
+
+const closeMore = () => {
+  // snap to top BEFORE collapse begins (prevents grey flash)
+  scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+  setMoreOpen(false);
+};
+
+const toggleMore = () => {
+  if (moreOpen) closeMore();
+  else openMore();
+};
+
+
+  // Profile data
   const academicYear = coalesce(profile?.academic_year);
   const locationDescription = coalesce(profile?.location_description);
   const graduationYear = profile?.graduation_year ? String(profile.graduation_year) : null;
@@ -193,24 +240,16 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
           ? profile.mutuals
           : null;
 
-  // Handle affiliations - could be array of IDs or array of strings
   const affiliationsRaw = profile?.affiliations || profile?.clubs || profile?.organizations || [];
-  const affiliations = Array.isArray(affiliationsRaw) 
-    ? affiliationsRaw.map(a => typeof a === 'object' ? a.name : String(a)).filter(Boolean)
+  const affiliations = Array.isArray(affiliationsRaw)
+    ? affiliationsRaw.map((a) => (typeof a === 'object' ? a.name : String(a))).filter(Boolean)
     : normalizeList(affiliationsRaw);
 
   const featuredRaw = normalizeList(
     profile?.featured_affiliations || profile?.featuredAffiliations || profile?.featured
   ).slice(0, 2);
 
-  // IMPORTANT: show something even if "featured" isn't wired yet
   const featuredAffiliations = featuredRaw.length ? featuredRaw : affiliations.slice(0, 2);
-
-  // Build context line for preview: grad year + up to 2 featured affiliations + mutuals chip
-  const gradYearShort = graduationYear ? `'${String(graduationYear).slice(-2)}` : null;
-  const previewContextParts = [gradYearShort, ...featuredAffiliations].filter(Boolean);
-  
-  // Mutuals will be rendered as a separate chip component
 
   const schoolName = coalesce(profile?.school?.short_name, profile?.school?.name);
   const major = coalesce(profile?.major);
@@ -219,171 +258,138 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
   );
   const interests = normalizeList(profile?.interests);
 
-  const expandedMetaLine = [yearLabel, major].filter(Boolean).join(' · ');
-
-  const toggleMore = () => setMoreOpen((prev) => !prev);
+  const gradYearShort = graduationYear ? `'${String(graduationYear).slice(-2)}` : null;
+  const previewContextParts = [gradYearShort, ...featuredAffiliations].filter(Boolean);
 
   return (
     <>
-      {/* Backdrop when expanded */}
-      {moreOpen && (
-        <Animated.View
-          style={[
-            styles.expandedBackdrop,
-            {
-              opacity: expansionHeight,
-            },
-          ]}
-          pointerEvents={moreOpen ? 'auto' : 'none'}
-        >
-          <Pressable
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-            onPress={toggleMore}
-          />
-        </Animated.View>
-      )}
+      {/* Backdrop: ALWAYS mounted, just fades in/out (prevents "pop") */}
+      <Animated.View
+        style={[
+          styles.expandedBackdrop,
+          {
+            opacity: expansion,
+          },
+        ]}
+        pointerEvents={moreOpen ? 'auto' : 'none'}
+      >
+        <Pressable
+  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+  onPress={closeMore}
+/>
+
+      </Animated.View>
 
       <Animated.View
         style={[
           styles.card,
           moreOpen && styles.cardExpanded,
           {
-            height: expansionHeight.interpolate({
-              inputRange: [0, 1],
-              outputRange: [
-                DEFAULT_CARD_HEIGHT, // Normal card height
-                EXPANDED_CARD_HEIGHT
-              ],
-            }),
-            // Smooth upward movement when expanding
-            transform: [
-              {
-                translateY: expansionHeight.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, EXPAND_UPWARD_OFFSET],
-                }),
-              },
-            ],
+            height: cardHeight,
+            transform: [{ translateY: cardTranslateY }],
             zIndex: moreOpen ? 1000 : 1,
             elevation: moreOpen ? 20 : 3,
           },
         ]}
       >
-      {/* Photo container - always rendered, height animates */}
-      <Animated.View
-        style={[
-          styles.photoContainer,
-          {
-            height: expansionHeight.interpolate({
-              inputRange: [0, 1],
-              outputRange: [DEFAULT_CARD_HEIGHT, PHOTO_HEIGHT_EXPANDED],
-            }),
-          },
-          moreOpen && styles.photoContainerExpanded,
-        ]}
-      >
-        <PhotoProgressBar count={safePhotos.length} activeIndex={photoIndex} />
-
-        {currentUri ? (
-          <Image source={{ uri: currentUri }} style={styles.photo} />
-        ) : (
-          <View style={styles.photoPlaceholder}>
-            <Text style={styles.photoPlaceholderText}>Add a photo</Text>
-          </View>
-        )}
-
-        {/* Tap zones: ONLY photo area */}
-        <TouchableOpacity
-          style={[styles.leftTapZone, { bottom: OVERLAY_DEADZONE }]}
-          onPress={handlePrevPhoto}
-          activeOpacity={0.15}
-        />
-        <TouchableOpacity
-          style={[styles.rightTapZone, { bottom: OVERLAY_DEADZONE }]}
-          onPress={handleNextPhoto}
-          activeOpacity={0.15}
-        />
-
-        {/* CAPTION OVERLAY */}
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.55)']}
-          style={styles.captionGradient}
-          pointerEvents="box-none"
-        >
-          <View style={styles.handlePill} pointerEvents="none" />
-
-          {/* Caption tap area: toggle expansion */}
-          <Pressable onPress={toggleMore} style={styles.captionTapArea} hitSlop={6}>
-            <Text style={styles.nameText}>
-              {firstName}
-              {age ? <Text style={styles.ageText}>{`  ${age}`}</Text> : null}
-            </Text>
-
-            <View style={styles.contextLineContainer}>
-              {!!previewContextParts.length && (
-                <Text style={styles.contextLine} numberOfLines={1}>
-                  {previewContextParts.join(' · ')}
-                </Text>
-              )}
-              {mutualCount !== null && mutualCount > 0 && (
-                <View style={styles.mutualsChip}>
-                  <Text style={styles.mutualsChipText}>
-                    {mutualCount} mutual{mutualCount !== 1 ? 's' : ''}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Bio in overlay */}
-            {!!bio && (
-              <Text style={styles.bioText} numberOfLines={moreOpen ? 3 : 2}>
-                {bio}
-              </Text>
-            )}
-          </Pressable>
-          <Pressable
-            onPress={toggleMore}
-            style={({ pressed }) => [styles.moreChevronBtn, pressed && { transform: [{ scale: 0.98 }] }]}
-            hitSlop={12}
-          >
-            <Animated.Text
-              style={[
-                styles.moreChevronText,
-                { transform: [{ rotate: chevronRotate }] },
-              ]}
-            >
-              ⌃
-            </Animated.Text>
-          </Pressable>
-        </LinearGradient>
-      </Animated.View>
-
-      {/* Expanded content - always rendered, revealed as card height grows */}
-      <Animated.View
-        style={[
-          {
-            height: expansionHeight.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, EXPANDED_CARD_HEIGHT - PHOTO_HEIGHT_EXPANDED],
-            }),
-            overflow: 'hidden',
-          },
-        ]}
-        pointerEvents={moreOpen ? 'auto' : 'none'}
-      >
-        <ScrollView
+        {/* Single ScrollView tree: no mount/unmount jump */}
+        <AnimatedScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
-          contentContainerStyle={[styles.expandedScrollContent, { backgroundColor: COLORS.surface }]}
-          showsVerticalScrollIndicator={true}
-          scrollEnabled={moreOpen}
-          bounces={true}
+          contentContainerStyle={[
+            styles.expandedScrollContent,
+            !moreOpen && { paddingBottom: 0 },
+          ]}
+          scrollEnabled={scrollEnabled}
+          showsVerticalScrollIndicator={moreOpen}
+          bounces={moreOpen}
           scrollEventThrottle={16}
-          directionalLockEnabled={false}
-          nestedScrollEnabled={false}
+          removeClippedSubviews={false}
         >
-          {/* CONTENT BELOW PHOTO - scrolls */}
+          {/* PHOTO AREA (always mounted) */}
+          <Animated.View style={[styles.photoContainer, styles.photoContainerExpanded, { height: photoHeight }]}>
+            <PhotoProgressBar count={safePhotos.length} activeIndex={photoIndex} />
+
+            {currentUri ? (
+              <Image
+                source={{ uri: currentUri }}
+                style={styles.photo}
+                // Helps reduce flicker when switching photos quickly
+                fadeDuration={120}
+              />
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <Text style={styles.photoPlaceholderText}>Add a photo</Text>
+              </View>
+            )}
+
+            {/* Tap zones for photo cycling */}
+            <TouchableOpacity
+              style={[styles.leftTapZone, { bottom: OVERLAY_DEADZONE }]}
+              onPress={handlePrevPhoto}
+              activeOpacity={0.15}
+            />
+            <TouchableOpacity
+              style={[styles.rightTapZone, { bottom: OVERLAY_DEADZONE }]}
+              onPress={handleNextPhoto}
+              activeOpacity={0.15}
+            />
+
+            {/* CAPTION OVERLAY */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.55)']}
+              style={styles.captionGradient}
+              pointerEvents="box-none"
+            >
+              {/* Optional: little handle pill in collapsed mode if you want */}
+              {!moreOpen ? <View style={styles.handlePill} pointerEvents="none" /> : null}
+
+              <Pressable onPress={toggleMore} style={styles.captionTapArea} hitSlop={6}>
+                <Text style={styles.nameText}>
+                  {firstName}
+                  {age ? <Text style={styles.ageText}>{`  ${age}`}</Text> : null}
+                </Text>
+
+                <View style={styles.contextLineContainer}>
+                  {!!previewContextParts.length && (
+                    <Text style={styles.contextLine} numberOfLines={1}>
+                      {previewContextParts.join(' · ')}
+                    </Text>
+                  )}
+
+                  {mutualCount !== null && mutualCount > 0 && (
+                    <View style={styles.mutualsChip}>
+                      <Text style={styles.mutualsChipText}>
+                        {mutualCount} mutual{mutualCount !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {!!bio && (
+                  <Text style={styles.bioText} numberOfLines={moreOpen ? 3 : 2}>
+                    {bio}
+                  </Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                onPress={toggleMore}
+                style={({ pressed }) => [
+                  styles.moreChevronBtn,
+                  pressed && { transform: [{ scale: 0.98 }] },
+                ]}
+                hitSlop={12}
+              >
+                <Animated.Text style={[styles.moreChevronText, { transform: [{ rotate: chevronRotate }] }]}>
+                  ⌃
+                </Animated.Text>
+              </Pressable>
+            </LinearGradient>
+          </Animated.View>
+
+          {/* CONTENT BELOW PHOTO (always mounted; scroll only when expanded) */}
           <View style={{ paddingHorizontal: 20, paddingTop: 20, backgroundColor: COLORS.surface }}>
-            {/* Academic Year */}
             {!!academicYear && (
               <View style={styles.expandedSection}>
                 <Text style={styles.sectionTitle}>Year</Text>
@@ -391,7 +397,6 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
               </View>
             )}
 
-            {/* Location */}
             {!!locationDescription && (
               <View style={styles.expandedSection}>
                 <Text style={styles.sectionTitle}>Location</Text>
@@ -399,7 +404,6 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
               </View>
             )}
 
-            {/* Graduation Year */}
             {!!graduationYear && (
               <View style={styles.expandedSection}>
                 <Text style={styles.sectionTitle}>Graduation</Text>
@@ -407,7 +411,6 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
               </View>
             )}
 
-            {/* Major */}
             {!!major && (
               <View style={styles.expandedSection}>
                 <Text style={styles.sectionTitle}>Major</Text>
@@ -415,7 +418,6 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
               </View>
             )}
 
-            {/* School */}
             {!!schoolName && (
               <View style={styles.expandedSection}>
                 <Text style={styles.sectionTitle}>School</Text>
@@ -423,7 +425,6 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
               </View>
             )}
 
-            {/* Featured affiliations (if any) */}
             {featuredRaw.length > 0 && (
               <View style={styles.expandedSection}>
                 <Text style={styles.sectionTitle}>Featured</Text>
@@ -436,8 +437,7 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
                 </View>
               </View>
             )}
-            
-            {/* All affiliations */}
+
             {affiliations.length > 0 && (
               <View style={styles.expandedSection}>
                 <Text style={styles.sectionTitle}>Affiliations</Text>
@@ -450,8 +450,7 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
                 </View>
               </View>
             )}
-            
-            {/* School/residential affiliations */}
+
             {schoolAffiliations.length > 0 && (
               <View style={styles.expandedSection}>
                 <Text style={styles.sectionTitle}>School</Text>
@@ -464,8 +463,7 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
                 </View>
               </View>
             )}
-            
-            {/* Interests */}
+
             {interests.length > 0 && (
               <View style={styles.expandedSection}>
                 <Text style={styles.sectionTitle}>Interests</Text>
@@ -481,9 +479,8 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
 
             <View style={{ height: 32 }} />
           </View>
-        </ScrollView>
+        </AnimatedScrollView>
       </Animated.View>
-    </Animated.View>
     </>
   );
 }

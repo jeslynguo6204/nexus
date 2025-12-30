@@ -20,8 +20,8 @@ const styles = StyleSheet.create({
   },
   cardExpanded: {
     borderRadius: RADIUS, // Keep rounded corners
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
   },
 
   photoContainer: {
