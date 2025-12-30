@@ -142,11 +142,19 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
         setAffiliationsByCategory(affiliationsData);
 
         // Set initial dorm if user has one selected (check if any affiliation ID matches a dorm)
-        // This is a simple check - you may need to adjust based on your data structure
+        // Normalize IDs for comparison to handle string/number mismatches
         if (affiliations.length > 0 && dormsData.length > 0) {
-          const matchingDorm = dormsData.find(d => affiliations.includes(d.id));
+          const matchingDorm = dormsData.find(d => {
+            const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
+            return affiliations.some(affId => {
+              const normalizedAffId = typeof affId === 'string' ? parseInt(affId, 10) : affId;
+              return normalizedAffId === dId;
+            });
+          });
           if (matchingDorm) {
-            setDorm(matchingDorm.id);
+            const dormId = typeof matchingDorm.id === 'string' ? parseInt(matchingDorm.id, 10) : matchingDorm.id;
+            setDorm(dormId);
+            console.log('Initial dorm set:', dormId, matchingDorm.name);
           }
         }
       } catch (error) {
@@ -156,6 +164,25 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
       }
     })();
   }, [schoolId]);
+
+  // Separate effect to set dorm when both dorms and affiliations are available
+  useEffect(() => {
+    if (dorms.length > 0 && affiliations.length > 0 && !dorm) {
+      // Check if any affiliation ID matches a dorm (normalize IDs for comparison)
+      const matchingDorm = dorms.find(d => {
+        const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
+        return affiliations.some(affId => {
+          const normalizedAffId = typeof affId === 'string' ? parseInt(affId, 10) : affId;
+          return normalizedAffId === dId;
+        });
+      });
+      if (matchingDorm) {
+        const dormId = typeof matchingDorm.id === 'string' ? parseInt(matchingDorm.id, 10) : matchingDorm.id;
+        setDorm(dormId);
+        console.log('Dorm initialized from affiliations:', dormId, matchingDorm.name);
+      }
+    }
+  }, [dorms, affiliations, dorm]);
 
   async function getCurrentLocation() {
     if (!Location) {
@@ -268,6 +295,39 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     const nextLocationLat = locationLat.trim() === '' ? null : locationLat.trim();
     const nextLocationLon = locationLon.trim() === '' ? null : locationLon.trim();
     
+    // Ensure dorm is included in affiliations if selected
+    let finalAffiliations = [...affiliations];
+    console.log('Submit - Current dorm:', dorm);
+    console.log('Submit - Current affiliations:', affiliations);
+    console.log('Submit - Available dorms:', dorms.map(d => ({ id: d.id, name: d.name })));
+    
+    if (dorm) {
+      const normalizedDorm = typeof dorm === 'string' ? parseInt(dorm, 10) : dorm;
+      console.log('Submit - Normalized dorm ID:', normalizedDorm);
+      
+      // Remove any existing dorm from affiliations
+      finalAffiliations = finalAffiliations.filter(id => {
+        const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+        return !dorms.some(d => {
+          const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
+          return dId === normalizedId;
+        });
+      });
+      // Add the current dorm
+      finalAffiliations.push(normalizedDorm);
+      console.log('Submit - Final affiliations with dorm:', finalAffiliations);
+    } else {
+      // Remove any dorm from affiliations if no dorm is selected
+      finalAffiliations = finalAffiliations.filter(id => {
+        const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+        return !dorms.some(d => {
+          const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
+          return dId === normalizedId;
+        });
+      });
+      console.log('Submit - No dorm selected, removed dorms from affiliations:', finalAffiliations);
+    }
+    
     // For now, only save fields that exist in the backend
     // Placeholder fields will be added later
     onSave({
@@ -279,7 +339,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
       locationDescription: nextLocationDesc,
       locationLat: nextLocationLat,
       locationLon: nextLocationLon,
-      affiliations: affiliations.length > 0 ? affiliations : null,
+      affiliations: finalAffiliations.length > 0 ? finalAffiliations : null,
     });
   }
 
@@ -414,9 +474,9 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
               style={localStyles.selectRow}
               onPress={() => openSelectionSheet({
                 title: 'Sexuality',
-                options: SEXUALITY_OPTIONS.map(opt => ({ name: opt })),
+                options: SEXUALITY_OPTIONS.map(opt => ({ name: opt, id: opt })),
                 selected: sexuality,
-                onSelect: (value) => setSexuality(value),
+                onSelect: (value) => setSexuality(value || ''),
                 allowMultiple: false,
                 allowUnselect: true,
               })}
@@ -595,9 +655,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
               ]}>
                 {religiousBeliefs.length === 0
                   ? 'Not selected'
-                  : religiousBeliefs.length === 1
-                  ? religiousBeliefs[0]
-                  : `${religiousBeliefs.length} selected`}
+                  : religiousBeliefs.join(', ')}
               </Text>
               <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
             </TouchableOpacity>
@@ -648,9 +706,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
               ]}>
                 {ethnicity.length === 0
                   ? 'Not selected'
-                  : ethnicity.length === 1
-                  ? ethnicity[0]
-                  : `${ethnicity.length} selected`}
+                  : ethnicity.join(', ')}
               </Text>
               <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
             </TouchableOpacity>
@@ -726,12 +782,9 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
               
               if (nonDormAffiliations.length === 0) return null;
 
-              // Check if this is a single-select category (Greek Life, Academic Programs, Varsity Athletics)
+              // Check if this is a single-select category (only Greek Life)
               const categoryLower = categoryName.toLowerCase();
-              const isSingleSelect = categoryLower.includes('greek') || 
-                                     categoryLower.includes('academic') ||
-                                     categoryLower.includes('varsity') ||
-                                     categoryLower.includes('athletics');
+              const isSingleSelect = categoryLower.includes('greek');
               
               // Get selected affiliations for this category
               // Normalize IDs for comparison (handle both string and number IDs)
@@ -779,7 +832,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                           });
                           // Add back the newly selected ones
                           if (isSingleSelect) {
-                            // Single select for Greek Life, Academic Programs, Varsity Athletics
+                            // Single select for Greek Life only
                             if (value !== null && value !== undefined) {
                               const normalizedValue = typeof value === 'string' ? parseInt(value, 10) : value;
                               setAffiliations([...otherAffiliationIds, normalizedValue]);
@@ -787,7 +840,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                               setAffiliations(otherAffiliationIds);
                             }
                           } else {
-                            // Multi-select for other categories - value is an array
+                            // Multi-select for other categories (Academic Programs, Varsity Athletics, etc.) - value is an array
                             const newAffiliationIds = Array.isArray(value) 
                               ? value.map(v => typeof v === 'string' ? parseInt(v, 10) : v).filter(v => v !== null && v !== undefined)
                               : (value ? [typeof value === 'string' ? parseInt(value, 10) : value] : []);
@@ -817,17 +870,20 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                             : 'Not selected')
                         : (selectedForCategory.length === 0
                             ? 'Not selected'
-                            : selectedForCategory.length === 1
-                            ? (() => {
-                                // Normalize the selected ID for comparison
-                                const normalizedSelected = typeof selectedForCategory[0] === 'string' ? parseInt(selectedForCategory[0], 10) : selectedForCategory[0];
-                                const found = nonDormAffiliations.find(aff => {
-                                  const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
-                                  return affId === normalizedSelected;
-                                });
-                                return found?.name || 'Not selected';
-                              })()
-                            : `${selectedForCategory.length} selected`)}
+                            : (() => {
+                                // For multi-select, show comma-separated names
+                                const selectedNames = selectedForCategory
+                                  .map(selectedId => {
+                                    const normalizedSelected = typeof selectedId === 'string' ? parseInt(selectedId, 10) : selectedId;
+                                    const found = nonDormAffiliations.find(aff => {
+                                      const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                                      return affId === normalizedSelected;
+                                    });
+                                    return found?.name;
+                                  })
+                                  .filter(Boolean); // Remove any undefined values
+                                return selectedNames.length > 0 ? selectedNames.join(', ') : 'Not selected';
+                              })())}
                     </Text>
                     <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
                   </TouchableOpacity>
@@ -907,6 +963,9 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
         } else if (title === 'Political affiliation') {
           // Political affiliation - use current string state
           currentSelected = politicalAffiliation;
+        } else if (title === 'Sexuality') {
+          // Sexuality - use current string state
+          currentSelected = sexuality;
         } else if (title === 'Ethnicity') {
           // Ethnicity - use current array state
           currentSelected = ethnicity;
@@ -914,14 +973,11 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           // If this is an affiliations category, recalculate selected from current affiliations state
           const categoryName = title;
           const categoryLower = categoryName.toLowerCase();
-          const isSingleSelect = categoryLower.includes('greek') || 
-                                 categoryLower.includes('academic') ||
-                                 categoryLower.includes('varsity') ||
-                                 categoryLower.includes('athletics');
+          const isSingleSelect = categoryLower.includes('greek');
           const categoryAffiliations = selectionSheetConfig.options;
           
           if (isSingleSelect) {
-            // Single select for Greek Life, Academic Programs, Varsity Athletics
+            // Single select for Greek Life only
             currentSelected = affiliations.find(id => {
               const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
               return categoryAffiliations.some(aff => {
