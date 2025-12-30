@@ -19,11 +19,14 @@
  * experience.
  */
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Switch, Alert, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Switch, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../styles/themeNEW';
+import { getMySchoolDorms, getMySchoolAffiliations } from '../api/affiliationsAPI';
+import SelectionSheet from './SelectionSheet';
 
 // Optional location import - gracefully handle if not installed
 let Location = null;
@@ -41,6 +44,7 @@ const SEXUALITY_OPTIONS = ['Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual'
 const DATING_INTENTIONS = ['Romantic', 'Platonic', 'Both'];
 const RELIGIOUS_OPTIONS = ['Christian', 'Catholic', 'Jewish', 'Muslim', 'Hindu', 'Buddhist', 'Agnostic', 'Atheist', 'Spiritual', 'Other', 'Prefer not to say'];
 const POLITICAL_OPTIONS = ['Very Liberal', 'Liberal', 'Moderate', 'Conservative', 'Very Conservative', 'Libertarian', 'Other', 'Prefer not to say'];
+const ETHNICITY_OPTIONS = ['American Indian or Alaska Native', 'Asian', 'Black or African American', 'Hispanic or Latino', 'Middle Eastern or North African', 'Native Hawaiian or Other Pacific Islander', 'White', 'Other', 'Prefer not to say'];
 
 export default function ProfileDetailsForm({ profile, onSave, onClose }) {
   const insets = useSafeAreaInsets();
@@ -72,14 +76,22 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
   
   // Personal Details
   const [height, setHeight] = useState(''); // Placeholder
-  const [religiousBeliefs, setReligiousBeliefs] = useState(''); // Placeholder
-  const [politicalAffiliation, setPoliticalAffiliation] = useState(''); // Placeholder
-  const [ethnicity, setEthnicity] = useState(''); // Placeholder
+  const [religiousBeliefs, setReligiousBeliefs] = useState([]); // Array for multiple selections
+  const [politicalAffiliation, setPoliticalAffiliation] = useState(''); // Single selection
+  const [ethnicity, setEthnicity] = useState([]); // Array for multiple selections
   
-  // Affiliations (placeholder for now)
+  // Affiliations
   const [affiliations, setAffiliations] = useState(
     profile.affiliations && Array.isArray(profile.affiliations) ? profile.affiliations : []
   );
+  const [dorm, setDorm] = useState(null); // Single dorm selection
+  const [dorms, setDorms] = useState([]);
+  const [affiliationsByCategory, setAffiliationsByCategory] = useState({});
+  const [loadingAffiliations, setLoadingAffiliations] = useState(true);
+  
+  // Selection sheet state
+  const [selectionSheetVisible, setSelectionSheetVisible] = useState(false);
+  const [selectionSheetConfig, setSelectionSheetConfig] = useState(null);
   
   // Interests
   const [interests, setInterests] = useState(''); // Placeholder - will be handled separately later
@@ -92,6 +104,58 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     profile?.school_name ||
     profile?.school?.short_name ||
     'School not set';
+  
+  const schoolId = profile?.school?.id || profile?.school_id;
+
+  // Fetch dorms and affiliations on mount
+  useEffect(() => {
+    (async () => {
+      if (!schoolId) {
+        setLoadingAffiliations(false);
+        return;
+      }
+
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+          setLoadingAffiliations(false);
+          return;
+        }
+
+        // Fetch dorms and affiliations in parallel
+        const [dormsData, affiliationsData] = await Promise.all([
+          getMySchoolDorms(token).catch((err) => {
+            console.warn('Error fetching dorms:', err);
+            return [];
+          }),
+          getMySchoolAffiliations(token).catch((err) => {
+            console.warn('Error fetching affiliations:', err);
+            return {};
+          })
+        ]);
+
+        console.log('Dorms data:', dormsData);
+        console.log('Affiliations data:', affiliationsData);
+        console.log('Affiliation categories:', Object.keys(affiliationsData));
+
+        setDorms(dormsData);
+        setAffiliationsByCategory(affiliationsData);
+
+        // Set initial dorm if user has one selected (check if any affiliation ID matches a dorm)
+        // This is a simple check - you may need to adjust based on your data structure
+        if (affiliations.length > 0 && dormsData.length > 0) {
+          const matchingDorm = dormsData.find(d => affiliations.includes(d.id));
+          if (matchingDorm) {
+            setDorm(matchingDorm.id);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load affiliations:', error);
+      } finally {
+        setLoadingAffiliations(false);
+      }
+    })();
+  }, [schoolId]);
 
   async function getCurrentLocation() {
     if (!Location) {
@@ -147,6 +211,54 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     });
   }
 
+  function toggleDorm(dormId) {
+    // Normalize dorm ID for comparison
+    const normalizedDormId = typeof dormId === 'string' ? parseInt(dormId, 10) : dormId;
+    const normalizedCurrentDorm = typeof dorm === 'string' ? parseInt(dorm, 10) : dorm;
+    
+    // Remove old dorm from affiliations if it exists
+    setAffiliations((prev) => {
+      const withoutOldDorm = prev.filter((id) => {
+        const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+        return !dorms.some(d => {
+          const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
+          return dId === normalizedId && dId !== normalizedDormId;
+        });
+      });
+      // Add new dorm if selected, otherwise just return without old dorm
+      if (normalizedDormId && normalizedDormId !== normalizedCurrentDorm) {
+        return [...withoutOldDorm, normalizedDormId];
+      }
+      return withoutOldDorm;
+    });
+    setDorm(normalizedDormId === normalizedCurrentDorm ? null : normalizedDormId);
+  }
+
+  // Helper functions for selection sheets
+  function openSelectionSheet(config) {
+    setSelectionSheetConfig(config);
+    setSelectionSheetVisible(true);
+  }
+
+  function closeSelectionSheet() {
+    setSelectionSheetVisible(false);
+    setSelectionSheetConfig(null);
+  }
+
+  function getSelectedDisplayName(selected, options, allowMultiple = false) {
+    if (!selected) return 'Not selected';
+    if (allowMultiple && Array.isArray(selected)) {
+      if (selected.length === 0) return 'Not selected';
+      if (selected.length === 1) {
+        const option = options.find(o => (o.id || o) === selected[0]);
+        return option?.name || option?.label || String(option || selected[0]);
+      }
+      return `${selected.length} selected`;
+    }
+    const option = options.find(o => (o.id || o) === selected);
+    return option?.name || option?.label || String(option || selected);
+  }
+
   function submit() {
     const gradYearNum = graduationYear ? Number(graduationYear) : null;
     const nextBio = bio.trim() === '' ? null : bio.trim();
@@ -192,10 +304,10 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+    <ScrollView
         style={localStyles.scrollView}
         contentContainerStyle={localStyles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+      keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {/* About Me */}
@@ -204,12 +316,12 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           
           <View style={localStyles.fieldGroup}>
             <Text style={localStyles.label}>Bio</Text>
-            <TextInput
-              value={bio}
-              onChangeText={setBio}
-              multiline
+        <TextInput
+          value={bio}
+          onChangeText={setBio}
+          multiline
               style={[localStyles.input, localStyles.textArea]}
-              placeholder="Say something about yourself"
+          placeholder="Say something about yourself"
               placeholderTextColor={COLORS.textMuted}
             />
           </View>
@@ -233,7 +345,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           
           <View style={localStyles.fieldGroup}>
             <Text style={localStyles.label}>Name <Text style={localStyles.required}>*</Text></Text>
-            <TextInput
+        <TextInput
               value={displayName}
               onChangeText={setDisplayName}
               style={localStyles.input}
@@ -298,29 +410,25 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
 
           <View style={localStyles.fieldGroup}>
             <Text style={localStyles.label}>Sexuality</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={localStyles.chipRow}
-              contentContainerStyle={localStyles.chipRowContent}
-            >
-              {SEXUALITY_OPTIONS.map((option) => {
-                const selected = sexuality === option;
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    onPress={() => setSexuality(option)}
-                    style={[localStyles.chip, selected && localStyles.chipSelected]}
-                  >
-                    <Text
-                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
-                    >
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                );
+            <TouchableOpacity
+              style={localStyles.selectRow}
+              onPress={() => openSelectionSheet({
+                title: 'Sexuality',
+                options: SEXUALITY_OPTIONS.map(opt => ({ name: opt })),
+                selected: sexuality,
+                onSelect: (value) => setSexuality(value),
+                allowMultiple: false,
+                allowUnselect: true,
               })}
-            </ScrollView>
+            >
+              <Text style={[
+                localStyles.selectRowText,
+                !sexuality && localStyles.selectRowTextPlaceholder
+              ]}>
+                {sexuality || 'Not selected'}
+              </Text>
+              <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -364,29 +472,29 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
 
           <View style={localStyles.fieldGroup}>
             <Text style={localStyles.label}>Graduation year</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
               style={localStyles.chipRow}
               contentContainerStyle={localStyles.chipRowContent}
-            >
-              {GRAD_YEARS.map((year) => {
-                const selected = graduationYear === String(year);
-                return (
-                  <TouchableOpacity
-                    key={year}
-                    onPress={() => setGraduationYear(String(year))}
+        >
+          {GRAD_YEARS.map((year) => {
+            const selected = graduationYear === String(year);
+            return (
+              <TouchableOpacity
+                key={year}
+                onPress={() => setGraduationYear(String(year))}
                     style={[localStyles.chip, selected && localStyles.chipSelected]}
-                  >
-                    <Text
+              >
+                <Text
                       style={selected ? localStyles.chipTextSelected : localStyles.chipText}
-                    >
-                      {year}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+                >
+                  {year}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
           </View>
 
           <View style={localStyles.fieldGroup}>
@@ -423,7 +531,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                 <Text style={localStyles.locationButtonText}>
                   {locationLoading ? 'Getting location...' : 'Use current location'}
                 </Text>
-              </TouchableOpacity>
+          </TouchableOpacity>
             )}
           </View>
 
@@ -467,94 +575,266 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
 
           <View style={localStyles.fieldGroup}>
             <Text style={localStyles.label}>Religious beliefs</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={localStyles.chipRow}
-              contentContainerStyle={localStyles.chipRowContent}
-            >
-              {RELIGIOUS_OPTIONS.map((option) => {
-                const selected = religiousBeliefs === option;
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    onPress={() => setReligiousBeliefs(option)}
-                    style={[localStyles.chip, selected && localStyles.chipSelected]}
-                  >
-                    <Text
-                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
-                    >
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                );
+            <TouchableOpacity
+              style={localStyles.selectRow}
+              onPress={() => openSelectionSheet({
+                title: 'Religious beliefs',
+                options: RELIGIOUS_OPTIONS.map(opt => ({ name: opt, id: opt })),
+                selected: religiousBeliefs,
+                onSelect: (value) => {
+                  const newValue = Array.isArray(value) ? value : (value ? [value] : []);
+                  setReligiousBeliefs(newValue);
+                },
+                allowMultiple: true,
+                allowUnselect: true,
               })}
-            </ScrollView>
+            >
+              <Text style={[
+                localStyles.selectRowText,
+                (!religiousBeliefs || religiousBeliefs.length === 0) && localStyles.selectRowTextPlaceholder
+              ]}>
+                {religiousBeliefs.length === 0
+                  ? 'Not selected'
+                  : religiousBeliefs.length === 1
+                  ? religiousBeliefs[0]
+                  : `${religiousBeliefs.length} selected`}
+              </Text>
+              <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
+            </TouchableOpacity>
           </View>
 
           <View style={localStyles.fieldGroup}>
             <Text style={localStyles.label}>Political affiliation</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={localStyles.chipRow}
-              contentContainerStyle={localStyles.chipRowContent}
-            >
-              {POLITICAL_OPTIONS.map((option) => {
-                const selected = politicalAffiliation === option;
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    onPress={() => setPoliticalAffiliation(option)}
-                    style={[localStyles.chip, selected && localStyles.chipSelected]}
-                  >
-                    <Text
-                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
-                    >
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                );
+            <TouchableOpacity
+              style={localStyles.selectRow}
+              onPress={() => openSelectionSheet({
+                title: 'Political affiliation',
+                options: POLITICAL_OPTIONS.map(opt => ({ name: opt, id: opt })),
+                selected: politicalAffiliation,
+                onSelect: (value) => setPoliticalAffiliation(value || ''),
+                allowMultiple: false,
+                allowUnselect: true,
               })}
-            </ScrollView>
+            >
+              <Text style={[
+                localStyles.selectRowText,
+                !politicalAffiliation && localStyles.selectRowTextPlaceholder
+              ]}>
+                {politicalAffiliation || 'Not selected'}
+              </Text>
+              <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
+            </TouchableOpacity>
           </View>
 
           <View style={localStyles.fieldGroup}>
             <Text style={localStyles.label}>Ethnicity</Text>
-            <TextInput
-              value={ethnicity}
-              onChangeText={setEthnicity}
-              style={localStyles.input}
-              placeholder="Optional"
-              placeholderTextColor={COLORS.textMuted}
-            />
+            <TouchableOpacity
+              style={localStyles.selectRow}
+              onPress={() => openSelectionSheet({
+                title: 'Ethnicity',
+                options: ETHNICITY_OPTIONS.map(opt => ({ name: opt, id: opt })),
+                selected: ethnicity,
+                onSelect: (value) => {
+                  const newValue = Array.isArray(value) ? value : (value ? [value] : []);
+                  setEthnicity(newValue);
+                },
+                allowMultiple: true,
+                allowUnselect: true,
+              })}
+            >
+              <Text style={[
+                localStyles.selectRowText,
+                (!ethnicity || ethnicity.length === 0) && localStyles.selectRowTextPlaceholder
+              ]}>
+                {ethnicity.length === 0
+                  ? 'Not selected'
+                  : ethnicity.length === 1
+                  ? ethnicity[0]
+                  : `${ethnicity.length} selected`}
+              </Text>
+              <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
+            </TouchableOpacity>
           </View>
         </View>
+
+        {/* Dorm Selection */}
+        {dorms.length > 0 && (
+          <View style={localStyles.section}>
+            <Text style={localStyles.sectionTitle}>Dorm</Text>
+            
+            <View style={localStyles.fieldGroup}>
+              <Text style={localStyles.label}>Residential house</Text>
+              {loadingAffiliations ? (
+                <ActivityIndicator size="small" color={COLORS.textMuted} style={{ marginTop: 10 }} />
+              ) : (
+                <TouchableOpacity
+                  style={localStyles.selectRow}
+                  onPress={() => openSelectionSheet({
+                    title: 'Residential house',
+                    options: dorms,
+                    selected: dorm,
+                    onSelect: (value) => {
+                      toggleDorm(value);
+                    },
+                    allowMultiple: false,
+                    allowUnselect: true,
+                  })}
+                >
+                  <Text style={[
+                    localStyles.selectRowText,
+                    !dorm && localStyles.selectRowTextPlaceholder
+                  ]}>
+                    {dorm 
+                      ? (() => {
+                          // Normalize IDs for comparison
+                          const normalizedDorm = typeof dorm === 'string' ? parseInt(dorm, 10) : dorm;
+                          const found = dorms.find(d => {
+                            const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
+                            return dId === normalizedDorm;
+                          });
+                          return found?.name || 'Not selected';
+                        })()
+                      : 'Not selected'}
+                  </Text>
+                  <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Affiliations */}
         <View style={localStyles.section}>
           <Text style={localStyles.sectionTitle}>Affiliations</Text>
           
-          <View style={localStyles.fieldGroup}>
-            <Text style={localStyles.label}>Greek life</Text>
-            <Text style={localStyles.placeholderText}>
-              Coming soon
-            </Text>
-          </View>
+          {loadingAffiliations ? (
+            <View style={localStyles.fieldGroup}>
+              <ActivityIndicator size="small" color={COLORS.textMuted} style={{ marginTop: 10 }} />
+            </View>
+          ) : Object.keys(affiliationsByCategory).length === 0 ? (
+            <View style={localStyles.fieldGroup}>
+              <Text style={localStyles.placeholderText}>
+                No affiliations available for your school
+              </Text>
+            </View>
+          ) : (
+            Object.entries(affiliationsByCategory).map(([categoryName, categoryAffiliations]) => {
+              // Filter out dorms from regular affiliations
+              const nonDormAffiliations = categoryAffiliations.filter(
+                aff => !dorms.some(d => d.id === aff.id)
+              );
+              
+              if (nonDormAffiliations.length === 0) return null;
 
-          <View style={localStyles.fieldGroup}>
-            <Text style={localStyles.label}>Athletics</Text>
-            <Text style={localStyles.placeholderText}>
-              Coming soon
-            </Text>
-          </View>
+              // Check if this is a single-select category (Greek Life, Academic Programs, Varsity Athletics)
+              const categoryLower = categoryName.toLowerCase();
+              const isSingleSelect = categoryLower.includes('greek') || 
+                                     categoryLower.includes('academic') ||
+                                     categoryLower.includes('varsity') ||
+                                     categoryLower.includes('athletics');
+              
+              // Get selected affiliations for this category
+              // Normalize IDs for comparison (handle both string and number IDs)
+              const selectedForCategory = isSingleSelect
+                ? affiliations.find(id => {
+                    const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+                    return nonDormAffiliations.some(aff => {
+                      const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                      return normalizedId === affId;
+                    });
+                  }) || null
+                : affiliations.filter(id => {
+                    const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+                    return nonDormAffiliations.some(aff => {
+                      const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                      return normalizedId === affId;
+                    });
+                  });
 
-          <View style={localStyles.fieldGroup}>
-            <Text style={localStyles.label}>Clubs & organizations</Text>
-            <Text style={localStyles.placeholderText}>
-              Coming soon
-            </Text>
-          </View>
+              return (
+                <View key={categoryName} style={localStyles.fieldGroup}>
+                  <Text style={localStyles.label}>{categoryName}</Text>
+                  <TouchableOpacity
+                    style={localStyles.selectRow}
+                    onPress={() => {
+                      console.log('Opening selection sheet for:', categoryName);
+                      console.log('Options:', nonDormAffiliations);
+                      console.log('Selected:', selectedForCategory);
+                      
+                      openSelectionSheet({
+                        title: categoryName,
+                        options: nonDormAffiliations,
+                        selected: selectedForCategory,
+                        isAffiliationCategory: true,
+                        onSelect: (value) => {
+                          console.log('Selection made:', value, 'isSingleSelect:', isSingleSelect);
+                          // Remove all affiliations from this category first
+                          // Normalize IDs for comparison (handle both string and number IDs)
+                          const otherAffiliationIds = affiliations.filter(id => {
+                            const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+                            return !nonDormAffiliations.some(aff => {
+                              const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                              return normalizedId === affId;
+                            });
+                          });
+                          // Add back the newly selected ones
+                          if (isSingleSelect) {
+                            // Single select for Greek Life, Academic Programs, Varsity Athletics
+                            if (value !== null && value !== undefined) {
+                              const normalizedValue = typeof value === 'string' ? parseInt(value, 10) : value;
+                              setAffiliations([...otherAffiliationIds, normalizedValue]);
+                            } else {
+                              setAffiliations(otherAffiliationIds);
+                            }
+                          } else {
+                            // Multi-select for other categories - value is an array
+                            const newAffiliationIds = Array.isArray(value) 
+                              ? value.map(v => typeof v === 'string' ? parseInt(v, 10) : v).filter(v => v !== null && v !== undefined)
+                              : (value ? [typeof value === 'string' ? parseInt(value, 10) : value] : []);
+                            setAffiliations([...otherAffiliationIds, ...newAffiliationIds]);
+                          }
+                        },
+                        allowMultiple: !isSingleSelect,
+                        allowUnselect: true,
+                      });
+                    }}
+                  >
+                    <Text style={[
+                      localStyles.selectRowText,
+                      (!selectedForCategory || (Array.isArray(selectedForCategory) && selectedForCategory.length === 0)) && localStyles.selectRowTextPlaceholder
+                    ]}>
+                      {isSingleSelect
+                        ? (selectedForCategory
+                            ? (() => {
+                                // Normalize the selected ID for comparison
+                                const normalizedSelected = typeof selectedForCategory === 'string' ? parseInt(selectedForCategory, 10) : selectedForCategory;
+                                const found = nonDormAffiliations.find(aff => {
+                                  const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                                  return affId === normalizedSelected;
+                                });
+                                return found?.name || 'Not selected';
+                              })()
+                            : 'Not selected')
+                        : (selectedForCategory.length === 0
+                            ? 'Not selected'
+                            : selectedForCategory.length === 1
+                            ? (() => {
+                                // Normalize the selected ID for comparison
+                                const normalizedSelected = typeof selectedForCategory[0] === 'string' ? parseInt(selectedForCategory[0], 10) : selectedForCategory[0];
+                                const found = nonDormAffiliations.find(aff => {
+                                  const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                                  return affId === normalizedSelected;
+                                });
+                                return found?.name || 'Not selected';
+                              })()
+                            : `${selectedForCategory.length} selected`)}
+                    </Text>
+                    <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              );
+            })
+          )}
         </View>
 
         {/* Interests */}
@@ -605,11 +885,85 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                 );
               })}
             </ScrollView>
-          </View>
         </View>
+      </View>
 
         <View style={{ height: 60 }} />
-      </ScrollView>
+    </ScrollView>
+
+      {/* Selection Sheet */}
+      {selectionSheetConfig && (() => {
+        // Calculate current selected value based on current state
+        let currentSelected = selectionSheetConfig.selected;
+        const title = selectionSheetConfig.title;
+        
+        // Recalculate selected from current state for reactive updates
+        if (title === 'Residential house' || title === 'Dorm') {
+          // Dorm - use current dorm state
+          currentSelected = dorm;
+        } else if (title === 'Religious beliefs') {
+          // Religious beliefs - use current array state
+          currentSelected = religiousBeliefs;
+        } else if (title === 'Political affiliation') {
+          // Political affiliation - use current string state
+          currentSelected = politicalAffiliation;
+        } else if (title === 'Ethnicity') {
+          // Ethnicity - use current array state
+          currentSelected = ethnicity;
+        } else if (selectionSheetConfig.isAffiliationCategory) {
+          // If this is an affiliations category, recalculate selected from current affiliations state
+          const categoryName = title;
+          const categoryLower = categoryName.toLowerCase();
+          const isSingleSelect = categoryLower.includes('greek') || 
+                                 categoryLower.includes('academic') ||
+                                 categoryLower.includes('varsity') ||
+                                 categoryLower.includes('athletics');
+          const categoryAffiliations = selectionSheetConfig.options;
+          
+          if (isSingleSelect) {
+            // Single select for Greek Life, Academic Programs, Varsity Athletics
+            currentSelected = affiliations.find(id => {
+              const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+              return categoryAffiliations.some(aff => {
+                const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                return normalizedId === affId;
+              });
+            }) || null;
+          } else {
+            // Multi-select for other categories
+            currentSelected = affiliations.filter(id => {
+              const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+              return categoryAffiliations.some(aff => {
+                const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                return normalizedId === affId;
+              });
+            });
+          }
+        }
+        
+        return (
+          <SelectionSheet
+            key={`${selectionSheetConfig.title}-${selectionSheetVisible}`}
+            visible={selectionSheetVisible}
+            title={selectionSheetConfig.title}
+            options={selectionSheetConfig.options}
+            selected={currentSelected}
+            onSelect={(value, option) => {
+              console.log('SelectionSheet onSelect called:', value, option);
+              if (selectionSheetConfig.onSelect) {
+                selectionSheetConfig.onSelect(value, option);
+              }
+              // Don't auto-close - user must click X to close
+            }}
+            onClose={() => {
+              console.log('SelectionSheet onClose called');
+              closeSelectionSheet();
+            }}
+            allowMultiple={selectionSheetConfig.allowMultiple}
+            allowUnselect={selectionSheetConfig.allowUnselect}
+          />
+        );
+      })()}
     </View>
   );
 }
@@ -769,5 +1123,24 @@ const localStyles = StyleSheet.create({
     fontWeight: '400',
     marginTop: 8,
     fontStyle: 'italic',
+  },
+  selectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.backgroundSubtle,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  selectRowText: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontWeight: '400',
+    flex: 1,
+  },
+  selectRowTextPlaceholder: {
+    color: COLORS.textMuted,
   },
 });
