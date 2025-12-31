@@ -1,5 +1,5 @@
 // mobile/components/ProfileCardNew.js
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,13 @@ import {
   Animated,
   Dimensions,
   Easing,
+  StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import styles from '../styles/ProfileCardStylesNew';
-import { COLORS } from '../styles/themeNEW';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 function normalizePhotos(photos) {
   const safe = Array.isArray(photos) ? photos : [];
@@ -47,14 +46,12 @@ function getFirstName(displayName) {
 }
 
 function getAge(profile) {
-  // First check if age is directly available
   if (typeof profile?.age === 'number' && profile.age > 0) return profile.age;
   if (typeof profile?.age === 'string' && profile.age.trim()) {
     const ageNum = parseInt(profile.age.trim(), 10);
     if (!isNaN(ageNum) && ageNum > 0) return ageNum;
   }
-  
-  // Fallback: calculate from date_of_birth if age is not available
+
   if (profile?.date_of_birth) {
     try {
       const birthDate = new Date(profile.date_of_birth);
@@ -65,15 +62,13 @@ function getAge(profile) {
         if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
           age--;
         }
-        if (age > 0 && age < 150) { // Sanity check
-          return age;
-        }
+        if (age > 0 && age < 150) return age;
       }
     } catch (e) {
       console.warn('Error calculating age from date_of_birth:', e);
     }
   }
-  
+
   return null;
 }
 
@@ -95,7 +90,7 @@ function normalizeList(maybeList) {
   return [];
 }
 
-function PhotoProgressBar({ count, activeIndex }) {
+const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeIndex }) {
   if (!count || count <= 1) return null;
 
   return (
@@ -107,7 +102,7 @@ function PhotoProgressBar({ count, activeIndex }) {
       ))}
     </View>
   );
-}
+});
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
@@ -121,39 +116,37 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
   const [moreAboutMeOpen, setMoreAboutMeOpen] = useState(false);
 
   const scrollRef = useRef(null);
+  const isClosingRef = useRef(false);
 
-  // Chevron rotation animation
   const chevronRotation = useRef(new Animated.Value(0)).current;
-  // Expansion animation (0 collapsed -> 1 expanded)
   const expansion = useRef(new Animated.Value(0)).current;
 
-  // Layout constants (keep same as your current intent)
   const TOP_BAR_HEIGHT = 60;
   const BOTTOM_NAV_HEIGHT = 80;
   const EXPANDED_CARD_HEIGHT = SCREEN_HEIGHT - TOP_BAR_HEIGHT - BOTTOM_NAV_HEIGHT;
 
-  // Default card height from SwipeDeckNew
   const DEFAULT_CARD_HEIGHT = Math.min(
     (Dimensions.get('window').width - 32) * 1.6,
     SCREEN_HEIGHT * 0.78
   );
 
-  // Photo height in expanded mode (scrolls because it sits inside ScrollView)
   const PHOTO_HEIGHT_EXPANDED = 500;
-
-  // Slight upward movement when expanding
   const EXPAND_UPWARD_OFFSET = -20;
-
-  // Prevent photo tap zones from stealing overlay/button taps
   const OVERLAY_DEADZONE = 120;
 
+  // ✅ small cleanup: compute once (keeps your existing behavior)
+  const backdropOpacity = useMemo(
+    () =>
+      expansion.interpolate({
+        inputRange: [0, 0.3, 1],
+        outputRange: [0, 1, 1],
+      }),
+    [expansion]
+  );
+
   useEffect(() => {
-    // notify parent
     onDetailsOpenChange?.(moreOpen);
-
-    // Disable scroll while animating (avoids jitter + weird gesture conflicts)
-    setScrollEnabled(false);
-
+  
     Animated.parallel([
       Animated.timing(chevronRotation, {
         toValue: moreOpen ? 1 : 0,
@@ -165,50 +158,57 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
         toValue: moreOpen ? 1 : 0,
         duration: 420,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: false, // height/translateY need JS driver
+        useNativeDriver: false,
       }),
     ]).start(({ finished }) => {
       if (!finished) return;
-
-      // When collapsing, snap back to top so the next expand starts clean
+    
       if (!moreOpen) {
-        scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+        // If we didn't already animate-scroll to top, ensure it's at 0 now.
+        if (!isClosingRef.current) {
+          scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+        }
+        isClosingRef.current = false;
+        setScrollEnabled(false);
+      } else {
+        setScrollEnabled(true);
       }
-
-      // Enable scroll only when expanded
-      setScrollEnabled(moreOpen);
     });
   }, [moreOpen, onDetailsOpenChange, chevronRotation, expansion]);
-
+  
   useEffect(() => {
-    // when profile changes, reset everything cleanly
     setPhotoIndex(0);
     setMoreOpen(false);
     setScrollEnabled(false);
     scrollRef.current?.scrollTo?.({ y: 0, animated: false });
-    // (Also reset animation values instantly to avoid transitional artifacts)
     chevronRotation.setValue(0);
     expansion.setValue(0);
   }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentUri = hasPhotos ? safePhotos[photoIndex]?.uri : null;
 
-  function handleNextPhoto() {
+  // ✅ small perf win: stable handlers
+  const handleNextPhoto = useCallback(() => {
     if (!hasPhotos) return;
     setPhotoIndex((prev) => (prev + 1) % safePhotos.length);
-  }
+  }, [hasPhotos, safePhotos.length]);
 
-  function handlePrevPhoto() {
+  const handlePrevPhoto = useCallback(() => {
     if (!hasPhotos) return;
     setPhotoIndex((prev) => (prev - 1 + safePhotos.length) % safePhotos.length);
-  }
+  }, [hasPhotos, safePhotos.length]);
 
   const chevronRotate = chevronRotation.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '180deg'],
   });
 
-  // Animate card height and translateY
+  const cardScale = expansion.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.985, 1],
+  });
+  
+
   const cardHeight = expansion.interpolate({
     inputRange: [0, 1],
     outputRange: [DEFAULT_CARD_HEIGHT, EXPANDED_CARD_HEIGHT],
@@ -219,26 +219,30 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
     outputRange: [0, EXPAND_UPWARD_OFFSET],
   });
 
-  // Animate photo height (collapsed: photo fills card; expanded: fixed photo height)
   const photoHeight = expansion.interpolate({
     inputRange: [0, 1],
     outputRange: [DEFAULT_CARD_HEIGHT, PHOTO_HEIGHT_EXPANDED],
   });
 
-  const openMore = () => setMoreOpen(true);
-
- const closeMore = () => {
-   // snap to top BEFORE collapse begins (prevents grey flash)
-   scrollRef.current?.scrollTo?.({ y: 0, animated: false });
-   setMoreOpen(false);
- };
-
-const toggleMore = () => {
-  if (moreOpen) closeMore();
-  else openMore();
-};
-
-
+  const closeMore = useCallback(() => {
+    // freeze user scrolling immediately
+    setScrollEnabled(false);
+  
+    // mark that this close path already initiated a scroll-to-top
+    isClosingRef.current = true;
+  
+    // smooth scroll to top (prevents clamp/jump in photo)
+    scrollRef.current?.scrollTo?.({ y: 0, animated: true });
+  
+    // start collapse on next frame so the scroll animation can begin cleanly
+    requestAnimationFrame(() => setMoreOpen(false));
+  }, []);
+  
+  const toggleMore = useCallback(() => {
+    if (moreOpen) closeMore();
+    else setMoreOpen(true);
+  }, [moreOpen, closeMore]);
+  
   // Profile data
   const academicYear = coalesce(profile?.academic_year);
   const locationDescription = coalesce(profile?.location_description);
@@ -247,27 +251,27 @@ const toggleMore = () => {
   const displayName = coalesce(profile?.display_name, profile?.name, 'Your name');
   const firstName = getFirstName(displayName) || displayName;
   const age = getAge(profile);
-  
-  // New fields
+
   const hometown = coalesce(profile?.hometown);
   const languages = coalesce(profile?.languages);
   const height = profile?.height ? `${profile.height} cm` : null;
   const religiousBeliefs = coalesce(profile?.religious_beliefs);
   const politicalAffiliation = coalesce(profile?.political_affiliation);
   const ethnicity = coalesce(profile?.ethnicity);
-  
-  // Debug logging
+
   if (__DEV__) {
-    console.log('ProfileCardNew - age:', age, 'profile.age:', profile?.age, 'profile.date_of_birth:', profile?.date_of_birth);
+    console.log(
+      'ProfileCardNew - age:',
+      age,
+      'profile.age:',
+      profile?.age,
+      'profile.date_of_birth:',
+      profile?.date_of_birth
+    );
   }
 
   const educationLevel = toTitleCase(coalesce(profile?.education_level, profile?.student_type));
-  const yearLabel = coalesce(
-    profile?.year_label,
-    profile?.class_year_label,
-    profile?.yearLabel,
-    educationLevel
-  );
+  const yearLabel = coalesce(profile?.year_label, profile?.class_year_label, profile?.yearLabel, educationLevel);
 
   const bio = coalesce(profile?.bio);
 
@@ -280,41 +284,38 @@ const toggleMore = () => {
           ? profile.mutuals
           : null;
 
-  // Handle affiliations - prefer resolved affiliations_info, fallback to raw IDs
+  // affiliations
   const affiliationsInfo = profile?.affiliations_info || [];
-  const affiliations = affiliationsInfo.length > 0
-    ? affiliationsInfo.map(a => a.short_name || a.name).filter(Boolean)
-    : (() => {
-        const affiliationsRaw = profile?.affiliations || profile?.clubs || profile?.organizations || [];
-        return Array.isArray(affiliationsRaw)
-          ? affiliationsRaw.map((a) => (typeof a === 'object' ? a.name : String(a))).filter(Boolean)
-          : normalizeList(affiliationsRaw);
-      })();
-  
-  // Handle dorm
-  const dormInfo = profile?.dorm;
-  const dormName = dormInfo ? (dormInfo.short_name || dormInfo.name) : null;
+  const affiliations =
+    affiliationsInfo.length > 0
+      ? affiliationsInfo.map((a) => a.short_name || a.name).filter(Boolean)
+      : (() => {
+          const affiliationsRaw = profile?.affiliations || profile?.clubs || profile?.organizations || [];
+          return Array.isArray(affiliationsRaw)
+            ? affiliationsRaw.map((a) => (typeof a === 'object' ? a.name : String(a))).filter(Boolean)
+            : normalizeList(affiliationsRaw);
+        })();
 
-  // Get featured affiliations - prefer from profile, fallback to first 2 affiliations
+  const dormInfo = profile?.dorm;
+  const dormName = dormInfo ? dormInfo.short_name || dormInfo.name : null;
+
   const featuredAffiliationIds = profile?.featured_affiliations || profile?.featuredAffiliations || [];
   let featuredAffiliations = [];
-  
+
   if (Array.isArray(featuredAffiliationIds) && featuredAffiliationIds.length > 0) {
-    // Resolve featured affiliation IDs to names
     featuredAffiliations = featuredAffiliationIds
-      .slice(0, 2) // Limit to 2
-      .map(featuredId => {
+      .slice(0, 2)
+      .map((featuredId) => {
         const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
-        const found = affiliationsInfo.find(aff => {
+        const found = affiliationsInfo.find((aff) => {
           const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
           return affId === normalizedFeatured;
         });
-        return found ? (found.short_name || found.name) : null;
+        return found ? found.short_name || found.name : null;
       })
       .filter(Boolean);
   }
-  
-  // Fallback to first 2 affiliations if no featured ones
+
   if (featuredAffiliations.length === 0 && affiliations.length > 0) {
     featuredAffiliations = affiliations.slice(0, 2);
   }
@@ -324,66 +325,47 @@ const toggleMore = () => {
   const schoolAffiliations = normalizeList(
     profile?.school_affiliations || profile?.residential_house || profile?.college_affiliation
   );
-  const interests = normalizeList(profile?.interests).slice(0, 8); // Max 8 interests
-  
-  // Filter out dorm from affiliations (already shown in sentence)
-  const nonDormAffiliations = affiliationsInfo.filter(aff => !aff.is_dorm);
-  
-  // Build "At Penn" sentence - always include class/year and verb with punctuation
+  const interests = normalizeList(profile?.interests).slice(0, 8);
+
+  const nonDormAffiliations = affiliationsInfo.filter((aff) => !aff.is_dorm);
+
   const buildAtPennSentence = () => {
     if (!academicYear) {
-      // If no academic year, still try to build something if we have major or dorm
       const parts = [];
-      if (major) {
-        parts.push(`studying ${major}`);
-      }
-      if (dormName) {
-        parts.push(`lives in ${dormName}`);
-      } else if (locationDescription && locationDescription.toLowerCase().includes('off campus')) {
+      if (major) parts.push(`studying ${major}`);
+      if (dormName) parts.push(`lives in ${dormName}`);
+      else if (locationDescription && locationDescription.toLowerCase().includes('off campus')) {
         parts.push('lives off campus');
       }
       return parts.length > 0 ? parts.join(', ') : null;
     }
-    
+
     const parts = [];
     const classMap = {
-      'Freshman': 'Freshman',
-      'Sophomore': 'Sophomore',
-      'Junior': 'Junior',
-      'Senior': 'Senior',
-      'Graduate': 'Graduate student',
+      Freshman: 'Freshman',
+      Sophomore: 'Sophomore',
+      Junior: 'Junior',
+      Senior: 'Senior',
+      Graduate: 'Graduate student',
     };
-    
-    // Always start with class/year
+
     parts.push(classMap[academicYear] || academicYear);
-    
-    // Always include a verb
-    if (major) {
-      parts.push(`studying ${major}`);
-    } else {
-      parts.push('currently undecided');
-    }
-    
-    // Housing (optional, with punctuation)
-    if (dormName) {
-      parts.push(`lives in ${dormName}`);
-    } else if (locationDescription && locationDescription.toLowerCase().includes('off campus')) {
+
+    if (major) parts.push(`studying ${major}`);
+    else parts.push('currently undecided');
+
+    if (dormName) parts.push(`lives in ${dormName}`);
+    else if (locationDescription && locationDescription.toLowerCase().includes('off campus')) {
       parts.push('lives off campus');
     }
-    
-    // Join with commas for better flow
-    if (parts.length === 2) {
-      return `${parts[0]} ${parts[1]}`;
-    } else if (parts.length === 3) {
-      return `${parts[0]} ${parts[1]}, ${parts[2]}`;
-    }
-    
+
+    if (parts.length === 2) return `${parts[0]} ${parts[1]}`;
+    if (parts.length === 3) return `${parts[0]} ${parts[1]}, ${parts[2]}`;
     return parts.join(' ');
   };
-  
+
   const atPennSentence = buildAtPennSentence();
-  
-  // Debug logging
+
   if (__DEV__) {
     console.log('ProfileCardNew - At Penn sentence:', {
       academicYear,
@@ -394,34 +376,30 @@ const toggleMore = () => {
     });
   }
 
-  // Build preview context: school short_name + grad year, then featured affiliations
   const schoolShortName = coalesce(profile?.school?.short_name, profile?.school_short_name);
   const gradYearShort = graduationYear ? `'${String(graduationYear).slice(-2)}` : null;
-  const schoolAndYear = schoolShortName && gradYearShort ? `${schoolShortName} ${gradYearShort}` : (schoolShortName || gradYearShort);
+  const schoolAndYear =
+    schoolShortName && gradYearShort ? `${schoolShortName} ${gradYearShort}` : schoolShortName || gradYearShort;
+
   const previewContextParts = [schoolAndYear, ...featuredAffiliations].filter(Boolean);
 
   return (
     <>
-       {/* Backdrop: ALWAYS mounted, but hides immediately when collapsing */}
-       <Animated.View
-         style={[
-           styles.expandedBackdrop,
-           {
-             opacity: moreOpen
-               ? expansion.interpolate({
-                   inputRange: [0, 0.3, 1],
-                   outputRange: [0, 1, 1],
-                 })
-               : 0,
-           },
-         ]}
-         pointerEvents={moreOpen ? 'auto' : 'none'}
-       >
-         <Pressable
-           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-           onPress={closeMore}
-         />
-       </Animated.View>
+      {/* Backdrop */}
+      <Animated.View
+        style={[
+          styles.expandedBackdrop,
+          {
+            opacity: moreOpen ? backdropOpacity : 0,
+          },
+        ]}
+        pointerEvents={moreOpen ? 'auto' : 'none'}
+      >
+        <Pressable
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          onPress={closeMore}
+        />
+      </Animated.View>
 
       <Animated.View
         style={[
@@ -429,44 +407,41 @@ const toggleMore = () => {
           moreOpen && styles.cardExpanded,
           {
             height: cardHeight,
-            transform: [{ translateY: cardTranslateY }],
+            transform: [{ translateY: cardTranslateY }, { scale: cardScale }],
             zIndex: moreOpen ? 1000 : 1,
             elevation: moreOpen ? 20 : 3,
           },
         ]}
       >
-        {/* Single ScrollView tree: no mount/unmount jump */}
         <AnimatedScrollView
           ref={scrollRef}
           style={{ flex: 1 }}
-          contentContainerStyle={[
-            styles.expandedScrollContent,
-            !moreOpen && { paddingBottom: 0 },
-          ]}
+          contentContainerStyle={[styles.expandedScrollContent, !moreOpen && { paddingBottom: 0 }]}
           scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator={false}
           bounces={moreOpen}
           scrollEventThrottle={16}
           removeClippedSubviews={false}
         >
-          {/* PHOTO AREA (always mounted) */}
-          <Animated.View style={[styles.photoContainer, styles.photoContainerExpanded, { height: photoHeight }]}>
+          {/* PHOTO AREA */}
+          <Animated.View
+  style={[
+    styles.photoContainer,
+    styles.photoContainerExpanded,
+    styles.photoContainerHardware,
+    { height: photoHeight },
+  ]}
+>
             <PhotoProgressBar count={safePhotos.length} activeIndex={photoIndex} />
 
             {currentUri ? (
-              <Image
-                source={{ uri: currentUri }}
-                style={styles.photo}
-                // Helps reduce flicker when switching photos quickly
-                fadeDuration={120}
-              />
+              <Image source={{ uri: currentUri }} style={[styles.photo, styles.photoClipped]} resizeMode="cover" fadeDuration={0} />
             ) : (
               <View style={styles.photoPlaceholder}>
                 <Text style={styles.photoPlaceholderText}>Add a photo</Text>
               </View>
             )}
 
-            {/* Tap zones for photo cycling */}
             <TouchableOpacity
               style={[styles.leftTapZone, { bottom: OVERLAY_DEADZONE }]}
               onPress={handlePrevPhoto}
@@ -478,12 +453,13 @@ const toggleMore = () => {
               activeOpacity={0.15}
             />
 
-            {/* CAPTION OVERLAY */}
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.55)']}
-              style={styles.captionGradient}
-              pointerEvents="box-none"
-            >
+            {/* CAPTION OVERLAY (tight) */}
+            <View style={styles.captionOverlay} pointerEvents="box-none">
+              <LinearGradient
+                colors={['rgba(0,0,0,0.00)', 'rgba(0,0,0,0.42)']}
+                style={StyleSheet.absoluteFillObject}
+                pointerEvents="none"
+              />
 
               <Pressable onPress={toggleMore} style={styles.captionTapArea} hitSlop={6}>
                 <Text style={styles.nameText}>
@@ -516,94 +492,77 @@ const toggleMore = () => {
 
               <Pressable
                 onPress={toggleMore}
-                style={({ pressed }) => [
-                  styles.moreChevronBtn,
-                  pressed && { transform: [{ scale: 0.98 }] },
-                ]}
+                style={({ pressed }) => [styles.moreChevronBtn, pressed && { transform: [{ scale: 0.98 }] }]}
                 hitSlop={12}
               >
                 <Animated.Text style={[styles.moreChevronText, { transform: [{ rotate: chevronRotate }] }]}>
                   ⌃
                 </Animated.Text>
               </Pressable>
-            </LinearGradient>
+            </View>
           </Animated.View>
 
-
           <View style={styles.expandedContent}>
-{/* ABOUT */}
-{(academicYear || major || dormName || hometown) && (
-  <View style={styles.section}>
-    <Text style={styles.sectionLabel}>ABOUT</Text>
+            {/* ABOUT */}
+            {(academicYear || major || dormName || hometown) && (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>ABOUT</Text>
 
-    {academicYear && major && (
-      <Text style={styles.aboutLine}>
-        {academicYear} studying {major}
-      </Text>
-    )}
+                {academicYear && major && (
+                  <Text style={styles.aboutLine}>
+                    {academicYear} studying {major}
+                  </Text>
+                )}
 
-    {dormName && (
-      <Text style={styles.aboutLineSecondary}>
-        Lives in {dormName}
-      </Text>
-    )}
+                {dormName && <Text style={styles.aboutLineSecondary}>Lives in {dormName}</Text>}
 
-    {hometown && (
-      <Text style={styles.aboutLineSecondary}>
-        From {hometown}
-      </Text>
-    )}
-  </View>
-)}
+                {hometown && <Text style={styles.aboutLineSecondary}>From {hometown}</Text>}
+              </View>
+            )}
 
+            <View style={styles.divider} />
 
-  <View style={styles.divider} />
+            {/* ON CAMPUS */}
+            {nonDormAffiliations.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>ON CAMPUS</Text>
 
- {/* ON CAMPUS */}
-{nonDormAffiliations.length > 0 && (
-  <View style={styles.section}>
-    <Text style={styles.sectionLabel}>ON CAMPUS</Text>
+                <View style={styles.inlineLine} pointerEvents="none">
+                  {nonDormAffiliations.slice(0, 5).map((aff, idx) => {
+                    const label = aff?.short_name || aff?.name || String(aff);
+                    const key = aff?.id ?? `${label}-${idx}`;
 
-    <View style={styles.inlineLine} pointerEvents="none">
-      {nonDormAffiliations.slice(0, 5).map((aff, idx) => {
-        const label = aff?.short_name || aff?.name || String(aff);
-        const key = aff?.id ?? `${label}-${idx}`;
+                    return (
+                      <React.Fragment key={`aff-${key}`}>
+                        {idx > 0 ? <View style={styles.inlineDot} /> : null}
+                        <Text style={styles.inlineItem} numberOfLines={1}>
+                          {label}
+                        </Text>
+                      </React.Fragment>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
-        return (
-          <React.Fragment key={`aff-${key}`}>
-            {idx > 0 ? <View style={styles.inlineDot} /> : null}
-            <Text style={styles.inlineItem} numberOfLines={1}>
-              {label}
-            </Text>
-          </React.Fragment>
-        );
-      })}
-    </View>
-  </View>
-)}
+            <View style={styles.divider} />
 
+            {/* INTERESTS */}
+            {interests.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>INTERESTS</Text>
+                <Text style={styles.inlineText} numberOfLines={2}>
+                  {interests.slice(0, 8).join(' · ')}
+                </Text>
+              </View>
+            )}
 
-  <View style={styles.divider} />
-
- {/* INTERESTS */}
-{interests.length > 0 && (
-  <View style={styles.section}>
-    <Text style={styles.sectionLabel}>INTERESTS</Text>
-
-    <Text style={styles.inlineText} numberOfLines={2}>
-      {interests.slice(0, 8).join(' · ')}
-    </Text>
-  </View>
-)}
-
-  <View style={{ height: 26 }} />
-</View>
-
-
+            <View style={{ height: 26 }} />
+          </View>
         </AnimatedScrollView>
       </Animated.View>
 
-      {/* More About Me Bottom Sheet */}
+      {/* Bottom Sheet (still here since your file includes it) */}
       <MoreAboutMeSheet
         visible={moreAboutMeOpen}
         onClose={() => setMoreAboutMeOpen(false)}
