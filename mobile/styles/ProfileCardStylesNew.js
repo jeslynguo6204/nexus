@@ -320,19 +320,20 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.textMuted,
-    letterSpacing: 0.25,
-    textTransform: 'uppercase',
-    marginBottom: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 18,
+    color: COLORS.textMuted ?? 'rgba(0,0,0,0.65)',
+    marginBottom: 12,
   },
-
+  
   chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
   },
+  
+  
   chip: {
     paddingVertical: 7,
     paddingHorizontal: 12,
@@ -346,35 +347,45 @@ const styles = StyleSheet.create({
     color: COLORS.textBody,
     fontWeight: '600',
   },
-  // Affiliation chips - inline tags, not buttons
+
   affiliationChip: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    borderWidth: 0.5,
-    borderColor: COLORS.textMuted + '40', // Thin, muted border
-  },
-  affiliationChipText: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    fontWeight: '400',
-  },
-  // Interest chips - warmer, rounder, softer
-  interestChip: {
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 20, // Rounder than default
-    backgroundColor: COLORS.accentSoft,
+    borderRadius: 999,
+    backgroundColor: COLORS.surface, // white
     borderWidth: 1,
-    borderColor: COLORS.textMuted + '20', // Softer border color
-    marginBottom: 8, // More breathing room between rows
+    borderColor: COLORS.borderMuted, // very light
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
   },
+  
+  affiliationChipText: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 18,
+    color: COLORS.textPrimary,
+  },
+  
+  interestChip: {
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: COLORS.borderMuted,
+  },
+  
   interestChipText: {
     fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 18,
     color: COLORS.textBody,
-    fontWeight: '500', // Slightly lighter than before
   },
+  
+
   // Background text - footnote style
   backgroundText: {
     fontSize: 13,
@@ -398,16 +409,239 @@ const styles = StyleSheet.create({
     zIndex: 998, // Below card but above everything else
   },
 
-  expandedSection: {
-    marginTop: 20,
+  expandedContent: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 28,
+    backgroundColor: COLORS.background, // was surfaceSubtle
   },
+  
+  sectionCard: {
+    backgroundColor: COLORS.backgroundSubtle, // VSCO slab
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 0,        // IMPORTANT: no borders
+    shadowOpacity: 0,      // IMPORTANT: no shadows
+    elevation: 0,
+    marginBottom: 16,
+  },
+  
 
+// If you use sectionCard, reduce expandedSection spacing so it doesn't double-space
+expandedSection: {
+  marginBottom: 16,
+},
+
+  expandedSection: {
+    marginBottom: 32, // major rhythm
+  },
+  
 expandedParagraph: {
   fontSize: 14,
   lineHeight: 20,
   color: COLORS.textBody,
   fontWeight: '500',
 },
+
+// About block hierarchy
+aboutStack: {
+  // header → content spacing already handled by sectionTitle marginBottom
+},
+
+
+aboutPrimary: {
+  fontSize: 18,
+  fontWeight: '700',
+  lineHeight: 24,
+  color: COLORS.textPrimary,
+},
+
+aboutSecondary: {
+  marginTop: 8,
+  fontSize: 16,
+  fontWeight: '500',
+  lineHeight: 22,
+  color: COLORS.textBody,
+},
+
+aboutLine: {
+  fontSize: 16,
+  lineHeight: 22,
+  fontWeight: '600',
+  color: COLORS.textPrimary,
+  marginBottom: 6,
+},
+
+aboutLineSecondary: {
+  fontSize: 15,
+  lineHeight: 21,
+  fontWeight: '500',
+  color: COLORS.textBody,
+  marginBottom: 6,
+},
+
+
+sectionHeaderRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+  marginBottom: 12,
+},
+
+sectionAccentDot: {
+  width: 8,
+  height: 8,
+  borderRadius: 999,
+  backgroundColor: COLORS.accent,
+  opacity: 0.85,
+},
+
+sectionTitle: {
+  fontSize: 20,          // bigger
+  fontWeight: '800',
+  lineHeight: 24,
+  color: COLORS.textPrimary,
+  marginBottom: 12,
+},
+
+fieldLabel: {
+  fontSize: 13,
+  fontWeight: '600',
+  color: COLORS.textMuted,
+  marginBottom: 6,
+},
+
+affRow: {
+  backgroundColor: COLORS.surface,
+  borderRadius: 16,
+  paddingVertical: 14,
+  paddingHorizontal: 14,
+  marginBottom: 10,
+},
+
+affRowText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: COLORS.textPrimary,
+},
+
+moreRow: {
+  marginTop: 8,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingVertical: 12,
+},
+
+moreRowText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: COLORS.accent, // accent ONLY here
+},
+
+expandedContent: {
+  paddingHorizontal: 18,
+  paddingTop: 16,
+  paddingBottom: 22,
+  backgroundColor: COLORS.surface,   // one surface only
+},
+
+section: {
+  paddingVertical: 14,
+},
+
+divider: {
+  height: StyleSheet.hairlineWidth,
+  backgroundColor: COLORS.borderMuted ?? 'rgba(0,0,0,0.08)',
+},
+
+sectionLabel: {
+  fontSize: 12,
+  fontWeight: '800',
+  letterSpacing: 1.0,
+  color: COLORS.textMuted,
+  marginBottom: 10,
+},
+
+bodyStrong: {
+  fontSize: 18,
+  lineHeight: 24,
+  fontWeight: '700',
+  color: COLORS.textPrimary,
+  marginBottom: 6,
+},
+
+body: {
+  fontSize: 16,
+  lineHeight: 22,
+  fontWeight: '500',
+  color: COLORS.textBody,
+  marginBottom: 6,
+},
+
+inlineWrap: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 10,
+},
+
+inlineLine: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  rowGap: 10,
+},
+
+inlineDot: {
+  width: 3,
+  height: 3,
+  borderRadius: 999,
+  backgroundColor: COLORS.textMuted,
+  opacity: 0.6,
+  marginHorizontal: 10,
+},
+
+inlineItem: {
+  fontSize: 15,
+  fontWeight: '600',
+  color: COLORS.textPrimary,
+},
+
+inlineText: {
+  fontSize: 15,
+  fontWeight: '600',
+  color: COLORS.textPrimary,
+  lineHeight: 21,
+},
+
+tag: {
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  borderRadius: 12, // less pill-y than 999
+  backgroundColor: COLORS.backgroundSubtle, // subtle fill
+},
+
+tagText: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: COLORS.textPrimary,
+},
+
+tagSoft: {
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: COLORS.borderMuted ?? 'rgba(0,0,0,0.10)',
+  backgroundColor: 'transparent',
+},
+
+tagSoftText: {
+  fontSize: 14,
+  fontWeight: '500',
+  color: COLORS.textBody,
+},
+
 
 });
 

@@ -9,6 +9,9 @@ export const COLORS = {
   surface: '#FFFFFF',             // Cards / modals
   divider: '#E5E7EB',              // Hairline dividers
   border: '#D1D5DB',               // Inputs / outlines
+  surfaceSubtle: '#F6F7F9',        // Soft panel background (expanded profile area)
+  borderMuted: '#E5E7EB',          // Ultra-light borders for subtle chips
+  borderStrong: '#D1D5DB',         // Slightly stronger border when needed
 
   /* -------------------------
    * Text

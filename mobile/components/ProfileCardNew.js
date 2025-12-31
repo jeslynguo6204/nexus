@@ -529,64 +529,77 @@ const toggleMore = () => {
             </LinearGradient>
           </Animated.View>
 
-          {/* CONTENT BELOW PHOTO (always mounted; scroll only when expanded) */}
-          <View style={{ paddingHorizontal: 20, paddingTop: 20, backgroundColor: COLORS.surface }}>
-            {/* Section 1: About Me */}
-            {(academicYear || major || dormName || hometown) && (
-              <View style={[styles.expandedSection, { marginTop: 32 }]}>
-                <Text style={styles.sectionTitle}>About Me</Text>
-                <View style={{ marginTop: 12 }}>
-                  {academicYear && major && (
-                    <Text style={styles.expandedParagraph}>
-                      {academicYear} studying {major}
-                    </Text>
-                  )}
-                  {dormName && (
-                    <Text style={[styles.expandedParagraph, { marginTop: 8 }]}>
-                      Lives in {dormName}
-                    </Text>
-                  )}
-                  {hometown && (
-                    <Text style={[styles.expandedParagraph, { marginTop: 8 }]}>
-                      From {hometown}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            )}
 
-            {/* Section 2: At Penn */}
-            {nonDormAffiliations.length > 0 && (
-              <View style={[styles.expandedSection, { marginTop: 32 }]}>
-                <Text style={styles.sectionTitle}>At Penn</Text>
-                <View style={[styles.chipWrap, { marginTop: 12 }]}>
-                  {nonDormAffiliations.map((aff) => (
-                    <View key={`affil-${aff.id}`} style={styles.affiliationChip}>
-                      <Text style={styles.affiliationChipText}>
-                        {aff.short_name || aff.name}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
+          <View style={styles.expandedContent}>
+{/* ABOUT */}
+{(academicYear || major || dormName || hometown) && (
+  <View style={styles.section}>
+    <Text style={styles.sectionLabel}>ABOUT</Text>
 
-            {/* Section 3: Interests */}
-            {interests.length > 0 && (
-              <View style={[styles.expandedSection, { marginTop: 32 }]}>
-                <Text style={styles.sectionTitle}>Interests</Text>
-                <View style={[styles.chipWrap, { marginTop: 12 }]}>
-                  {interests.map((item) => (
-                    <View key={`interest-${item}`} style={styles.interestChip}>
-                      <Text style={styles.interestChipText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
+    {academicYear && major && (
+      <Text style={styles.aboutLine}>
+        {academicYear} studying {major}
+      </Text>
+    )}
 
-            <View style={{ height: 32 }} />
-          </View>
+    {dormName && (
+      <Text style={styles.aboutLineSecondary}>
+        Lives in {dormName}
+      </Text>
+    )}
+
+    {hometown && (
+      <Text style={styles.aboutLineSecondary}>
+        From {hometown}
+      </Text>
+    )}
+  </View>
+)}
+
+
+  <View style={styles.divider} />
+
+ {/* ON CAMPUS */}
+{nonDormAffiliations.length > 0 && (
+  <View style={styles.section}>
+    <Text style={styles.sectionLabel}>ON CAMPUS</Text>
+
+    <View style={styles.inlineLine} pointerEvents="none">
+      {nonDormAffiliations.slice(0, 5).map((aff, idx) => {
+        const label = aff?.short_name || aff?.name || String(aff);
+        const key = aff?.id ?? `${label}-${idx}`;
+
+        return (
+          <React.Fragment key={`aff-${key}`}>
+            {idx > 0 ? <View style={styles.inlineDot} /> : null}
+            <Text style={styles.inlineItem} numberOfLines={1}>
+              {label}
+            </Text>
+          </React.Fragment>
+        );
+      })}
+    </View>
+  </View>
+)}
+
+
+  <View style={styles.divider} />
+
+ {/* INTERESTS */}
+{interests.length > 0 && (
+  <View style={styles.section}>
+    <Text style={styles.sectionLabel}>INTERESTS</Text>
+
+    <Text style={styles.inlineText} numberOfLines={2}>
+      {interests.slice(0, 8).join(' · ')}
+    </Text>
+  </View>
+)}
+
+  <View style={{ height: 26 }} />
+</View>
+
+
         </AnimatedScrollView>
       </Animated.View>
 
