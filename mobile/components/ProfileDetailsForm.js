@@ -98,6 +98,12 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
   const [affiliations, setAffiliations] = useState(
     profile.affiliations && Array.isArray(profile.affiliations) ? profile.affiliations : []
   );
+  // Featured/key affiliations (up to 2) - these show in preview
+  const [featuredAffiliations, setFeaturedAffiliations] = useState(
+    profile.featured_affiliations && Array.isArray(profile.featured_affiliations) 
+      ? profile.featured_affiliations 
+      : []
+  );
   const [dorm, setDorm] = useState(null); // Single dorm selection
   const [dorms, setDorms] = useState([]);
   const [affiliationsByCategory, setAffiliationsByCategory] = useState({});
@@ -376,6 +382,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
       languages: nextLanguages,
       hometown: nextHometown,
       ethnicity: nextEthnicity,
+      featuredAffiliations: featuredAffiliations.length > 0 ? featuredAffiliations : null,
     });
   }
 
@@ -926,6 +933,89 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                 </View>
               );
             })
+          )}
+          
+          {/* Caption about affiliations */}
+          <View style={localStyles.fieldGroup}>
+            <Text style={[localStyles.placeholderText, { fontStyle: 'italic', marginTop: 8, fontSize: 13, lineHeight: 18 }]}>
+              Remember, this isn't a resume. You can select as many affiliations as you like, but you can choose up to two key ones to highlight on your profile.
+            </Text>
+          </View>
+          
+          {/* Key Affiliations Selector */}
+          {affiliations.length > 0 && (
+            <View style={localStyles.fieldGroup}>
+              <Text style={localStyles.label}>Key Affiliations (up to 2)</Text>
+              <Text style={[localStyles.placeholderText, { fontSize: 13, marginBottom: 8 }]}>
+                Select up to 2 affiliations to feature in your profile preview
+              </Text>
+              <TouchableOpacity
+                style={localStyles.selectRow}
+                onPress={() => {
+                  // Get all selected affiliations with their names
+                  const allSelectedAffils = [];
+                  Object.entries(affiliationsByCategory).forEach(([categoryName, categoryAffiliations]) => {
+                    const nonDormAffiliations = categoryAffiliations.filter(
+                      aff => !dorms.some(d => d.id === aff.id)
+                    );
+                    nonDormAffiliations.forEach(aff => {
+                      const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                      if (affiliations.some(id => {
+                        const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+                        return normalizedId === affId;
+                      })) {
+                        allSelectedAffils.push(aff);
+                      }
+                    });
+                  });
+                  
+                  openSelectionSheet({
+                    title: 'Key Affiliations',
+                    options: allSelectedAffils,
+                    selected: featuredAffiliations,
+                    onSelect: (value) => {
+                      // Limit to 2 selections
+                      const newFeatured = Array.isArray(value) 
+                        ? value.slice(0, 2).map(v => typeof v === 'string' ? parseInt(v, 10) : v).filter(v => v !== null && v !== undefined)
+                        : (value ? [typeof value === 'string' ? parseInt(value, 10) : value].slice(0, 2) : []);
+                      setFeaturedAffiliations(newFeatured);
+                    },
+                    allowMultiple: true,
+                    allowUnselect: true,
+                  });
+                }}
+              >
+                <Text style={[
+                  localStyles.selectRowText,
+                  featuredAffiliations.length === 0 && localStyles.selectRowTextPlaceholder
+                ]}>
+                  {featuredAffiliations.length === 0
+                    ? 'Select key affiliations'
+                    : (() => {
+                        // Get names for featured affiliations
+                        const allAffils = [];
+                        Object.entries(affiliationsByCategory).forEach(([categoryName, categoryAffiliations]) => {
+                          const nonDormAffiliations = categoryAffiliations.filter(
+                            aff => !dorms.some(d => d.id === aff.id)
+                          );
+                          allAffils.push(...nonDormAffiliations);
+                        });
+                        const featuredNames = featuredAffiliations
+                          .map(featuredId => {
+                            const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
+                            const found = allAffils.find(aff => {
+                              const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                              return affId === normalizedFeatured;
+                            });
+                            return found?.name;
+                          })
+                          .filter(Boolean);
+                        return featuredNames.length > 0 ? featuredNames.join(', ') : 'Select key affiliations';
+                      })()}
+                </Text>
+                <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </View>
           )}
         </View>
 

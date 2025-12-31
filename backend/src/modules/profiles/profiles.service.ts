@@ -67,6 +67,7 @@ export async function updateMyProfile(
   if (input.languages !== undefined) updates.languages = input.languages;
   if (input.hometown !== undefined) updates.hometown = input.hometown;
   if (input.ethnicity !== undefined) updates.ethnicity = input.ethnicity;
+  if (input.featuredAffiliations !== undefined) updates.featured_affiliations = input.featuredAffiliations;
 
   // additional sanity checks if you want them here
   if (

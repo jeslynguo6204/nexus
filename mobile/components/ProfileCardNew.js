@@ -246,6 +246,14 @@ const toggleMore = () => {
   const firstName = getFirstName(displayName) || displayName;
   const age = getAge(profile);
   
+  // New fields
+  const hometown = coalesce(profile?.hometown);
+  const languages = coalesce(profile?.languages);
+  const height = profile?.height ? `${profile.height} cm` : null;
+  const religiousBeliefs = coalesce(profile?.religious_beliefs);
+  const politicalAffiliation = coalesce(profile?.political_affiliation);
+  const ethnicity = coalesce(profile?.ethnicity);
+  
   // Debug logging
   if (__DEV__) {
     console.log('ProfileCardNew - age:', age, 'profile.age:', profile?.age, 'profile.date_of_birth:', profile?.date_of_birth);
@@ -270,16 +278,44 @@ const toggleMore = () => {
           ? profile.mutuals
           : null;
 
-  const affiliationsRaw = profile?.affiliations || profile?.clubs || profile?.organizations || [];
-  const affiliations = Array.isArray(affiliationsRaw)
-    ? affiliationsRaw.map((a) => (typeof a === 'object' ? a.name : String(a))).filter(Boolean)
-    : normalizeList(affiliationsRaw);
+  // Handle affiliations - prefer resolved affiliations_info, fallback to raw IDs
+  const affiliationsInfo = profile?.affiliations_info || [];
+  const affiliations = affiliationsInfo.length > 0
+    ? affiliationsInfo.map(a => a.short_name || a.name).filter(Boolean)
+    : (() => {
+        const affiliationsRaw = profile?.affiliations || profile?.clubs || profile?.organizations || [];
+        return Array.isArray(affiliationsRaw)
+          ? affiliationsRaw.map((a) => (typeof a === 'object' ? a.name : String(a))).filter(Boolean)
+          : normalizeList(affiliationsRaw);
+      })();
+  
+  // Handle dorm
+  const dormInfo = profile?.dorm;
+  const dormName = dormInfo ? (dormInfo.short_name || dormInfo.name) : null;
 
-  const featuredRaw = normalizeList(
-    profile?.featured_affiliations || profile?.featuredAffiliations || profile?.featured
-  ).slice(0, 2);
-
-  const featuredAffiliations = featuredRaw.length ? featuredRaw : affiliations.slice(0, 2);
+  // Get featured affiliations - prefer from profile, fallback to first 2 affiliations
+  const featuredAffiliationIds = profile?.featured_affiliations || profile?.featuredAffiliations || [];
+  let featuredAffiliations = [];
+  
+  if (Array.isArray(featuredAffiliationIds) && featuredAffiliationIds.length > 0) {
+    // Resolve featured affiliation IDs to names
+    featuredAffiliations = featuredAffiliationIds
+      .slice(0, 2) // Limit to 2
+      .map(featuredId => {
+        const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
+        const found = affiliationsInfo.find(aff => {
+          const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+          return affId === normalizedFeatured;
+        });
+        return found ? (found.short_name || found.name) : null;
+      })
+      .filter(Boolean);
+  }
+  
+  // Fallback to first 2 affiliations if no featured ones
+  if (featuredAffiliations.length === 0 && affiliations.length > 0) {
+    featuredAffiliations = affiliations.slice(0, 2);
+  }
 
   const schoolName = coalesce(profile?.school?.short_name, profile?.school?.name);
   const major = coalesce(profile?.major);
@@ -288,8 +324,11 @@ const toggleMore = () => {
   );
   const interests = normalizeList(profile?.interests);
 
+  // Build preview context: school short_name + grad year, then featured affiliations
+  const schoolShortName = coalesce(profile?.school?.short_name, profile?.school_short_name);
   const gradYearShort = graduationYear ? `'${String(graduationYear).slice(-2)}` : null;
-  const previewContextParts = [gradYearShort, ...featuredAffiliations].filter(Boolean);
+  const schoolAndYear = schoolShortName && gradYearShort ? `${schoolShortName} ${gradYearShort}` : (schoolShortName || gradYearShort);
+  const previewContextParts = [schoolAndYear, ...featuredAffiliations].filter(Boolean);
 
   return (
     <>
@@ -457,16 +496,52 @@ const toggleMore = () => {
               </View>
             )}
 
-            {featuredRaw.length > 0 && (
+            {!!hometown && (
               <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Featured</Text>
-                <View style={styles.chipWrap}>
-                  {featuredRaw.map((item) => (
-                    <View key={`featured-${item}`} style={styles.chip}>
-                      <Text style={styles.chipText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
+                <Text style={styles.sectionTitle}>Hometown</Text>
+                <Text style={styles.expandedParagraph}>{hometown}</Text>
+              </View>
+            )}
+
+            {!!languages && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Languages</Text>
+                <Text style={styles.expandedParagraph}>{languages}</Text>
+              </View>
+            )}
+
+            {!!height && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Height</Text>
+                <Text style={styles.expandedParagraph}>{height}</Text>
+              </View>
+            )}
+
+            {!!religiousBeliefs && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Religious Beliefs</Text>
+                <Text style={styles.expandedParagraph}>{religiousBeliefs}</Text>
+              </View>
+            )}
+
+            {!!politicalAffiliation && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Political Affiliation</Text>
+                <Text style={styles.expandedParagraph}>{politicalAffiliation}</Text>
+              </View>
+            )}
+
+            {!!ethnicity && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Ethnicity</Text>
+                <Text style={styles.expandedParagraph}>{ethnicity}</Text>
+              </View>
+            )}
+
+            {!!dormName && (
+              <View style={styles.expandedSection}>
+                <Text style={styles.sectionTitle}>Dorm</Text>
+                <Text style={styles.expandedParagraph}>{dormName}</Text>
               </View>
             )}
 

@@ -44,6 +44,7 @@ export const profileUpdateSchema = z
     languages: z.string().trim().max(255).optional().nullable(),
     hometown: z.string().trim().max(255).optional().nullable(),
     ethnicity: z.string().trim().max(255).optional().nullable(), // Stored as comma-separated string
+    featuredAffiliations: z.array(z.number().int().positive()).max(2).optional().nullable(), // Up to 2 affiliation IDs for preview
   })
   .refine(
     (data) =>

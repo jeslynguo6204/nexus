@@ -40,6 +40,7 @@ export interface ProfileRow {
   ethnicity: string | null; // Stored as comma-separated string
   age: number | null;
   date_of_birth: string | null; // DATE comes back as string from pg
+  featured_affiliations: number[] | null; // Array of affiliation IDs (up to 2) for preview
   updated_at: string;
 }
 
@@ -80,6 +81,7 @@ export async function getProfileByUserId(
       p.ethnicity,
       p.age,
       p.date_of_birth,
+      p.featured_affiliations,
       p.updated_at,
       u.school_id,
       s.name AS school_name,
@@ -125,6 +127,7 @@ export interface ProfileUpdateInput {
   ethnicity?: string | null;
   age?: number | null;
   date_of_birth?: string | null;
+  featured_affiliations?: number[] | null;
 }
 
 // partial update builder
@@ -190,6 +193,7 @@ export async function updateProfileByUserId(
       ethnicity,
       age,
       date_of_birth,
+      featured_affiliations,
       updated_at
     `,
     values
