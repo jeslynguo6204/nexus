@@ -130,9 +130,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   ageText: {
+    fontSize: 20, // Slightly smaller than nameText (which is 24)
     color: 'rgba(255,255,255,0.92)',
-    fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '700', // Slightly lighter than nameText (which is 900)
   },
 
   contextLineContainer: {

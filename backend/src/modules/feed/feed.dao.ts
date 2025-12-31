@@ -20,10 +20,19 @@ export interface FeedProfileRow {
   school_id: number | null;
   school_name: string | null;
   school_short_name: string | null;
+  age: number | null;
+  date_of_birth: string | null;
 }
 
-export async function getSimpleFeed(): Promise<FeedProfileRow[]> {
+export async function getSimpleFeed(includeAllForTesting = false): Promise<FeedProfileRow[]> {
   // Fetch all profiles with show_me_in_discovery = true
+  // If includeAllForTesting is true, include all profiles (for hardcoded ordering testing)
+  const whereClause = includeAllForTesting 
+    ? '1=1' // Include all profiles
+    : 'p.show_me_in_discovery = TRUE';
+  
+  const limitClause = includeAllForTesting ? 'LIMIT 100' : 'LIMIT 25';
+    
   const profiles = await dbQuery<FeedProfileRow>(
     `
     SELECT
@@ -33,15 +42,17 @@ export async function getSimpleFeed(): Promise<FeedProfileRow[]> {
       p.major,
       p.graduation_year,
       p.interests,
+      p.age,
+      p.date_of_birth,
       u.school_id,
       s.name AS school_name,
       s.short_name AS school_short_name
     FROM profiles p
     JOIN users u ON u.id = p.user_id
     LEFT JOIN schools s ON s.id = u.school_id
-    WHERE p.show_me_in_discovery = TRUE
+    WHERE ${whereClause}
     ORDER BY p.updated_at DESC
-    LIMIT 25
+    ${limitClause}
     `
   );
 

@@ -46,8 +46,33 @@ function getFirstName(displayName) {
 }
 
 function getAge(profile) {
-  if (typeof profile?.age === 'number') return profile.age;
-  if (typeof profile?.age === 'string' && profile.age.trim()) return profile.age.trim();
+  // First check if age is directly available
+  if (typeof profile?.age === 'number' && profile.age > 0) return profile.age;
+  if (typeof profile?.age === 'string' && profile.age.trim()) {
+    const ageNum = parseInt(profile.age.trim(), 10);
+    if (!isNaN(ageNum) && ageNum > 0) return ageNum;
+  }
+  
+  // Fallback: calculate from date_of_birth if age is not available
+  if (profile?.date_of_birth) {
+    try {
+      const birthDate = new Date(profile.date_of_birth);
+      if (!isNaN(birthDate.getTime())) {
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        if (age > 0 && age < 150) { // Sanity check
+          return age;
+        }
+      }
+    } catch (e) {
+      console.warn('Error calculating age from date_of_birth:', e);
+    }
+  }
+  
   return null;
 }
 
@@ -220,6 +245,11 @@ const toggleMore = () => {
   const displayName = coalesce(profile?.display_name, profile?.name, 'Your name');
   const firstName = getFirstName(displayName) || displayName;
   const age = getAge(profile);
+  
+  // Debug logging
+  if (__DEV__) {
+    console.log('ProfileCardNew - age:', age, 'profile.age:', profile?.age, 'profile.date_of_birth:', profile?.date_of_birth);
+  }
 
   const educationLevel = toTitleCase(coalesce(profile?.education_level, profile?.student_type));
   const yearLabel = coalesce(
@@ -349,7 +379,7 @@ const toggleMore = () => {
               <Pressable onPress={toggleMore} style={styles.captionTapArea} hitSlop={6}>
                 <Text style={styles.nameText}>
                   {firstName}
-                  {age ? <Text style={styles.ageText}>{`  ${age}`}</Text> : null}
+                  {age !== null && age !== undefined ? <Text style={styles.ageText}>, {age}</Text> : null}
                 </Text>
 
                 <View style={styles.contextLineContainer}>
