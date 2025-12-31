@@ -14,6 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import styles from '../styles/ProfileCardStylesNew';
 import { COLORS } from '../styles/themeNEW';
+import MoreAboutMeSheet from './MoreAboutMeSheet';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -117,6 +118,7 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
   const [photoIndex, setPhotoIndex] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(false);
+  const [moreAboutMeOpen, setMoreAboutMeOpen] = useState(false);
 
   const scrollRef = useRef(null);
 
@@ -322,7 +324,75 @@ const toggleMore = () => {
   const schoolAffiliations = normalizeList(
     profile?.school_affiliations || profile?.residential_house || profile?.college_affiliation
   );
-  const interests = normalizeList(profile?.interests);
+  const interests = normalizeList(profile?.interests).slice(0, 8); // Max 8 interests
+  
+  // Filter out dorm from affiliations (already shown in sentence)
+  const nonDormAffiliations = affiliationsInfo.filter(aff => !aff.is_dorm);
+  
+  // Build "At Penn" sentence - always include class/year and verb with punctuation
+  const buildAtPennSentence = () => {
+    if (!academicYear) {
+      // If no academic year, still try to build something if we have major or dorm
+      const parts = [];
+      if (major) {
+        parts.push(`studying ${major}`);
+      }
+      if (dormName) {
+        parts.push(`lives in ${dormName}`);
+      } else if (locationDescription && locationDescription.toLowerCase().includes('off campus')) {
+        parts.push('lives off campus');
+      }
+      return parts.length > 0 ? parts.join(', ') : null;
+    }
+    
+    const parts = [];
+    const classMap = {
+      'Freshman': 'Freshman',
+      'Sophomore': 'Sophomore',
+      'Junior': 'Junior',
+      'Senior': 'Senior',
+      'Graduate': 'Graduate student',
+    };
+    
+    // Always start with class/year
+    parts.push(classMap[academicYear] || academicYear);
+    
+    // Always include a verb
+    if (major) {
+      parts.push(`studying ${major}`);
+    } else {
+      parts.push('currently undecided');
+    }
+    
+    // Housing (optional, with punctuation)
+    if (dormName) {
+      parts.push(`lives in ${dormName}`);
+    } else if (locationDescription && locationDescription.toLowerCase().includes('off campus')) {
+      parts.push('lives off campus');
+    }
+    
+    // Join with commas for better flow
+    if (parts.length === 2) {
+      return `${parts[0]} ${parts[1]}`;
+    } else if (parts.length === 3) {
+      return `${parts[0]} ${parts[1]}, ${parts[2]}`;
+    }
+    
+    return parts.join(' ');
+  };
+  
+  const atPennSentence = buildAtPennSentence();
+  
+  // Debug logging
+  if (__DEV__) {
+    console.log('ProfileCardNew - At Penn sentence:', {
+      academicYear,
+      major,
+      dormName,
+      atPennSentence,
+      nonDormAffiliations: nonDormAffiliations.length,
+    });
+  }
 
   // Build preview context: school short_name + grad year, then featured affiliations
   const schoolShortName = coalesce(profile?.school?.short_name, profile?.school_short_name);
@@ -461,123 +531,54 @@ const toggleMore = () => {
 
           {/* CONTENT BELOW PHOTO (always mounted; scroll only when expanded) */}
           <View style={{ paddingHorizontal: 20, paddingTop: 20, backgroundColor: COLORS.surface }}>
-            {!!academicYear && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Year</Text>
-                <Text style={styles.expandedParagraph}>{academicYear}</Text>
+            {/* Section 1: About Me */}
+            {(academicYear || major || dormName || hometown) && (
+              <View style={[styles.expandedSection, { marginTop: 32 }]}>
+                <Text style={styles.sectionTitle}>About Me</Text>
+                <View style={{ marginTop: 12 }}>
+                  {academicYear && major && (
+                    <Text style={styles.expandedParagraph}>
+                      {academicYear} studying {major}
+                    </Text>
+                  )}
+                  {dormName && (
+                    <Text style={[styles.expandedParagraph, { marginTop: 8 }]}>
+                      Lives in {dormName}
+                    </Text>
+                  )}
+                  {hometown && (
+                    <Text style={[styles.expandedParagraph, { marginTop: 8 }]}>
+                      From {hometown}
+                    </Text>
+                  )}
+                </View>
               </View>
             )}
 
-            {!!locationDescription && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Location</Text>
-                <Text style={styles.expandedParagraph}>{locationDescription}</Text>
-              </View>
-            )}
-
-            {!!graduationYear && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Graduation</Text>
-                <Text style={styles.expandedParagraph}>{graduationYear}</Text>
-              </View>
-            )}
-
-            {!!major && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Major</Text>
-                <Text style={styles.expandedParagraph}>{major}</Text>
-              </View>
-            )}
-
-            {!!schoolName && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>School</Text>
-                <Text style={styles.expandedParagraph}>{schoolName}</Text>
-              </View>
-            )}
-
-            {!!hometown && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Hometown</Text>
-                <Text style={styles.expandedParagraph}>{hometown}</Text>
-              </View>
-            )}
-
-            {!!languages && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Languages</Text>
-                <Text style={styles.expandedParagraph}>{languages}</Text>
-              </View>
-            )}
-
-            {!!height && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Height</Text>
-                <Text style={styles.expandedParagraph}>{height}</Text>
-              </View>
-            )}
-
-            {!!religiousBeliefs && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Religious Beliefs</Text>
-                <Text style={styles.expandedParagraph}>{religiousBeliefs}</Text>
-              </View>
-            )}
-
-            {!!politicalAffiliation && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Political Affiliation</Text>
-                <Text style={styles.expandedParagraph}>{politicalAffiliation}</Text>
-              </View>
-            )}
-
-            {!!ethnicity && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Ethnicity</Text>
-                <Text style={styles.expandedParagraph}>{ethnicity}</Text>
-              </View>
-            )}
-
-            {!!dormName && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Dorm</Text>
-                <Text style={styles.expandedParagraph}>{dormName}</Text>
-              </View>
-            )}
-
-            {affiliations.length > 0 && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>Affiliations</Text>
-                <View style={styles.chipWrap}>
-                  {affiliations.map((item) => (
-                    <View key={`affil-${item}`} style={styles.chip}>
-                      <Text style={styles.chipText}>{item}</Text>
+            {/* Section 2: At Penn */}
+            {nonDormAffiliations.length > 0 && (
+              <View style={[styles.expandedSection, { marginTop: 32 }]}>
+                <Text style={styles.sectionTitle}>At Penn</Text>
+                <View style={[styles.chipWrap, { marginTop: 12 }]}>
+                  {nonDormAffiliations.map((aff) => (
+                    <View key={`affil-${aff.id}`} style={styles.affiliationChip}>
+                      <Text style={styles.affiliationChipText}>
+                        {aff.short_name || aff.name}
+                      </Text>
                     </View>
                   ))}
                 </View>
               </View>
             )}
 
-            {schoolAffiliations.length > 0 && (
-              <View style={styles.expandedSection}>
-                <Text style={styles.sectionTitle}>School</Text>
-                <View style={styles.chipWrap}>
-                  {schoolAffiliations.map((item) => (
-                    <View key={`school-${item}`} style={styles.chip}>
-                      <Text style={styles.chipText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
+            {/* Section 3: Interests */}
             {interests.length > 0 && (
-              <View style={styles.expandedSection}>
+              <View style={[styles.expandedSection, { marginTop: 32 }]}>
                 <Text style={styles.sectionTitle}>Interests</Text>
-                <View style={styles.chipWrap}>
+                <View style={[styles.chipWrap, { marginTop: 12 }]}>
                   {interests.map((item) => (
-                    <View key={`interest-${item}`} style={styles.chip}>
-                      <Text style={styles.chipText}>{item}</Text>
+                    <View key={`interest-${item}`} style={styles.interestChip}>
+                      <Text style={styles.interestChipText}>{item}</Text>
                     </View>
                   ))}
                 </View>
@@ -588,6 +589,18 @@ const toggleMore = () => {
           </View>
         </AnimatedScrollView>
       </Animated.View>
+
+      {/* More About Me Bottom Sheet */}
+      <MoreAboutMeSheet
+        visible={moreAboutMeOpen}
+        onClose={() => setMoreAboutMeOpen(false)}
+        height={height}
+        languages={languages}
+        religiousBeliefs={religiousBeliefs}
+        politicalAffiliation={politicalAffiliation}
+        ethnicity={ethnicity}
+        sexuality={coalesce(profile?.sexuality)}
+      />
     </>
   );
 }

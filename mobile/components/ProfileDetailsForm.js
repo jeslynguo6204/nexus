@@ -965,101 +965,76 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           </View>
           
           {/* Key Affiliations Selector */}
-          {affiliations.length > 0 && (
-            <View style={localStyles.fieldGroup}>
-              <Text style={localStyles.label}>Key Affiliations (up to 2)</Text>
-              <Text style={[localStyles.placeholderText, { fontSize: 13, marginBottom: 8 }]}>
-                Select up to 2 affiliations to feature in your profile preview
-              </Text>
-              <TouchableOpacity
-                style={localStyles.selectRow}
-                onPress={() => {
-                  // Get all selected affiliations with their names
-                  const allSelectedAffils = [];
-                  Object.entries(affiliationsByCategory).forEach(([categoryName, categoryAffiliations]) => {
-                    const nonDormAffiliations = categoryAffiliations.filter(
-                      aff => !dorms.some(d => d.id === aff.id)
-                    );
-                    nonDormAffiliations.forEach(aff => {
-                      const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
-                      if (affiliations.some(id => {
-                        const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
-                        return normalizedId === affId;
-                      })) {
-                        allSelectedAffils.push(aff);
-                      }
-                    });
-                  });
-                  
-                  // Calculate current selected value dynamically to ensure it's always up-to-date
-                  const currentSelected = featuredAffiliations.map(id => {
-                    const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
-                    // Find matching option to ensure ID type consistency
-                    const found = allSelectedAffils.find(aff => {
-                      const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
-                      return affId === normalizedId;
-                    });
-                    return found ? found.id : normalizedId;
-                  }).filter(id => {
-                    // Only include IDs that are still in the available options
-                    const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
-                    return allSelectedAffils.some(aff => {
-                      const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
-                      return affId === normalizedId;
-                    });
-                  });
-                  
-                  openSelectionSheet({
-                    title: 'Key Affiliations',
-                    options: allSelectedAffils,
-                    selected: currentSelected,
-                    onSelect: (value) => {
-                      // Normalize all IDs to numbers for consistency
-                      const newFeatured = Array.isArray(value) 
-                        ? value.slice(0, 2).map(v => {
-                            const normalized = typeof v === 'string' ? parseInt(v, 10) : v;
-                            return normalized;
-                          }).filter(v => v !== null && v !== undefined && !isNaN(v))
-                        : (value ? [typeof value === 'string' ? parseInt(value, 10) : value].slice(0, 2).filter(v => !isNaN(v)) : []);
-                      setFeaturedAffiliations(newFeatured);
-                    },
-                    allowMultiple: true,
-                    allowUnselect: true,
-                  });
-                }}
-              >
-                <Text style={[
-                  localStyles.selectRowText,
-                  featuredAffiliations.length === 0 && localStyles.selectRowTextPlaceholder
-                ]}>
-                  {featuredAffiliations.length === 0
-                    ? 'Select key affiliations'
-                    : (() => {
-                        // Get names for featured affiliations
-                        const allAffils = [];
-                        Object.entries(affiliationsByCategory).forEach(([categoryName, categoryAffiliations]) => {
-                          const nonDormAffiliations = categoryAffiliations.filter(
-                            aff => !dorms.some(d => d.id === aff.id)
-                          );
-                          allAffils.push(...nonDormAffiliations);
-                        });
-                        const featuredNames = featuredAffiliations
-                          .map(featuredId => {
-                            const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
-                            const found = allAffils.find(aff => {
-                              const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
-                              return affId === normalizedFeatured;
-                            });
-                            return found?.name;
-                          })
-                          .filter(Boolean);
-                        return featuredNames.length > 0 ? featuredNames.join(', ') : 'Select key affiliations';
-                      })()}
+          {affiliations.length > 0 && (() => {
+            // Get all selected affiliations with their names
+            const allSelectedAffils = [];
+            Object.entries(affiliationsByCategory).forEach(([categoryName, categoryAffiliations]) => {
+              const nonDormAffiliations = categoryAffiliations.filter(
+                aff => !dorms.some(d => d.id === aff.id)
+              );
+              nonDormAffiliations.forEach(aff => {
+                const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                if (affiliations.some(id => {
+                  const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+                  return normalizedId === affId;
+                })) {
+                  allSelectedAffils.push(aff);
+                }
+              });
+            });
+            
+            return (
+              <View style={localStyles.fieldGroup}>
+                <Text style={localStyles.label}>Key Affiliations (up to 2)</Text>
+                <Text style={[localStyles.placeholderText, { fontSize: 13, marginBottom: 8 }]}>
+                  Select up to 2 affiliations to feature in your profile preview
                 </Text>
-                <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />
-              </TouchableOpacity>
-            </View>
-          )}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+                  {allSelectedAffils.map((aff) => {
+                    const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                    const isSelected = featuredAffiliations.some(featuredId => {
+                      const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
+                      return normalizedFeatured === affId;
+                    });
+                    const isDisabled = !isSelected && featuredAffiliations.length >= 2;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={aff.id}
+                        onPress={() => {
+                          if (isSelected) {
+                            // Unselect
+                            const newFeatured = featuredAffiliations.filter(featuredId => {
+                              const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
+                              return normalizedFeatured !== affId;
+                            });
+                            setFeaturedAffiliations(newFeatured);
+                          } else if (!isDisabled) {
+                            // Select (only if under limit)
+                            const newFeatured = [...featuredAffiliations, affId].slice(0, 2);
+                            setFeaturedAffiliations(newFeatured);
+                          }
+                        }}
+                        disabled={isDisabled}
+                        style={[
+                          localStyles.chip,
+                          isSelected && localStyles.chipSelected,
+                          isDisabled && { opacity: 0.4 },
+                          { marginBottom: 8 },
+                        ]}
+                      >
+                        <Text
+                          style={isSelected ? localStyles.chipTextSelected : localStyles.chipText}
+                        >
+                          {aff.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })()}
         </View>
 
         {/* Interests */}

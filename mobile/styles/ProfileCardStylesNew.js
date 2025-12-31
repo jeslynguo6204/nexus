@@ -346,6 +346,42 @@ const styles = StyleSheet.create({
     color: COLORS.textBody,
     fontWeight: '600',
   },
+  // Affiliation chips - inline tags, not buttons
+  affiliationChip: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+    borderWidth: 0.5,
+    borderColor: COLORS.textMuted + '40', // Thin, muted border
+  },
+  affiliationChipText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    fontWeight: '400',
+  },
+  // Interest chips - warmer, rounder, softer
+  interestChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20, // Rounder than default
+    backgroundColor: COLORS.accentSoft,
+    borderWidth: 1,
+    borderColor: COLORS.textMuted + '20', // Softer border color
+    marginBottom: 8, // More breathing room between rows
+  },
+  interestChipText: {
+    fontSize: 14,
+    color: COLORS.textBody,
+    fontWeight: '500', // Slightly lighter than before
+  },
+  // Background text - footnote style
+  backgroundText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORS.textMuted,
+    fontWeight: '400',
+  },
   // Expanded scroll content (contains photo + all content)
   expandedScrollContent: {
     paddingBottom: 50, // Extra padding to ensure content isn't cut off by nav bar

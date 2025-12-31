@@ -24,6 +24,7 @@ export interface FeedProfileRow {
   bio: string | null;
   major: string | null;
   graduation_year: number | null;
+  academic_year: string | null;
   interests?: string[] | null;
   photos?: PhotoRow[];
   school_id: number | null;
@@ -61,6 +62,7 @@ export async function getSimpleFeed(includeAllForTesting = false): Promise<FeedP
       p.bio,
       p.major,
       p.graduation_year,
+      p.academic_year,
       p.interests,
       p.age,
       p.date_of_birth,
