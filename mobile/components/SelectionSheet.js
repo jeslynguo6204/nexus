@@ -1,5 +1,5 @@
 // mobile/components/SelectionSheet.js
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,14 @@ export default function SelectionSheet({
   allowUnselect = true,
 }) {
   const insets = useSafeAreaInsets();
+  
+  // Internal state that syncs with the selected prop to ensure reactive updates
+  const [internalSelected, setInternalSelected] = useState(selected);
+  
+  // Sync internal state with prop when it changes (especially important when modal is open)
+  useEffect(() => {
+    setInternalSelected(selected);
+  }, [selected]);
 
   // Debug logging
   useEffect(() => {
@@ -44,24 +52,20 @@ export default function SelectionSheet({
         optionsCount: options.length,
         options: options.slice(0, 3), // First 3 for debugging
         selected,
+        internalSelected,
         allowMultiple,
       });
     }
   }, [visible, title, options.length, allowMultiple]);
 
-  // Log when selected prop changes to track updates
-  useEffect(() => {
-    if (visible) {
-      console.log('SelectionSheet selected prop updated:', selected);
-    }
-  }, [selected, visible]);
-
   const isSelected = (option) => {
     const value = option.id !== undefined ? option.id : option;
+    // Use internalSelected for reactive updates
+    const currentSelected = internalSelected;
     
     if (allowMultiple) {
-      if (!Array.isArray(selected) || selected.length === 0) return false;
-      return selected.some(s => {
+      if (!Array.isArray(currentSelected) || currentSelected.length === 0) return false;
+      return currentSelected.some(s => {
         // Direct comparison for strings, normalize numbers for numeric IDs
         if (typeof value === 'string' && typeof s === 'string') {
           return s === value;
@@ -73,54 +77,60 @@ export default function SelectionSheet({
       });
     }
     // Single select - handle both null/undefined and the actual value
-    if (selected === null || selected === undefined || selected === '') return false;
+    if (currentSelected === null || currentSelected === undefined || currentSelected === '') return false;
     // Direct comparison for strings, normalize numbers for numeric IDs
-    if (typeof value === 'string' && typeof selected === 'string') {
-      return selected === value;
+    if (typeof value === 'string' && typeof currentSelected === 'string') {
+      return currentSelected === value;
     }
     const optionId = typeof value === 'string' ? (isNaN(parseInt(value, 10)) ? value : parseInt(value, 10)) : value;
-    const selectedId = typeof selected === 'string' ? (isNaN(parseInt(selected, 10)) ? selected : parseInt(selected, 10)) : selected;
+    const selectedId = typeof currentSelected === 'string' ? (isNaN(parseInt(currentSelected, 10)) ? currentSelected : parseInt(currentSelected, 10)) : currentSelected;
     return selectedId === optionId;
   };
 
   const handleSelect = (option) => {
     const value = option.id !== undefined ? option.id : option;
-    // Keep original value (string or number) - don't normalize strings to numbers
+    // Normalize numeric IDs for consistent comparison
+    const normalizeId = (id) => {
+      if (typeof id === 'string' && !isNaN(parseInt(id, 10))) {
+        return parseInt(id, 10);
+      }
+      return id;
+    };
+    
+    const normalizedValue = normalizeId(value);
     let newValue;
     
     if (allowMultiple) {
-      const current = Array.isArray(selected) ? selected : (selected ? [selected] : []);
+      // Use internalSelected for current state
+      const current = Array.isArray(internalSelected) ? internalSelected : (internalSelected ? [internalSelected] : []);
+      // Normalize current array for comparison
+      const normalizedCurrent = current.map(normalizeId);
       
       if (isSelected(option)) {
         // Unselect
         if (allowUnselect) {
-          // Remove by direct comparison (handles both strings and numbers)
-          newValue = current.filter(v => {
-            if (typeof v === 'string' && typeof value === 'string') {
-              return v !== value;
-            }
-            // For numeric IDs, normalize both
-            const vId = typeof v === 'string' ? (isNaN(parseInt(v, 10)) ? v : parseInt(v, 10)) : v;
-            const valueId = typeof value === 'string' ? (isNaN(parseInt(value, 10)) ? value : parseInt(value, 10)) : value;
-            return vId !== valueId;
-          });
+          // Remove the normalized value
+          newValue = normalizedCurrent.filter(v => v !== normalizedValue);
         } else {
           return; // Don't allow unselect
         }
       } else {
-        // Select - add the value as-is (string or number)
-        newValue = [...current, value];
+        // Select - add the normalized value (limit to 2 for key affiliations)
+        newValue = [...normalizedCurrent, normalizedValue];
       }
     } else {
       // Single select
       if (isSelected(option) && allowUnselect) {
         newValue = null;
       } else {
-        newValue = value;
+        newValue = normalizedValue;
       }
     }
     
-    // Always call onSelect to update state immediately
+    // Update internal state immediately for reactive UI
+    setInternalSelected(newValue);
+    
+    // Always call onSelect to update parent state
     onSelect(newValue, option);
   };
 

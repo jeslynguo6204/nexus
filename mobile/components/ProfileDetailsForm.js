@@ -185,6 +185,28 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     })();
   }, [schoolId]);
 
+  // Clean up featured affiliations when affiliations are removed
+  useEffect(() => {
+    if (featuredAffiliations.length > 0 && affiliations.length > 0) {
+      // Remove any featured affiliations that are no longer in the affiliations list
+      const validFeatured = featuredAffiliations.filter(featuredId => {
+        const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
+        return affiliations.some(affId => {
+          const normalizedAff = typeof affId === 'string' ? parseInt(affId, 10) : affId;
+          return normalizedAff === normalizedFeatured;
+        });
+      });
+      
+      // Only update if there's a change (to avoid infinite loops)
+      if (validFeatured.length !== featuredAffiliations.length) {
+        setFeaturedAffiliations(validFeatured);
+      }
+    } else if (affiliations.length === 0 && featuredAffiliations.length > 0) {
+      // If all affiliations are removed, clear featured affiliations
+      setFeaturedAffiliations([]);
+    }
+  }, [affiliations]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Separate effect to set dorm when both dorms and affiliations are available
   useEffect(() => {
     if (dorms.length > 0 && affiliations.length > 0 && !dorm) {
@@ -969,15 +991,36 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                     });
                   });
                   
+                  // Calculate current selected value dynamically to ensure it's always up-to-date
+                  const currentSelected = featuredAffiliations.map(id => {
+                    const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+                    // Find matching option to ensure ID type consistency
+                    const found = allSelectedAffils.find(aff => {
+                      const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                      return affId === normalizedId;
+                    });
+                    return found ? found.id : normalizedId;
+                  }).filter(id => {
+                    // Only include IDs that are still in the available options
+                    const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+                    return allSelectedAffils.some(aff => {
+                      const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                      return affId === normalizedId;
+                    });
+                  });
+                  
                   openSelectionSheet({
                     title: 'Key Affiliations',
                     options: allSelectedAffils,
-                    selected: featuredAffiliations,
+                    selected: currentSelected,
                     onSelect: (value) => {
-                      // Limit to 2 selections
+                      // Normalize all IDs to numbers for consistency
                       const newFeatured = Array.isArray(value) 
-                        ? value.slice(0, 2).map(v => typeof v === 'string' ? parseInt(v, 10) : v).filter(v => v !== null && v !== undefined)
-                        : (value ? [typeof value === 'string' ? parseInt(value, 10) : value].slice(0, 2) : []);
+                        ? value.slice(0, 2).map(v => {
+                            const normalized = typeof v === 'string' ? parseInt(v, 10) : v;
+                            return normalized;
+                          }).filter(v => v !== null && v !== undefined && !isNaN(v))
+                        : (value ? [typeof value === 'string' ? parseInt(value, 10) : value].slice(0, 2).filter(v => !isNaN(v)) : []);
                       setFeaturedAffiliations(newFeatured);
                     },
                     allowMultiple: true,
