@@ -11,7 +11,7 @@ export interface AffiliationCategory {
 export interface Affiliation {
   id: number;
   name: string;
-  description: string | null;
+  short_name: string | null;
   school_id: number | null;
   category_id: number;
   category_name: string;
@@ -44,7 +44,7 @@ export async function getAffiliationsBySchool(
     SELECT 
       a.id,
       a.name,
-      a.description,
+      a.short_name,
       a.school_id,
       a.category_id,
       ac.name AS category_name,
@@ -80,7 +80,7 @@ export async function getDormsBySchool(schoolId: number): Promise<Affiliation[]>
     SELECT 
       a.id,
       a.name,
-      a.description,
+      a.short_name,
       a.school_id,
       a.category_id,
       ac.name AS category_name,

@@ -58,6 +58,16 @@ export async function updateMyProfile(
   if (input.photos !== undefined) updates.photos = input.photos;
   if (input.affiliations !== undefined) updates.affiliations = input.affiliations;
 
+  if (input.gender !== undefined) updates.gender = input.gender;
+  if (input.sexuality !== undefined) updates.sexuality = input.sexuality;
+  if (input.pronouns !== undefined) updates.pronouns = input.pronouns;
+  if (input.religiousBeliefs !== undefined) updates.religious_beliefs = input.religiousBeliefs;
+  if (input.height !== undefined) updates.height = input.height;
+  if (input.politicalAffiliation !== undefined) updates.political_affiliation = input.politicalAffiliation;
+  if (input.languages !== undefined) updates.languages = input.languages;
+  if (input.hometown !== undefined) updates.hometown = input.hometown;
+  if (input.ethnicity !== undefined) updates.ethnicity = input.ethnicity;
+
   // additional sanity checks if you want them here
   if (
     updates.min_age_preference != null &&

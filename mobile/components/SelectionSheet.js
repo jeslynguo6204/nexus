@@ -162,14 +162,6 @@ export default function SelectionSheet({
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
             <View style={styles.headerRight}>
-              {allowMultiple && (
-                <TouchableOpacity
-                  onPress={onClose}
-                  style={styles.doneButton}
-                >
-                  <Text style={styles.doneButtonText}>Done</Text>
-                </TouchableOpacity>
-              )}
               <TouchableOpacity
                 onPress={onClose}
                 style={styles.closeButton}

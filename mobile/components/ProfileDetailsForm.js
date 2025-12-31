@@ -38,8 +38,8 @@ try {
 
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 const ACADEMIC_YEARS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'];
-const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
-const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'He/They', 'She/They', 'Any pronouns'];
+const GENDER_OPTIONS = ['Male', 'Female', 'Non-Binary'];
+const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'He/They', 'She/They', 'Other'];
 const SEXUALITY_OPTIONS = ['Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Queer', 'Prefer not to say'];
 const DATING_INTENTIONS = ['Romantic', 'Platonic', 'Both'];
 const RELIGIOUS_OPTIONS = ['Christian', 'Catholic', 'Jewish', 'Muslim', 'Hindu', 'Buddhist', 'Agnostic', 'Atheist', 'Spiritual', 'Other', 'Prefer not to say'];
@@ -55,9 +55,9 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
   
   // Identity
   const [displayName, setDisplayName] = useState(profile.display_name || '');
-  const [gender, setGender] = useState(profile.gender || ''); // Placeholder
-  const [pronouns, setPronouns] = useState(''); // Placeholder
-  const [sexuality, setSexuality] = useState(''); // Placeholder
+  const [gender, setGender] = useState(profile.gender || '');
+  const [pronouns, setPronouns] = useState(profile.pronouns || '');
+  const [sexuality, setSexuality] = useState(profile.sexuality || '');
   
   // Academics
   const [academicYear, setAcademicYear] = useState(profile.academic_year || null);
@@ -68,17 +68,31 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
   
   // Location & Background
   const [locationDescription, setLocationDescription] = useState(profile.location_description || '');
-  const [hometown, setHometown] = useState(''); // Placeholder
-  const [languages, setLanguages] = useState(''); // Placeholder
+  const [hometown, setHometown] = useState(profile.hometown || '');
+  const [languages, setLanguages] = useState(profile.languages || '');
   const [locationLat, setLocationLat] = useState(profile.location_lat || '');
   const [locationLon, setLocationLon] = useState(profile.location_lon || '');
   const [locationLoading, setLocationLoading] = useState(false);
   
   // Personal Details
-  const [height, setHeight] = useState(''); // Placeholder
-  const [religiousBeliefs, setReligiousBeliefs] = useState([]); // Array for multiple selections
-  const [politicalAffiliation, setPoliticalAffiliation] = useState(''); // Single selection
-  const [ethnicity, setEthnicity] = useState([]); // Array for multiple selections
+  const [height, setHeight] = useState(profile.height ? String(profile.height) : '');
+  // religious_beliefs is stored as comma-separated string in DB, but we use array in UI
+  const [religiousBeliefs, setReligiousBeliefs] = useState(
+    profile.religious_beliefs 
+      ? (Array.isArray(profile.religious_beliefs) 
+          ? profile.religious_beliefs 
+          : profile.religious_beliefs.split(',').map(s => s.trim()).filter(Boolean))
+      : []
+  );
+  const [politicalAffiliation, setPoliticalAffiliation] = useState(profile.political_affiliation || '');
+  // ethnicity is stored as comma-separated string in DB, but we use array in UI
+  const [ethnicity, setEthnicity] = useState(
+    profile.ethnicity 
+      ? (Array.isArray(profile.ethnicity) 
+          ? profile.ethnicity 
+          : profile.ethnicity.split(',').map(s => s.trim()).filter(Boolean))
+      : []
+  );
   
   // Affiliations
   const [affiliations, setAffiliations] = useState(
@@ -328,8 +342,21 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
       console.log('Submit - No dorm selected, removed dorms from affiliations:', finalAffiliations);
     }
     
-    // For now, only save fields that exist in the backend
-    // Placeholder fields will be added later
+    // Handle religious beliefs - convert array to comma-separated string for DB
+    const nextReligiousBeliefs = religiousBeliefs.length > 0 ? religiousBeliefs.join(', ') : null;
+    
+    // Handle ethnicity - convert array to comma-separated string for DB
+    const nextEthnicity = ethnicity.length > 0 ? ethnicity.join(', ') : null;
+    
+    // Handle height - convert to number or null
+    const nextHeight = height.trim() !== '' ? parseFloat(height.trim()) : null;
+    
+    // Handle languages
+    const nextLanguages = languages.trim() !== '' ? languages.trim() : null;
+    
+    // Handle hometown
+    const nextHometown = hometown.trim() !== '' ? hometown.trim() : null;
+    
     onSave({
       displayName: nextDisplayName,
       bio: nextBio,
@@ -340,6 +367,15 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
       locationLat: nextLocationLat,
       locationLon: nextLocationLon,
       affiliations: finalAffiliations.length > 0 ? finalAffiliations : null,
+      gender: gender || null,
+      sexuality: sexuality || null,
+      pronouns: pronouns || null,
+      religiousBeliefs: nextReligiousBeliefs,
+      height: nextHeight,
+      politicalAffiliation: politicalAffiliation || null,
+      languages: nextLanguages,
+      hometown: nextHometown,
+      ethnicity: nextEthnicity,
     });
   }
 
@@ -579,7 +615,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
               value={locationDescription}
               onChangeText={setLocationDescription}
               style={localStyles.input}
-              placeholder="e.g. New York, NY or On campus"
+              placeholder="Where are you currently located?"
               placeholderTextColor={COLORS.textMuted}
             />
             {Location && (
@@ -601,7 +637,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
               value={hometown}
               onChangeText={setHometown}
               style={localStyles.input}
-              placeholder="Where are you from?"
+              placeholder="Where do you call home?"
               placeholderTextColor={COLORS.textMuted}
             />
           </View>

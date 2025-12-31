@@ -35,6 +35,15 @@ export const profileUpdateSchema = z
     interests: z.array(z.string().trim().min(1).max(100)).max(50).optional(),
     photos: z.array(z.string().trim().max(500)).max(6).optional(),
     affiliations: z.array(z.number().int().positive()).max(20).optional(), // Array of affiliation IDs
+    gender: z.string().trim().max(50).optional().nullable(),
+    sexuality: z.string().trim().max(50).optional().nullable(),
+    pronouns: z.string().trim().max(50).optional().nullable(),
+    religiousBeliefs: z.string().trim().max(100).optional().nullable(),
+    height: z.number().min(0).max(300).optional().nullable(), // Height in cm (or inches converted)
+    politicalAffiliation: z.string().trim().max(100).optional().nullable(),
+    languages: z.string().trim().max(255).optional().nullable(),
+    hometown: z.string().trim().max(255).optional().nullable(),
+    ethnicity: z.string().trim().max(255).optional().nullable(), // Stored as comma-separated string
   })
   .refine(
     (data) =>

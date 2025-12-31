@@ -29,6 +29,17 @@ export interface ProfileRow {
   interests: string[] | null;
   photos: string[] | null;
   affiliations: number[] | null; // Array of affiliation IDs
+  gender: string | null;
+  sexuality: string | null;
+  pronouns: string | null;
+  religious_beliefs: string | null;
+  height: number | null; // DECIMAL comes back as number from pg
+  political_affiliation: string | null;
+  languages: string | null;
+  hometown: string | null;
+  ethnicity: string | null; // Stored as comma-separated string
+  age: number | null;
+  date_of_birth: string | null; // DATE comes back as string from pg
   updated_at: string;
 }
 
@@ -58,6 +69,17 @@ export async function getProfileByUserId(
       p.interests,
       p.photos,
       p.affiliations,
+      p.gender,
+      p.sexuality,
+      p.pronouns,
+      p.religious_beliefs,
+      p.height,
+      p.political_affiliation,
+      p.languages,
+      p.hometown,
+      p.ethnicity,
+      p.age,
+      p.date_of_birth,
       p.updated_at,
       u.school_id,
       s.name AS school_name,
@@ -92,6 +114,17 @@ export interface ProfileUpdateInput {
   interests?: string[] | null;
   photos?: string[] | null;
   affiliations?: number[] | null; // Array of affiliation IDs
+  gender?: string | null;
+  sexuality?: string | null;
+  pronouns?: string | null;
+  religious_beliefs?: string | null;
+  height?: number | null;
+  political_affiliation?: string | null;
+  languages?: string | null;
+  hometown?: string | null;
+  ethnicity?: string | null;
+  age?: number | null;
+  date_of_birth?: string | null;
 }
 
 // partial update builder
@@ -146,10 +179,80 @@ export async function updateProfileByUserId(
       interests,
       photos,
       affiliations,
+      gender,
+      sexuality,
+      pronouns,
+      religious_beliefs,
+      height,
+      political_affiliation,
+      languages,
+      hometown,
+      ethnicity,
+      age,
+      date_of_birth,
       updated_at
     `,
     values
   );
 
   return rows[0] ?? null;
+}
+
+/**
+ * Calculate age from date_of_birth
+ */
+export function calculateAge(dateOfBirth: string | null): number | null {
+  if (!dateOfBirth) return null;
+  
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age;
+}
+
+/**
+ * Update ages for all users whose birthday is today
+ * This should be called daily (e.g., via a cron job)
+ */
+export async function updateAgesForBirthdays(): Promise<number> {
+  const today = new Date();
+  const month = today.getMonth() + 1; // getMonth() returns 0-11
+  const day = today.getDate();
+  
+  // Find all profiles where date_of_birth month and day match today
+  const rows = await dbQuery<{ user_id: number; date_of_birth: string }>(
+    `
+    SELECT user_id, date_of_birth
+    FROM profiles
+    WHERE date_of_birth IS NOT NULL
+      AND EXTRACT(MONTH FROM date_of_birth) = $1
+      AND EXTRACT(DAY FROM date_of_birth) = $2
+    `,
+    [month, day]
+  );
+  
+  let updatedCount = 0;
+  
+  for (const row of rows) {
+    const age = calculateAge(row.date_of_birth);
+    if (age !== null) {
+      await dbQuery(
+        `
+        UPDATE profiles
+        SET age = $1, updated_at = NOW()
+        WHERE user_id = $2
+        `,
+        [age, row.user_id]
+      );
+      updatedCount++;
+    }
+  }
+  
+  return updatedCount;
 }

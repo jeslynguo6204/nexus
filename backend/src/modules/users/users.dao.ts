@@ -71,12 +71,24 @@ export async function createUserWithDefaults(params: {
 
     const userId = userRes.rows[0].id;
 
+    // Calculate age from date_of_birth if provided
+    let age: number | null = null;
+    if (params.dateOfBirth) {
+      const birthDate = new Date(params.dateOfBirth);
+      const today = new Date();
+      age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+    }
+
     await client.query(
       `
-      INSERT INTO profiles (user_id, display_name, show_me_in_discovery)
-      VALUES ($1, $2, TRUE)
+      INSERT INTO profiles (user_id, display_name, show_me_in_discovery, date_of_birth, gender, age)
+      VALUES ($1, $2, TRUE, $3, $4, $5)
       `,
-      [userId, params.fullName]
+      [userId, params.fullName, params.dateOfBirth ?? null, params.gender ?? null, age]
     );
 
     await client.query(
