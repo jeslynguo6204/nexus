@@ -70,11 +70,11 @@ export async function getAffiliationsBySchool(
 
 /**
  * Get dorms/residential houses for a specific school
- * Assumes dorms are in affiliations table with a specific category or naming pattern
+ * Only includes actual dorms, not houses (e.g., Harvard houses are affiliations, not dorms)
  */
 export async function getDormsBySchool(schoolId: number): Promise<Affiliation[]> {
-  // Assuming there's a category for dorms or we can identify them by name pattern
-  // You may need to adjust this query based on your actual schema
+  // Only match categories/names that are explicitly dorms
+  // Exclude "house" category as houses are regular affiliations (e.g., Harvard houses)
   const rows = await dbQuery<Affiliation>(
     `
     SELECT 
@@ -89,11 +89,13 @@ export async function getDormsBySchool(schoolId: number): Promise<Affiliation[]>
     FROM affiliations a
     JOIN affiliation_categories ac ON ac.id = a.category_id
     WHERE (a.school_id = $1 OR a.school_id IS NULL)
-      AND (LOWER(ac.name) LIKE '%dorm%' 
-           OR LOWER(ac.name) LIKE '%residential%'
-           OR LOWER(ac.name) LIKE '%housing%'
-           OR LOWER(a.name) LIKE '%dorm%'
-           OR LOWER(a.name) LIKE '%house%')
+      AND (
+        LOWER(ac.name) LIKE '%dorm%' 
+        OR LOWER(ac.name) LIKE '%residential%' AND LOWER(ac.name) NOT LIKE '%house%'
+        OR LOWER(ac.name) LIKE '%housing%' AND LOWER(ac.name) NOT LIKE '%house%'
+        OR (LOWER(a.name) LIKE '%dorm%' AND LOWER(a.name) NOT LIKE '%house%')
+      )
+      AND LOWER(ac.name) NOT LIKE '%house%'
     ORDER BY a.name ASC
     `,
     [schoolId]

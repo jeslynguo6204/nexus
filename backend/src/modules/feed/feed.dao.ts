@@ -127,20 +127,29 @@ export async function getSimpleFeed(includeAllForTesting = false): Promise<FeedP
           [profile.affiliations]
         );
 
-        // Check if any affiliation is a dorm (category name is "Dorm" or similar)
+        // Check if any affiliation is a dorm (category name is "Dorm" or similar, but NOT "House")
+        // Houses (e.g., Harvard houses) should be treated as regular affiliations, not dorms
         const dormCategory = await dbQuery<{ id: number }>(
-          `SELECT id FROM affiliation_categories WHERE LOWER(name) = 'dorm' OR LOWER(name) = 'dorms' LIMIT 1`
+          `SELECT id FROM affiliation_categories 
+           WHERE (LOWER(name) = 'dorm' OR LOWER(name) = 'dorms' OR LOWER(name) LIKE '%dorm%')
+           AND LOWER(name) NOT LIKE '%house%'
+           LIMIT 1`
         );
         const dormCategoryId = dormCategory[0]?.id;
 
-        affiliationsInfo = affiliationRows.map(row => ({
-          id: row.id,
-          name: row.name,
-          short_name: row.short_name,
-          category_id: row.category_id,
-          category_name: row.category_name,
-          is_dorm: row.category_id === dormCategoryId,
-        }));
+        affiliationsInfo = affiliationRows.map(row => {
+          // Only mark as dorm if category matches dorm category AND is not a house
+          const isDorm = row.category_id === dormCategoryId && 
+                        !row.category_name.toLowerCase().includes('house');
+          return {
+            id: row.id,
+            name: row.name,
+            short_name: row.short_name,
+            category_id: row.category_id,
+            category_name: row.category_name,
+            is_dorm: isDorm,
+          };
+        });
 
         // Find dorm if any
         const dormAffil = affiliationsInfo.find(a => a.is_dorm);

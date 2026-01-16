@@ -46,7 +46,7 @@ export default function SwipeDeckNew({
         if (!swipeEnabled) return;
         // Only move if horizontal movement is clearly dominant (2x threshold)
         if (Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 2) {
-          pan.setValue({ x: gestureState.dx, y: gestureState.dy * 0.12 });
+        pan.setValue({ x: gestureState.dx, y: gestureState.dy * 0.12 });
         }
       },
       onPanResponderRelease: (_, gestureState) => {

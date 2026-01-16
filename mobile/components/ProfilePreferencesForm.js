@@ -1,30 +1,11 @@
 // mobile/components/ProfilePreferencesForm.js
 
-/**
- * ProfilePreferencesForm is a reusable form component for editing a user's profile 
- * preferences, such as their dating and friends modes, gender preferences, age 
- * range, and maximum distance.
- * 
- * Like the ProfileDetailsForm, it is used within the ProfileScreen to allow users 
- * to edit a specific section of their profile. When the form is submitted, it calls
- * the onSave prop with the updated preference fields, which the ProfileScreen 
- * handles by making an API call to update the user's profile on the server.
- * 
- * The form is pre-populated with the user's current preferences, which are passed 
- * in as the profile prop. It uses various input components like switches, sliders, 
- * and buttons to provide an intuitive interface for adjusting these settings.
- * 
- * By allowing users to control their discovery preferences, this form component 
- * helps to tailor the user's experience on the app and improve the relevance of the
- * potential matches they see on the HomeScreen.
- */
-
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Switch, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Switch, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import styles, { COLORS } from '../styles/ProfileFormStyles';
+import { COLORS } from '../styles/themeNEW';
 
 const GENDER_OPTIONS = ['male', 'female', 'non-binary', 'everyone'];
 
@@ -69,7 +50,8 @@ export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
   }
 
   function submit() {
-    const maxDistanceKm = Math.round(maxDistanceMiles * 1.60934);
+    // Convert miles to km and ensure it's an integer >= 1 (backend validation requirement)
+    const maxDistanceKm = Math.max(1, Math.round(maxDistanceMiles * 1.60934));
     onSave({
       isDatingEnabled,
       isFriendsEnabled,
@@ -82,164 +64,323 @@ export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.background, paddingTop: insets.top }}>
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.card}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 8,
-          }}
+    <View style={[localStyles.container, { paddingTop: insets.top }]}>
+      {/* Minimal header */}
+      <View style={localStyles.header}>
+        <TouchableOpacity
+          onPress={onClose}
+          style={localStyles.headerButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Text style={[styles.sectionTitle, styles.firstSectionTitle]}>
-            Settings
-          </Text>
-          {onClose ? (
-            <TouchableOpacity onPress={onClose} style={{ padding: 6 }}>
-              <FontAwesome name="close" size={20} color={COLORS.text} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        <Text style={styles.sectionTitle}>Modes</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Dating mode</Text>
-          <Switch
-            value={isDatingEnabled}
-            onValueChange={setIsDatingEnabled}
-            trackColor={{ false: '#CBD5E1', true: COLORS.primarySoft }}
-            thumbColor={isDatingEnabled ? COLORS.primary : '#FFFFFF'}
-          />
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Friends mode</Text>
-          <Switch
-            value={isFriendsEnabled}
-            onValueChange={setIsFriendsEnabled}
-            trackColor={{ false: '#CBD5E1', true: COLORS.primarySoft }}
-            thumbColor={isFriendsEnabled ? COLORS.primary : '#FFFFFF'}
-          />
-        </View>
-
-        <View style={styles.sectionSpacer} />
-
-        <Text style={styles.sectionTitle}>Who you want to see</Text>
-
-        <Text style={styles.subLabel}>Dating</Text>
-        <View style={styles.chipRow}>
-          {GENDER_OPTIONS.map((opt) => {
-            const selected = datingGenderPreference === opt;
-            return (
-              <TouchableOpacity
-                key={opt}
-                onPress={() => setDatingGenderPreference(opt)}
-                style={[styles.chip, selected && styles.chipSelected]}
-              >
-                <Text
-                  style={selected ? styles.chipTextSelected : styles.chipText}
-                >
-                  {opt}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <Text style={styles.subLabel}>Friends</Text>
-        <View style={styles.chipRow}>
-          {GENDER_OPTIONS.map((opt) => {
-            const selected = friendsGenderPreference === opt;
-            return (
-              <TouchableOpacity
-                key={opt}
-                onPress={() => setFriendsGenderPreference(opt)}
-                style={[styles.chip, selected && styles.chipSelected]}
-              >
-                <Text
-                  style={selected ? styles.chipTextSelected : styles.chipText}
-                >
-                  {opt}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View style={styles.sectionSpacer} />
-
-        <Text style={styles.sectionTitle}>Age range</Text>
-        <View style={styles.sliderLabelRow}>
-          <Text style={styles.subLabel}>Preferred ages</Text>
-          <Text style={styles.subLabel}>
-            {minAgePreference} – {maxAgePreference}
-          </Text>
-        </View>
-        <Text style={styles.label}>Minimum age</Text>
-        <Slider
-          minimumValue={18}
-          maximumValue={40}
-          step={1}
-          value={minAgePreference}
-          onValueChange={handleMinAgeChange}
-          minimumTrackTintColor={COLORS.primary}
-          maximumTrackTintColor={COLORS.primarySoft}
-          thumbTintColor={COLORS.primary}
-        />
-        <Text style={styles.label}>Maximum age</Text>
-        <Slider
-          minimumValue={18}
-          maximumValue={40}
-          step={1}
-          value={maxAgePreference}
-          onValueChange={handleMaxAgeChange}
-          minimumTrackTintColor={COLORS.primary}
-          maximumTrackTintColor={COLORS.primarySoft}
-          thumbTintColor={COLORS.primary}
-        />
-
-        <View style={styles.sectionSpacer} />
-
-        <Text style={styles.sectionTitle}>Maximum distance</Text>
-        <View style={styles.sliderLabelRow}>
-          <Text style={styles.subLabel}>Show people within</Text>
-          <Text style={styles.subLabel}>
-            {maxDistanceMiles < 1 ? '< 1 mile' : `${maxDistanceMiles} miles`}
-          </Text>
-        </View>
-        <Slider
-          minimumValue={0.5}
-          maximumValue={50}
-          step={0.5}
-          value={maxDistanceMiles}
-          onValueChange={(v) => setMaxDistanceMiles(Number(v.toFixed(1)))}
-          minimumTrackTintColor={COLORS.primary}
-          maximumTrackTintColor={COLORS.primarySoft}
-          thumbTintColor={COLORS.primary}
-        />
-
-        <View style={styles.saveButtonContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={submit}>
-            <Text style={styles.primaryButtonText}>Save</Text>
-          </TouchableOpacity>
-          {onClose ? (
-            <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: '#eef2f7', marginTop: 10 }]}
-              onPress={onClose}
-            >
-              <Text style={[styles.primaryButtonText, { color: COLORS.text }]}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+          <FontAwesome name="times" size={18} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }} />
+        <TouchableOpacity
+          onPress={submit}
+          style={localStyles.saveButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={localStyles.saveButtonText}>Save</Text>
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+
+      <ScrollView
+        style={localStyles.scrollView}
+        contentContainerStyle={localStyles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Modes */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>Modes</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <View style={localStyles.switchRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={localStyles.switchLabel}>Dating mode</Text>
+                <Text style={localStyles.switchSubtext}>
+                  See and be seen by people looking to date
+                </Text>
+              </View>
+              <Switch
+                value={isDatingEnabled}
+                onValueChange={setIsDatingEnabled}
+                trackColor={{ false: COLORS.divider, true: COLORS.accentSoft }}
+                thumbColor={isDatingEnabled ? COLORS.accent : COLORS.surface}
+              />
+            </View>
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <View style={localStyles.switchRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={localStyles.switchLabel}>Friends mode</Text>
+                <Text style={localStyles.switchSubtext}>
+                  See and be seen by people looking for friends
+                </Text>
+              </View>
+              <Switch
+                value={isFriendsEnabled}
+                onValueChange={setIsFriendsEnabled}
+                trackColor={{ false: COLORS.divider, true: COLORS.accentSoft }}
+                thumbColor={isFriendsEnabled ? COLORS.accent : COLORS.surface}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Who you want to see */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>Who you want to see</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Dating</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
+            >
+              {GENDER_OPTIONS.map((opt) => {
+                const selected = datingGenderPreference === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={() => setDatingGenderPreference(opt)}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {opt}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={localStyles.fieldGroup}>
+            <Text style={localStyles.label}>Friends</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={localStyles.chipRow}
+              contentContainerStyle={localStyles.chipRowContent}
+            >
+              {GENDER_OPTIONS.map((opt) => {
+                const selected = friendsGenderPreference === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={() => setFriendsGenderPreference(opt)}
+                    style={[localStyles.chip, selected && localStyles.chipSelected]}
+                  >
+                    <Text
+                      style={selected ? localStyles.chipTextSelected : localStyles.chipText}
+                    >
+                      {opt}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+
+        {/* Age range */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>Age range</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <View style={localStyles.sliderHeader}>
+              <Text style={localStyles.label}>Preferred ages</Text>
+              <Text style={localStyles.sliderValue}>
+                {minAgePreference} – {maxAgePreference}
+              </Text>
+            </View>
+            <Text style={[localStyles.label, { marginTop: 16 }]}>Minimum age</Text>
+            <View style={localStyles.sliderContainer}>
+              <Slider
+                minimumValue={18}
+                maximumValue={40}
+                step={1}
+                value={minAgePreference}
+                onValueChange={handleMinAgeChange}
+                minimumTrackTintColor={COLORS.accent}
+                maximumTrackTintColor={COLORS.accentSoft}
+                thumbTintColor={COLORS.accent}
+              />
+            </View>
+            <Text style={[localStyles.label, { marginTop: 16 }]}>Maximum age</Text>
+            <View style={localStyles.sliderContainer}>
+              <Slider
+                minimumValue={18}
+                maximumValue={40}
+                step={1}
+                value={maxAgePreference}
+                onValueChange={handleMaxAgeChange}
+                minimumTrackTintColor={COLORS.accent}
+                maximumTrackTintColor={COLORS.accentSoft}
+                thumbTintColor={COLORS.accent}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Maximum distance */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>Maximum distance</Text>
+          
+          <View style={localStyles.fieldGroup}>
+            <View style={localStyles.sliderHeader}>
+              <Text style={localStyles.label}>Show people within</Text>
+              <Text style={localStyles.sliderValue}>
+                {maxDistanceMiles < 1 ? '< 1 mile' : `${maxDistanceMiles} miles`}
+              </Text>
+            </View>
+            <View style={localStyles.sliderContainer}>
+              <Slider
+                minimumValue={0.5}
+                maximumValue={50}
+                step={0.5}
+                value={maxDistanceMiles}
+                onValueChange={(v) => setMaxDistanceMiles(Number(v.toFixed(1)))}
+                minimumTrackTintColor={COLORS.accent}
+                maximumTrackTintColor={COLORS.accentSoft}
+                thumbTintColor={COLORS.accent}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
     </View>
   );
 }
+
+const localStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  headerButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: COLORS.textPrimary,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 40,
+  },
+  section: {
+    marginTop: 40,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+    letterSpacing: -0.2,
+  },
+  fieldGroup: {
+    marginTop: 20,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: COLORS.textMuted,
+    marginBottom: 10,
+    letterSpacing: 0,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.backgroundSubtle,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  switchLabel: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontWeight: '400',
+    marginBottom: 4,
+  },
+  switchSubtext: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: '400',
+    lineHeight: 18,
+  },
+  chipRow: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  chipRowContent: {
+    paddingRight: 20,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 0,
+    backgroundColor: COLORS.backgroundSubtle,
+    marginRight: 8,
+  },
+  chipSelected: {
+    backgroundColor: COLORS.textPrimary,
+  },
+  chipText: {
+    fontSize: 15,
+    color: COLORS.textBody,
+    fontWeight: '400',
+  },
+  chipTextSelected: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: COLORS.surface,
+  },
+  sliderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sliderValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+  },
+  sliderContainer: {
+    backgroundColor: COLORS.backgroundSubtle,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 8,
+  },
+});

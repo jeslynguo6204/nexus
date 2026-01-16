@@ -94,10 +94,13 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
       : []
   );
   
-  // Affiliations
-  const [affiliations, setAffiliations] = useState(
-    profile.affiliations && Array.isArray(profile.affiliations) ? profile.affiliations : []
-  );
+  // Affiliations (normalize IDs to numbers for consistency)
+  const [affiliations, setAffiliations] = useState(() => {
+    if (profile.affiliations && Array.isArray(profile.affiliations)) {
+      return profile.affiliations.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(id => !isNaN(id));
+    }
+    return [];
+  });
   // Featured/key affiliations (up to 2) - these show in preview
   const [featuredAffiliations, setFeaturedAffiliations] = useState(
     profile.featured_affiliations && Array.isArray(profile.featured_affiliations) 
@@ -314,6 +317,53 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     setSelectionSheetConfig(null);
   }
 
+  // Helper function to sort affiliation categories in a specific order
+  // School should appear first, Club Sports should appear right after Varsity Athletics
+  function sortAffiliationCategories(categories) {
+    const categoryOrder = [
+      'House',
+      'School',
+      'Academic Programs',
+      'Greek Life',
+      'Pre-Professional Greek Life',
+      'Varsity Athletics',
+      'Club Sports', // Right after Varsity Athletics
+      'Senior Society',
+      'Publications',
+      'Student Government',
+      'Consulting Clubs',
+      'Business Clubs',
+      'Engineering Clubs'
+    ];
+
+    // Create a map for quick lookup of order
+    const orderMap = new Map();
+    categoryOrder.forEach((cat, index) => {
+      orderMap.set(cat.toLowerCase(), index);
+    });
+
+    // Sort categories: known categories first (in specified order), then alphabetically
+    return Object.entries(categories).sort(([nameA], [nameB]) => {
+      const orderA = orderMap.get(nameA.toLowerCase());
+      const orderB = orderMap.get(nameB.toLowerCase());
+
+      // If both are in the order list, sort by their position
+      if (orderA !== undefined && orderB !== undefined) {
+        return orderA - orderB;
+      }
+      // If only A is in the order list, A comes first
+      if (orderA !== undefined) {
+        return -1;
+      }
+      // If only B is in the order list, B comes first
+      if (orderB !== undefined) {
+        return 1;
+      }
+      // If neither is in the order list, sort alphabetically
+      return nameA.localeCompare(nameB);
+    });
+  }
+
   function getSelectedDisplayName(selected, options, allowMultiple = false) {
     if (!selected) return 'Not selected';
     if (allowMultiple && Array.isArray(selected)) {
@@ -329,7 +379,15 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
   }
 
   function submit() {
-    const gradYearNum = graduationYear ? Number(graduationYear) : null;
+    // Validate graduationYear - must be integer between 2020-2040
+    let gradYearNum = null;
+    if (graduationYear && graduationYear.trim() !== '') {
+      const parsed = Number(graduationYear);
+      if (!isNaN(parsed) && Number.isInteger(parsed) && parsed >= 2020 && parsed <= 2040) {
+        gradYearNum = parsed;
+      }
+    }
+    
     const nextBio = bio.trim() === '' ? null : bio.trim();
     const nextMajor = major.trim() === '' ? null : major.trim();
     const nextDisplayName = displayName.trim() === '' ? null : displayName.trim();
@@ -338,37 +396,46 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     const nextLocationLon = locationLon.trim() === '' ? null : locationLon.trim();
     
     // Ensure dorm is included in affiliations if selected
+    // Note: Houses are NOT dorms - they're regular affiliations and should NOT be removed here
     let finalAffiliations = [...affiliations];
     console.log('Submit - Current dorm:', dorm);
-    console.log('Submit - Current affiliations:', affiliations);
+    console.log('Submit - Current affiliations (before processing):', affiliations);
     console.log('Submit - Available dorms:', dorms.map(d => ({ id: d.id, name: d.name })));
     
+    // First, remove any existing dorms from affiliations (houses are NOT dorms, so they won't be removed)
+    finalAffiliations = finalAffiliations.filter(id => {
+      const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+      const isDorm = dorms.some(d => {
+        const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
+        return dId === normalizedId;
+      });
+      if (isDorm) {
+        console.log('Submit - Removing dorm ID from affiliations:', normalizedId);
+      }
+      return !isDorm;
+    });
+    console.log('Submit - Affiliations after removing dorms (houses should still be here):', finalAffiliations);
+    
+    // Then, if a dorm is selected, add it
     if (dorm) {
       const normalizedDorm = typeof dorm === 'string' ? parseInt(dorm, 10) : dorm;
       console.log('Submit - Normalized dorm ID:', normalizedDorm);
-      
-      // Remove any existing dorm from affiliations
-      finalAffiliations = finalAffiliations.filter(id => {
-        const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
-        return !dorms.some(d => {
-          const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
-          return dId === normalizedId;
-        });
-      });
-      // Add the current dorm
       finalAffiliations.push(normalizedDorm);
       console.log('Submit - Final affiliations with dorm:', finalAffiliations);
     } else {
-      // Remove any dorm from affiliations if no dorm is selected
-      finalAffiliations = finalAffiliations.filter(id => {
-        const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
-        return !dorms.some(d => {
-          const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
-          return dId === normalizedId;
-        });
-      });
-      console.log('Submit - No dorm selected, removed dorms from affiliations:', finalAffiliations);
+      console.log('Submit - No dorm selected, final affiliations:', finalAffiliations);
     }
+    
+    // Clean and validate affiliations array - ensure all are positive integers
+    finalAffiliations = finalAffiliations
+      .map(id => {
+        if (typeof id === 'string') {
+          const parsed = parseInt(id, 10);
+          return isNaN(parsed) ? null : parsed;
+        }
+        return id;
+      })
+      .filter(id => id !== null && id !== undefined && Number.isInteger(id) && id > 0);
     
     // Handle religious beliefs - convert array to comma-separated string for DB
     const nextReligiousBeliefs = religiousBeliefs.length > 0 ? religiousBeliefs.join(', ') : null;
@@ -376,8 +443,14 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     // Handle ethnicity - convert array to comma-separated string for DB
     const nextEthnicity = ethnicity.length > 0 ? ethnicity.join(', ') : null;
     
-    // Handle height - convert to number or null
-    const nextHeight = height.trim() !== '' ? parseFloat(height.trim()) : null;
+    // Handle height - convert to number or null, ensure it's valid
+    let nextHeight = null;
+    if (height.trim() !== '') {
+      const parsedHeight = parseFloat(height.trim());
+      if (!isNaN(parsedHeight) && parsedHeight >= 0 && parsedHeight <= 300) {
+        nextHeight = parsedHeight;
+      }
+    }
     
     // Handle languages
     const nextLanguages = languages.trim() !== '' ? languages.trim() : null;
@@ -385,27 +458,150 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
     // Handle hometown
     const nextHometown = hometown.trim() !== '' ? hometown.trim() : null;
     
-    onSave({
-      displayName: nextDisplayName,
-      bio: nextBio,
-      major: nextMajor,
-      graduationYear: gradYearNum,
-      academicYear: academicYear || null,
-      locationDescription: nextLocationDesc,
-      locationLat: nextLocationLat,
-      locationLon: nextLocationLon,
-      affiliations: finalAffiliations.length > 0 ? finalAffiliations : null,
-      gender: gender || null,
-      sexuality: sexuality || null,
-      pronouns: pronouns || null,
-      religiousBeliefs: nextReligiousBeliefs,
-      height: nextHeight,
-      politicalAffiliation: politicalAffiliation || null,
-      languages: nextLanguages,
-      hometown: nextHometown,
-      ethnicity: nextEthnicity,
-      featuredAffiliations: featuredAffiliations.length > 0 ? featuredAffiliations : null,
-    });
+    // Prepare the payload
+    // For fields that can be cleared: if they had a value originally but are now empty, send null
+    // If they never had a value and are still empty, omit them
+    // If they have a value (new or updated), send it
+    const payload = {};
+    
+    // Display name - always send if changed or if clearing
+    const originalDisplayName = profile.display_name || null;
+    if (nextDisplayName !== originalDisplayName) {
+      payload.displayName = nextDisplayName;
+    }
+    
+    // Bio - send if changed or if clearing
+    const originalBio = profile.bio || null;
+    if (nextBio !== originalBio) {
+      payload.bio = nextBio;
+    }
+    
+    // Major - send if changed or if clearing
+    const originalMajor = profile.major || null;
+    if (nextMajor !== originalMajor) {
+      payload.major = nextMajor;
+    }
+    
+    // Graduation year - send if changed or if clearing
+    const originalGradYear = profile.graduation_year || null;
+    if (gradYearNum !== originalGradYear) {
+      payload.graduationYear = gradYearNum;
+    }
+    
+    // Academic year - send if changed or if clearing
+    const originalAcademicYear = profile.academic_year || null;
+    const validAcademicYears = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'];
+    const finalAcademicYear = (academicYear && validAcademicYears.includes(academicYear)) ? academicYear : null;
+    if (finalAcademicYear !== originalAcademicYear) {
+      payload.academicYear = finalAcademicYear;
+    }
+    
+    // Location description - send if changed or if clearing
+    const originalLocationDesc = profile.location_description || null;
+    if (nextLocationDesc !== originalLocationDesc) {
+      payload.locationDescription = nextLocationDesc;
+    }
+    
+    // Location lat/lon - send if changed or if clearing
+    const originalLocationLat = profile.location_lat || null;
+    if (nextLocationLat !== originalLocationLat) {
+      payload.locationLat = nextLocationLat;
+    }
+    const originalLocationLon = profile.location_lon || null;
+    if (nextLocationLon !== originalLocationLon) {
+      payload.locationLon = nextLocationLon;
+    }
+    
+    // Affiliations - always send if there are any, or send empty array if clearing all
+    const originalAffiliations = profile.affiliations && Array.isArray(profile.affiliations) 
+      ? profile.affiliations.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(id => !isNaN(id) && id > 0).sort()
+      : [];
+    const finalAffiliationsSorted = [...finalAffiliations].sort();
+    const affiliationsChanged = JSON.stringify(originalAffiliations) !== JSON.stringify(finalAffiliationsSorted);
+    if (affiliationsChanged) {
+      payload.affiliations = finalAffiliations.length > 0 ? finalAffiliations : [];
+    }
+    
+    // Gender - send if changed or if clearing
+    const originalGender = profile.gender || null;
+    if (gender !== originalGender) {
+      payload.gender = gender || null;
+    }
+    
+    // Sexuality - send if changed or if clearing
+    const originalSexuality = profile.sexuality || null;
+    if (sexuality !== originalSexuality) {
+      payload.sexuality = sexuality || null;
+    }
+    
+    // Pronouns - send if changed or if clearing
+    const originalPronouns = profile.pronouns || null;
+    if (pronouns !== originalPronouns) {
+      payload.pronouns = pronouns || null;
+    }
+    
+    // Religious beliefs - send if changed or if clearing
+    const originalReligiousBeliefs = profile.religious_beliefs || null;
+    if (nextReligiousBeliefs !== originalReligiousBeliefs) {
+      payload.religiousBeliefs = nextReligiousBeliefs;
+    }
+    
+    // Height - send if changed or if clearing
+    const originalHeight = profile.height || null;
+    if (nextHeight !== originalHeight) {
+      payload.height = nextHeight;
+    }
+    
+    // Political affiliation - send if changed or if clearing
+    const originalPoliticalAffiliation = profile.political_affiliation || null;
+    if (politicalAffiliation !== originalPoliticalAffiliation) {
+      payload.politicalAffiliation = politicalAffiliation || null;
+    }
+    
+    // Languages - send if changed or if clearing
+    const originalLanguages = profile.languages || null;
+    if (nextLanguages !== originalLanguages) {
+      payload.languages = nextLanguages;
+    }
+    
+    // Hometown - send if changed or if clearing
+    const originalHometown = profile.hometown || null;
+    if (nextHometown !== originalHometown) {
+      payload.hometown = nextHometown;
+    }
+    
+    // Ethnicity - send if changed or if clearing
+    const originalEthnicity = profile.ethnicity || null;
+    if (nextEthnicity !== originalEthnicity) {
+      payload.ethnicity = nextEthnicity;
+    }
+    
+    // Featured affiliations - send if changed or if clearing
+    // IMPORTANT: Do NOT sort - preserve the order they were selected
+    const originalFeatured = (profile.featured_affiliations && Array.isArray(profile.featured_affiliations))
+      ? profile.featured_affiliations.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(id => !isNaN(id) && id > 0)
+      : [];
+    const cleanedFeatured = featuredAffiliations
+      .map(id => {
+        if (typeof id === 'string') {
+          const parsed = parseInt(id, 10);
+          return isNaN(parsed) ? null : parsed;
+        }
+        return id;
+      })
+      .filter(id => id !== null && id !== undefined && Number.isInteger(id) && id > 0);
+    // Compare arrays preserving order
+    const featuredChanged = JSON.stringify(originalFeatured) !== JSON.stringify(cleanedFeatured);
+    if (featuredChanged) {
+      payload.featuredAffiliations = cleanedFeatured.length > 0 ? cleanedFeatured : null;
+    }
+    
+    // Log the payload for debugging
+    console.log('Submit - Final payload being sent:', JSON.stringify(payload, null, 2));
+    console.log('Submit - Affiliations in payload:', payload.affiliations);
+    console.log('Submit - Featured affiliations in payload:', payload.featuredAffiliations);
+    
+    onSave(payload);
   }
 
   return (
@@ -519,7 +715,10 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                 return (
                   <TouchableOpacity
                     key={option}
-                    onPress={() => setPronouns(option)}
+                    onPress={() => {
+                      // If already selected, unselect it; otherwise, select it
+                      setPronouns(selected ? '' : option);
+                    }}
                     style={[localStyles.chip, selected && localStyles.chipSelected]}
                   >
                     <Text
@@ -623,7 +822,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           </View>
 
           <View style={localStyles.fieldGroup}>
-            <Text style={localStyles.label}>Major</Text>
+            <Text style={localStyles.label}>Major/Area of Study</Text>
             <TextInput
               value={major}
               onChangeText={setMajor}
@@ -699,7 +898,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           </View>
 
           <View style={localStyles.fieldGroup}>
-            <Text style={localStyles.label}>Religious beliefs</Text>
+            <Text style={localStyles.label}>Religious Beliefs</Text>
             <TouchableOpacity
               style={localStyles.selectRow}
               onPress={() => openSelectionSheet({
@@ -727,7 +926,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           </View>
 
           <View style={localStyles.fieldGroup}>
-            <Text style={localStyles.label}>Political affiliation</Text>
+            <Text style={localStyles.label}>Political Affiliation</Text>
             <TouchableOpacity
               style={localStyles.selectRow}
               onPress={() => openSelectionSheet({
@@ -784,7 +983,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
             <Text style={localStyles.sectionTitle}>Dorm</Text>
             
             <View style={localStyles.fieldGroup}>
-              <Text style={localStyles.label}>Residential house</Text>
+              <Text style={localStyles.label}>Residential House</Text>
               {loadingAffiliations ? (
                 <ActivityIndicator size="small" color={COLORS.textMuted} style={{ marginTop: 10 }} />
               ) : (
@@ -839,17 +1038,23 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
               </Text>
             </View>
           ) : (
-            Object.entries(affiliationsByCategory).map(([categoryName, categoryAffiliations]) => {
-              // Filter out dorms from regular affiliations
+            sortAffiliationCategories(affiliationsByCategory).map(([categoryName, categoryAffiliations]) => {
+              // Filter out dorms from regular affiliations (normalize IDs for comparison)
               const nonDormAffiliations = categoryAffiliations.filter(
-                aff => !dorms.some(d => d.id === aff.id)
+                aff => {
+                  const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                  return !dorms.some(d => {
+                    const dId = typeof d.id === 'string' ? parseInt(d.id, 10) : d.id;
+                    return dId === affId;
+                  });
+                }
               );
               
               if (nonDormAffiliations.length === 0) return null;
 
-              // Check if this is a single-select category (only Greek Life)
+              // Check if this is a single-select category (Greek Life and House)
               const categoryLower = categoryName.toLowerCase();
-              const isSingleSelect = categoryLower.includes('greek');
+              const isSingleSelect = categoryLower.includes('greek') || categoryLower.includes('house');
               
               // Get selected affiliations for this category
               // Normalize IDs for comparison (handle both string and number IDs)
@@ -886,6 +1091,9 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                         isAffiliationCategory: true,
                         onSelect: (value) => {
                           console.log('Selection made:', value, 'isSingleSelect:', isSingleSelect);
+                          console.log('Current affiliations before update:', affiliations);
+                          console.log('nonDormAffiliations:', nonDormAffiliations);
+                          
                           // Remove all affiliations from this category first
                           // Normalize IDs for comparison (handle both string and number IDs)
                           const otherAffiliationIds = affiliations.filter(id => {
@@ -895,13 +1103,18 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                               return normalizedId === affId;
                             });
                           });
+                          console.log('otherAffiliationIds (after removing category):', otherAffiliationIds);
+                          
                           // Add back the newly selected ones
                           if (isSingleSelect) {
-                            // Single select for Greek Life only
+                            // Single select for Greek Life and House
                             if (value !== null && value !== undefined) {
                               const normalizedValue = typeof value === 'string' ? parseInt(value, 10) : value;
-                              setAffiliations([...otherAffiliationIds, normalizedValue]);
+                              const newAffiliations = [...otherAffiliationIds, normalizedValue];
+                              console.log('Setting affiliations (single-select):', newAffiliations);
+                              setAffiliations(newAffiliations);
                             } else {
+                              console.log('Setting affiliations (unselected):', otherAffiliationIds);
                               setAffiliations(otherAffiliationIds);
                             }
                           } else {
@@ -909,7 +1122,9 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                             const newAffiliationIds = Array.isArray(value) 
                               ? value.map(v => typeof v === 'string' ? parseInt(v, 10) : v).filter(v => v !== null && v !== undefined)
                               : (value ? [typeof value === 'string' ? parseInt(value, 10) : value] : []);
-                            setAffiliations([...otherAffiliationIds, ...newAffiliationIds]);
+                            const newAffiliations = [...otherAffiliationIds, ...newAffiliationIds];
+                            console.log('Setting affiliations (multi-select):', newAffiliations);
+                            setAffiliations(newAffiliations);
                           }
                         },
                         allowMultiple: !isSingleSelect,
@@ -966,8 +1181,8 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           
           {/* Key Affiliations Selector */}
           {affiliations.length > 0 && (() => {
-            // Get all selected affiliations with their names
-            const allSelectedAffils = [];
+            // Get all selected affiliations with their names, but order them by featuredAffiliations order
+            const allSelectedAffilsMap = new Map();
             Object.entries(affiliationsByCategory).forEach(([categoryName, categoryAffiliations]) => {
               const nonDormAffiliations = categoryAffiliations.filter(
                 aff => !dorms.some(d => d.id === aff.id)
@@ -978,9 +1193,33 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                   const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
                   return normalizedId === affId;
                 })) {
-                  allSelectedAffils.push(aff);
+                  allSelectedAffilsMap.set(affId, aff);
                 }
               });
+            });
+            
+            // Order affiliations by the order they appear in featuredAffiliations (selection order)
+            // Then append any other selected affiliations that aren't featured
+            const orderedAffils = [];
+            const featuredSet = new Set(featuredAffiliations.map(id => {
+              const normalized = typeof id === 'string' ? parseInt(id, 10) : id;
+              return normalized;
+            }));
+            
+            // First, add featured affiliations in their selection order
+            featuredAffiliations.forEach(featuredId => {
+              const normalized = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
+              const aff = allSelectedAffilsMap.get(normalized);
+              if (aff) {
+                orderedAffils.push(aff);
+              }
+            });
+            
+            // Then, add any other selected affiliations that aren't featured
+            allSelectedAffilsMap.forEach((aff, affId) => {
+              if (!featuredSet.has(affId)) {
+                orderedAffils.push(aff);
+              }
             });
             
             return (
@@ -990,7 +1229,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                   Select up to 2 affiliations to feature in your profile preview
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
-                  {allSelectedAffils.map((aff) => {
+                  {orderedAffils.map((aff) => {
                     const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
                     const isSelected = featuredAffiliations.some(featuredId => {
                       const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
@@ -1010,9 +1249,15 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
                             });
                             setFeaturedAffiliations(newFeatured);
                           } else if (!isDisabled) {
-                            // Select (only if under limit)
-                            const newFeatured = [...featuredAffiliations, affId].slice(0, 2);
-                            setFeaturedAffiliations(newFeatured);
+                            // Select (only if under limit) - preserve order by appending to end
+                            // If we're at the limit, remove the oldest (first) and add the new one at the end
+                            if (featuredAffiliations.length >= 2) {
+                              const newFeatured = [...featuredAffiliations.slice(1), affId];
+                              setFeaturedAffiliations(newFeatured);
+                            } else {
+                              const newFeatured = [...featuredAffiliations, affId];
+                              setFeaturedAffiliations(newFeatured);
+                            }
                           }
                         }}
                         disabled={isDisabled}
@@ -1117,11 +1362,11 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
           // If this is an affiliations category, recalculate selected from current affiliations state
           const categoryName = title;
           const categoryLower = categoryName.toLowerCase();
-          const isSingleSelect = categoryLower.includes('greek');
+          const isSingleSelect = categoryLower.includes('greek') || categoryLower.includes('house');
           const categoryAffiliations = selectionSheetConfig.options;
           
           if (isSingleSelect) {
-            // Single select for Greek Life only
+            // Single select for Greek Life and House
             currentSelected = affiliations.find(id => {
               const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
               return categoryAffiliations.some(aff => {

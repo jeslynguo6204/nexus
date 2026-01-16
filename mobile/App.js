@@ -48,14 +48,18 @@ export default function App() {
           ) : (
             <AuthStack
               onSignedIn={async (authResponse) => {
+                console.log('🔑 onSignedIn called with:', authResponse);
                 // adapt this to whatever your backend returns
                 // earlier your backend was returning { userId, token }
                 const { token } = authResponse;
                 if (token) {
+                  console.log('💾 Saving token to AsyncStorage');
                   await AsyncStorage.setItem('token', token);
+                  console.log('✅ Token saved, updating state');
                   setToken(token);
+                  console.log('✅ Token state updated');
                 } else {
-                  console.warn('No token in auth response', authResponse);
+                  console.warn('⚠️ No token in auth response', authResponse);
                 }
               }}
             />

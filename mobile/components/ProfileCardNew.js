@@ -259,17 +259,6 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
   const politicalAffiliation = coalesce(profile?.political_affiliation);
   const ethnicity = coalesce(profile?.ethnicity);
 
-  if (__DEV__) {
-    console.log(
-      'ProfileCardNew - age:',
-      age,
-      'profile.age:',
-      profile?.age,
-      'profile.date_of_birth:',
-      profile?.date_of_birth
-    );
-  }
-
   const educationLevel = toTitleCase(coalesce(profile?.education_level, profile?.student_type));
   const yearLabel = coalesce(profile?.year_label, profile?.class_year_label, profile?.yearLabel, educationLevel);
 
@@ -299,10 +288,12 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
   const dormInfo = profile?.dorm;
   const dormName = dormInfo ? dormInfo.short_name || dormInfo.name : null;
 
+  // Get featured affiliations in the order they were selected (preserve order from backend)
   const featuredAffiliationIds = profile?.featured_affiliations || profile?.featuredAffiliations || [];
   let featuredAffiliations = [];
 
   if (Array.isArray(featuredAffiliationIds) && featuredAffiliationIds.length > 0) {
+    // Map in order to preserve selection order - first selected appears first
     featuredAffiliations = featuredAffiliationIds
       .slice(0, 2)
       .map((featuredId) => {
@@ -327,7 +318,36 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
   );
   const interests = normalizeList(profile?.interests).slice(0, 8);
 
-  const nonDormAffiliations = affiliationsInfo.filter((aff) => !aff.is_dorm);
+  // Filter out dorms and reorder: featured affiliations first (in selection order), then the rest
+  const allNonDormAffiliations = affiliationsInfo.filter((aff) => !aff.is_dorm);
+  
+  // Get featured affiliation IDs in order (normalized)
+  const featuredIds = (featuredAffiliationIds || [])
+    .slice(0, 2)
+    .map(id => typeof id === 'string' ? parseInt(id, 10) : id)
+    .filter(id => !isNaN(id) && id > 0);
+  
+  // Create a map of all affiliations by ID for quick lookup
+  const affMap = new Map();
+  allNonDormAffiliations.forEach(aff => {
+    const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+    affMap.set(affId, aff);
+  });
+  
+  // Get featured affiliations in selection order
+  const featuredAffils = featuredIds
+    .map(id => affMap.get(id))
+    .filter(Boolean); // Remove any not found
+  
+  // Get other affiliations (not featured)
+  const featuredIdsSet = new Set(featuredIds);
+  const otherAffils = allNonDormAffiliations.filter(aff => {
+    const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+    return !featuredIdsSet.has(affId);
+  });
+  
+  // Combine: featured affiliations first (in selection order), then the rest
+  const nonDormAffiliations = [...featuredAffils, ...otherAffils];
 
   const buildAtPennSentence = () => {
     if (!academicYear) {
@@ -365,16 +385,6 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
   };
 
   const atPennSentence = buildAtPennSentence();
-
-  if (__DEV__) {
-    console.log('ProfileCardNew - At Penn sentence:', {
-      academicYear,
-      major,
-      dormName,
-      atPennSentence,
-      nonDormAffiliations: nonDormAffiliations.length,
-    });
-  }
 
   const schoolShortName = coalesce(profile?.school?.short_name, profile?.school_short_name);
   const gradYearShort = graduationYear ? `'${String(graduationYear).slice(-2)}` : null;

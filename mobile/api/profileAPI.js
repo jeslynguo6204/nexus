@@ -34,7 +34,10 @@ export async function updateMyProfile(token, fields) {
   const json = await res.json();
 
   if (!res.ok) {
-    throw new Error(json.error || "Update failed");
+    // Log full error details for debugging
+    console.error('Profile update error:', JSON.stringify(json, null, 2));
+    console.error('Request body sent:', JSON.stringify(fields, null, 2));
+    throw new Error(json.error || json.details?.fieldErrors || "Update failed");
   }
 
   return json.profile;

@@ -37,11 +37,27 @@ export default function LoginScreen({ navigation, onSignedIn }) {
   async function handleLogin() {
     try {
       setLoading(true);
+      console.log('🔐 Attempting login with email:', email);
 
       const json = await login({ email, password });
+      console.log('✅ Login successful, response:', json);
 
-      onSignedIn(json);
+      if (!json || !json.token) {
+        console.error('❌ No token in login response:', json);
+        Alert.alert('Error', 'Login failed: No token received');
+        return;
+      }
+
+      console.log('📞 Calling onSignedIn with:', json);
+      if (onSignedIn) {
+        await onSignedIn(json);
+        console.log('✅ onSignedIn completed');
+      } else {
+        console.error('❌ onSignedIn callback is not defined!');
+        Alert.alert('Error', 'Login callback not available');
+      }
     } catch (e) {
+      console.error('❌ Login error:', e);
       Alert.alert('Error', String(e.message || e));
     } finally {
       setLoading(false);
