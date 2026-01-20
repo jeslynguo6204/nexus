@@ -1,5 +1,5 @@
 // mobile/components/SwipeDeckNew.js
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { View, Animated, PanResponder, Dimensions, StyleSheet } from 'react-native';
 import ProfileCardNew from './ProfileCardNew';
 
@@ -22,6 +22,24 @@ export default function SwipeDeckNew({
   const pan = useRef(new Animated.ValueXY()).current;
   const [isAnimating, setIsAnimating] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [shouldResetPan, setShouldResetPan] = useState(false);
+
+  // Use refs to track current values for panResponder callbacks
+  const profilesRef = useRef(profiles);
+  const currentIndexRef = useRef(currentIndex);
+  
+  // Update refs whenever props change
+  profilesRef.current = profiles;
+  currentIndexRef.current = currentIndex;
+
+  // Reset pan after currentIndex updates to avoid showing old card at center
+  useLayoutEffect(() => {
+    if (shouldResetPan) {
+      pan.setValue({ x: 0, y: 0 });
+      setIsAnimating(false);
+      setShouldResetPan(false);
+    }
+  }, [shouldResetPan, pan]);
 
   const visible = useMemo(
     () => profiles.slice(currentIndex, currentIndex + 3),
@@ -55,7 +73,8 @@ export default function SwipeDeckNew({
         const { dx } = gestureState;
 
         if (Math.abs(dx) > SWIPE_THRESHOLD) {
-          const topProfile = visible[0];
+          // Use refs to get current values, avoiding stale closure
+          const topProfile = profilesRef.current[currentIndexRef.current];
           if (dx > 0) {
             animateOut(true, topProfile);
           } else {
@@ -100,8 +119,9 @@ export default function SwipeDeckNew({
   }
 
   function resetCard() {
-    pan.setValue({ x: 0, y: 0 });
-    setIsAnimating(false);
+    // Flag that pan should be reset after currentIndex updates
+    setShouldResetPan(true);
+    // Update index which will trigger the useLayoutEffect above
     onNext?.();
   }
 

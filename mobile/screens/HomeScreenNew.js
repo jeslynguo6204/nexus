@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import SwipeDeckNew from '../components/SwipeDeckNew';
 import { getFeedProfiles } from '../api/feedAPI';
+import { getMyProfile } from '../api/profileAPI';
 import styles from '../styles/HomeStylesNew';
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
@@ -24,6 +25,7 @@ export default function HomeScreenNew() {
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [myUserId, setMyUserId] = useState(null);
 
   const [scope, setScope] = useState('school'); // school | league | area
   const [mode, setMode] = useState('romantic'); // romantic | platonic
@@ -69,7 +71,13 @@ export default function HomeScreenNew() {
         const token = await AsyncStorage.getItem('token');
         if (!token) throw new Error('Not signed in');
 
-        const fetchedProfiles = await getFeedProfiles(token);
+        // Fetch both my profile and feed profiles
+        const [myProfile, fetchedProfiles] = await Promise.all([
+          getMyProfile(token),
+          getFeedProfiles(token)
+        ]);
+        
+        setMyUserId(myProfile?.user_id);
         setProfiles(Array.isArray(fetchedProfiles) ? fetchedProfiles : []);
         setCurrentIndex(0);
       } catch (e) {
@@ -89,8 +97,8 @@ export default function HomeScreenNew() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
-      console.log('Liked profile:', profile?.user_id);
-      moveToNextCard();
+      console.log(`✅ Profile ${myUserId} LIKED profile ${profile?.user_id}`);
+      // moveToNextCard is handled by onNext callback from SwipeDeckNew
     } catch (e) {
       console.warn(e);
       Alert.alert('Error', String(e.message || e));
@@ -101,8 +109,8 @@ export default function HomeScreenNew() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
-      console.log('Passed on profile:', profile?.user_id);
-      moveToNextCard();
+      console.log(`⏭️  Profile ${myUserId} PASSED ON profile ${profile?.user_id}`);
+      // moveToNextCard is handled by onNext callback from SwipeDeckNew
     } catch (e) {
       console.warn(e);
       Alert.alert('Error', String(e.message || e));
