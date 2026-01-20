@@ -47,7 +47,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm';
-import ProfileCard from '../components/ProfileCard';
+import ProfileCardNew from '../components/ProfileCardNew';
 import PreviewModal from '../components/PreviewModal';
 
 import { COLORS } from '../styles/ProfileFormStyles';
@@ -490,7 +490,7 @@ export default function ProfileScreen({ onSignOut }) {
         title="Profile preview"
         onClose={() => setPreviewVisible(false)}
       >
-        <ProfileCard profile={profile} photos={photos} />
+        <ProfileCardNew profile={profile} photos={photos} />
       </PreviewModal>
 
     </View>
