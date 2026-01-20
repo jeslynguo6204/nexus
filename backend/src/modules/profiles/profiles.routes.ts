@@ -18,4 +18,8 @@ router.patch(
   ProfilesController.updateMe
 );
 
+// POST /profiles/admin/update-ages (optional admin endpoint)
+// Note: You may want to add admin authentication middleware here
+router.post("/admin/update-ages", ProfilesController.updateAges);
+
 export default router;

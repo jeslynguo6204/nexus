@@ -3,6 +3,7 @@ import { Response, NextFunction } from "express";
 import { AuthedRequest } from "../../middleware/authMiddleware";
 import * as ProfileService from "./profiles.service";
 import { ProfileUpdateBody } from "./profiles.validation";
+import { runAgeUpdateJob } from "./profiles.cron";
 
 export async function getMe(
   req: AuthedRequest,
@@ -44,6 +45,34 @@ export async function updateMe(
     }
 
     return res.json({ profile: updated });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Admin endpoint to manually trigger age update for users with birthdays today
+ * This can be called manually or scheduled via cron
+ */
+export async function updateAges(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const result = await runAgeUpdateJob();
+    
+    if (result.success) {
+      return res.json({ 
+        message: `Successfully updated ages for ${result.updatedCount} users`,
+        updatedCount: result.updatedCount 
+      });
+    } else {
+      return res.status(500).json({ 
+        error: result.error || 'Failed to update ages',
+        updatedCount: result.updatedCount 
+      });
+    }
   } catch (err) {
     next(err);
   }

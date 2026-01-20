@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "backfill-age": "ts-node scripts/backfill-profile-age.ts"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -11,6 +12,7 @@
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
     "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^2.7.0",
     "pg": "^8.16.3",
     "zod": "^4.1.13"
   },
@@ -21,6 +23,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.6",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }

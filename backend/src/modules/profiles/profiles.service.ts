@@ -23,6 +23,8 @@ export async function updateMyProfile(
   if (input.major !== undefined) updates.major = input.major;
   if (input.graduationYear !== undefined)
     updates.graduation_year = input.graduationYear;
+  if (input.academicYear !== undefined)
+    updates.academic_year = input.academicYear;
 
   if (input.isDatingEnabled !== undefined)
     updates.is_dating_enabled = input.isDatingEnabled;
@@ -45,10 +47,27 @@ export async function updateMyProfile(
   if (input.showMeInDiscovery !== undefined)
     updates.show_me_in_discovery = input.showMeInDiscovery;
 
+  if (input.locationLat !== undefined)
+    updates.location_lat = input.locationLat;
+  if (input.locationLon !== undefined)
+    updates.location_lon = input.locationLon;
+  if (input.locationDescription !== undefined)
+    updates.location_description = input.locationDescription;
+
   if (input.interests !== undefined) updates.interests = input.interests;
   if (input.photos !== undefined) updates.photos = input.photos;
+  if (input.affiliations !== undefined) updates.affiliations = input.affiliations;
 
-  // (optional) you can also wire locationDescription to a DB column later
+  if (input.gender !== undefined) updates.gender = input.gender;
+  if (input.sexuality !== undefined) updates.sexuality = input.sexuality;
+  if (input.pronouns !== undefined) updates.pronouns = input.pronouns;
+  if (input.religiousBeliefs !== undefined) updates.religious_beliefs = input.religiousBeliefs;
+  if (input.height !== undefined) updates.height = input.height;
+  if (input.politicalAffiliation !== undefined) updates.political_affiliation = input.politicalAffiliation;
+  if (input.languages !== undefined) updates.languages = input.languages;
+  if (input.hometown !== undefined) updates.hometown = input.hometown;
+  if (input.ethnicity !== undefined) updates.ethnicity = input.ethnicity;
+  if (input.featuredAffiliations !== undefined) updates.featured_affiliations = input.featuredAffiliations;
 
   // additional sanity checks if you want them here
   if (

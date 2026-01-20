@@ -2,9 +2,8 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import HomeScreen from '../screens/HomeScreen';
-import HomeScreenNew from '../screens/HomeScreenNew';
-import ProfileScreen from '../screens/ProfileScreen';
+import HomeScreenNew from '../features/home/screens/HomeScreenNew';
+import ProfileScreen from '../features/profile/screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
