@@ -262,9 +262,9 @@ export default function HomeScreenNew() {
           <View style={styles.emptyWrap}>
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>
-                That&apos;s all for now.{'\n'}Check back later for new profiles.
+                That&apos;s all for now!{'\n'}Check back later for new profiles.
               </Text>
-              <Text style={styles.emptySub}>Minimal by design. Color by people.</Text>
+              <Text style={styles.emptySub}>Six Degrees</Text>
             </View>
           </View>
         )}

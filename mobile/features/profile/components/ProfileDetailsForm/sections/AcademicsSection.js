@@ -2,10 +2,12 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { COLORS } from '@/styles/themeNEW';
-import FormSection from '../ui/FormSection';
-import FormField from '../ui/FormField';
-import FormInput from '../ui/FormInput';
-import ChipRow from '../ui/ChipRow';
+import {
+  FormSection,
+  FormField,
+  FormInput,
+  ChipRow,
+} from '@/features/profile/components/form-editor-components';
 
 const ACADEMIC_YEARS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'];
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];

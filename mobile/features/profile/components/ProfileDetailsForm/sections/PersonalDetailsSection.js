@@ -1,9 +1,11 @@
 // mobile/features/profile/components/ProfileDetailsForm/sections/PersonalDetailsSection.js
 import React from 'react';
-import FormSection from '../ui/FormSection';
-import FormField from '../ui/FormField';
-import FormInput from '../ui/FormInput';
-import FormSelectRow from '../ui/FormSelectRow';
+import {
+  FormSection,
+  FormField,
+  FormInput,
+  FormSelectRow,
+} from '@/features/profile/components/form-editor-components';
 
 const RELIGIOUS_OPTIONS = [
   'Christian', 'Catholic', 'Jewish', 'Muslim', 'Hindu', 'Buddhist',

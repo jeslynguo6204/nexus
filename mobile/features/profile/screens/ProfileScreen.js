@@ -46,7 +46,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm/ProfileDetailsForm';
-import ProfilePreferencesForm from '../components/ProfilePreferencesForm';
+import ProfilePreferencesForm from '../components/ProfilePreferencesForm/ProfilePreferencesForm';
 import ProfileCardNew from '../../home/components/ProfileCardNew';
 import PreviewModal from '../components/PreviewModal';
 
@@ -386,7 +386,8 @@ export default function ProfileScreen({ onSignOut }) {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.secondaryButton, { flex: 1, marginLeft: 8 }]}
-                    onPress={() => setPreviewVisible(true)}
+                    onPress={() => {/* Logic to show ProfileCard directly */}
+                    }
                   >
                     <Text style={styles.secondaryButtonText}>Preview Profile</Text>
                   </TouchableOpacity>

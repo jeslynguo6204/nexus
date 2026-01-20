@@ -1,8 +1,10 @@
 // mobile/features/profile/components/ProfileDetailsForm/sections/LocationSection.js
 import React from 'react';
-import FormSection from '../ui/FormSection';
-import FormField from '../ui/FormField';
-import FormInput from '../ui/FormInput';
+import {
+  FormSection,
+  FormField,
+  FormInput,
+} from '@/features/profile/components/form-editor-components';
 
 export default function LocationSection({ draft, setField }) {
   return (

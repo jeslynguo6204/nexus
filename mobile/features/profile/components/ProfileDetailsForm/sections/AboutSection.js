@@ -1,8 +1,11 @@
 // mobile/features/profile/components/ProfileDetailsForm/sections/AboutSection.js
 import React from 'react';
-import FormSection from '../ui/FormSection';
-import FormField from '../ui/FormField';
-import FormInput from '../ui/FormInput';
+import {
+  FormSection,
+  FormField,
+  FormInput,
+  ChipRow,
+} from '@/features/profile/components/form-editor-components';
 
 export default function AboutSection({ draft, setField }) {
   return (

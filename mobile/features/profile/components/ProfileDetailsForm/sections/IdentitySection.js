@@ -1,10 +1,12 @@
 // mobile/features/profile/components/ProfileDetailsForm/sections/IdentitySection.js
 import React from 'react';
-import FormSection from '../ui/FormSection';
-import FormField from '../ui/FormField';
-import FormInput from '../ui/FormInput';
-import FormSelectRow from '../ui/FormSelectRow';
-import ChipRow from '../ui/ChipRow';
+import {
+  FormSection,
+  FormField,
+  FormInput,
+  FormSelectRow,
+  ChipRow,
+} from '@/features/profile/components/form-editor-components';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Non-Binary'];
 const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'He/They', 'She/They', 'Other'];

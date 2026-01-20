@@ -2,7 +2,9 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { COLORS } from '@/styles/themeNEW';
-import FormSection from '../ui/FormSection';
+import {
+  FormSection,
+} from '@/features/profile/components/form-editor-components';
 
 function isDormAffiliationId(id, dorms) {
   const n = Number(id);

@@ -2,9 +2,11 @@
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
 import { COLORS } from '@/styles/themeNEW';
-import FormSection from '../ui/FormSection';
-import FormField from '../ui/FormField';
-import FormSelectRow from '../ui/FormSelectRow';
+import {
+  FormSection,
+  FormField,
+  FormSelectRow,
+} from '@/features/profile/components/form-editor-components';
 
 export default function DormSection({ draft, setField, dorms, loading, openSelectionSheet }) {
   if (!dorms || dorms.length === 0) return null;
