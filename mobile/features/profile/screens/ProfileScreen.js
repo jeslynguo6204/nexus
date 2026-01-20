@@ -56,6 +56,7 @@ import styles from '../../../styles/ProfileScreenStyles';
 // ✅ API helpers
 import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../../../api/photosAPI';
 import { getMyProfile, updateMyProfile } from '../../../api/profileAPI';
+import { getMySchoolAffiliations } from '../../../api/affiliationsAPI';
 
 const MAX_INTERESTS = 6;
 
@@ -87,6 +88,7 @@ export default function ProfileScreen({ onSignOut }) {
   const [interestVisible, setInterestVisible] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photos, setPhotos] = useState([]);
+  const [affiliations, setAffiliations] = useState([]);
 
   useEffect(() => {
     (async () => {
@@ -98,7 +100,14 @@ export default function ProfileScreen({ onSignOut }) {
 
         // ✅ use profile API helper
         const myProfile = await getMyProfile(token);
+        console.log('ProfileScreen - myProfile data:', JSON.stringify(myProfile, null, 2));
         setProfile(myProfile);
+
+        // ✅ Fetch affiliations to get names for IDs
+        const affiliationsData = await getMySchoolAffiliations(token);
+        // Flatten all affiliations from all categories
+        const allAffiliations = Object.values(affiliationsData).flat();
+        setAffiliations(allAffiliations);
 
         // ✅ use photos API helper
         const photoRows = await fetchMyPhotos(token);
@@ -316,12 +325,50 @@ export default function ProfileScreen({ onSignOut }) {
                       {profile.display_name || 'Add your name'}
                     </Text>
                     <Text style={styles.metaText}>
-                      {(profile?.school?.short_name || profile?.school?.name || '') &&
-                        `${profile?.school?.short_name || profile?.school?.name}`}
-                      {profile.graduation_year
-                        ? ` '${String(profile.graduation_year).slice(-2)}`
-                        : ''}
-                      {profile.major ? ` · ${profile.major}` : ''}
+                      {(() => {
+                        const schoolShortName = profile?.school?.short_name || profile?.school?.name || '';
+                        const gradYearShort = profile.graduation_year ? `'${String(profile.graduation_year).slice(-2)}` : '';
+                        const schoolAndYear = schoolShortName && gradYearShort 
+                          ? `${schoolShortName} ${gradYearShort}` 
+                          : schoolShortName || gradYearShort;
+                        
+                        // Get featured affiliations (up to 2)
+                        const featuredAffiliationIds = profile?.featured_affiliations || [];
+                        let featuredAffiliationNames = [];
+                        
+                        if (Array.isArray(featuredAffiliationIds) && featuredAffiliationIds.length > 0 && affiliations.length > 0) {
+                          featuredAffiliationNames = featuredAffiliationIds
+                            .slice(0, 2)
+                            .map((featuredId) => {
+                              const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
+                              const found = affiliations.find((aff) => {
+                                const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                                return affId === normalizedFeatured;
+                              });
+                              return found ? (found.short_name || found.name) : null;
+                            })
+                            .filter(Boolean);
+                        }
+                        
+                        // Fallback to first 2 affiliations if no featured ones
+                        if (featuredAffiliationNames.length === 0 && profile?.affiliations?.length > 0 && affiliations.length > 0) {
+                          featuredAffiliationNames = profile.affiliations
+                            .slice(0, 2)
+                            .map((affId) => {
+                              const normalizedId = typeof affId === 'string' ? parseInt(affId, 10) : affId;
+                              const found = affiliations.find((aff) => {
+                                const affIdNorm = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                                return affIdNorm === normalizedId;
+                              });
+                              return found ? (found.short_name || found.name) : null;
+                            })
+                            .filter(Boolean)
+                            .slice(0, 2);
+                        }
+                        
+                        const parts = [schoolAndYear, ...featuredAffiliationNames].filter(Boolean);
+                        return parts.join(' · ');
+                      })()}
                     </Text>
                   </View>
                 </View>
