@@ -6,3 +6,4 @@ export { default as FormInput } from './FormInput';
 export { default as FormSelectRow } from './FormSelectRow';
 export { default as ChipRow } from './ChipRow';
 export { default as FormSlider } from './FormSlider';
+export { default as RangeSlider } from './RangeSlider';

@@ -1,30 +1,62 @@
-// mobile/features/profile/components/ProfileDetailsForm/ui/ChipRow.js
+// ChipRow.js
 import React from 'react';
 import { ScrollView, TouchableOpacity, Text } from 'react-native';
 import { COLORS } from '@/styles/themeNEW';
 
-export default function ChipRow({ options, selected, onSelect, allowUnselect = false }) {
+export default function ChipRow({
+  options,
+  selected,
+  onSelect,
+  allowUnselect = false,
+  disabled = false,
+}) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingRight: 20 }}
+      scrollEnabled={!disabled}
+    >
       {options.map((opt) => {
-        const isSelected = selected === opt;
+        const value = typeof opt === 'string' ? opt : opt.value;
+        const label = typeof opt === 'string' ? opt : opt.label;
+
+        const isSelected = selected === value;
+
         return (
           <TouchableOpacity
-            key={opt}
+            key={value}
             onPress={() => {
+              if (disabled) return;
               if (allowUnselect && isSelected) onSelect('');
-              else onSelect(opt);
+              else onSelect(value);
             }}
+            disabled={disabled}
             style={{
               paddingHorizontal: 16,
               paddingVertical: 10,
               borderRadius: 20,
               marginRight: 8,
-              backgroundColor: isSelected ? COLORS.textPrimary : COLORS.backgroundSubtle,
+              backgroundColor: disabled
+                ? '#EEEEEE'
+                : isSelected
+                ? COLORS.textPrimary
+                : COLORS.backgroundSubtle,
             }}
           >
-            <Text style={{ fontSize: 15, fontWeight: '400', color: isSelected ? COLORS.surface : COLORS.textPrimary }}>
-              {opt}
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '400',
+                color:
+                  disabled && !isSelected
+                    ? COLORS.textDisabled
+                    : isSelected
+                    ? COLORS.surface
+                    : COLORS.textPrimary,
+              }}
+            >
+              {label}
             </Text>
           </TouchableOpacity>
         );

@@ -7,8 +7,8 @@ import { FormSection, FormField } from '@/features/profile/components/form-edito
 
 export default function ModesSection({ draft, setField }) {
   return (
-    <FormSection title="Modes" first>
-      <FormField label="Dating mode" compact>
+    <FormSection title="Mode" first>
+      <FormField label="Dating Mode" compact>
         <View
           style={{
             flexDirection: 'row',
@@ -22,7 +22,7 @@ export default function ModesSection({ draft, setField }) {
         >
           <View style={{ flex: 1, paddingRight: 12 }}>
             <Text style={{ fontSize: 16, color: COLORS.textPrimary, fontWeight: '400', marginBottom: 4 }}>
-              Dating mode
+              Dating Mode
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.textMuted, fontWeight: '400', lineHeight: 18 }}>
               See and be seen by people looking to date
@@ -32,13 +32,13 @@ export default function ModesSection({ draft, setField }) {
           <Switch
             value={!!draft.isDatingEnabled}
             onValueChange={(v) => setField('isDatingEnabled', v)}
-            trackColor={{ false: COLORS.divider, true: COLORS.accentSoft }}
-            thumbColor={draft.isDatingEnabled ? COLORS.accent : COLORS.surface}
+            trackColor={{ false: COLORS.divider, true: COLORS.textPrimary }}
+            thumbColor={draft.isDatingEnabled ? '#555555' : '#CCCCCC'}
           />
         </View>
       </FormField>
 
-      <FormField label="Friends mode" compact>
+      <FormField label="Friend Mode" compact>
         <View
           style={{
             flexDirection: 'row',
@@ -52,7 +52,7 @@ export default function ModesSection({ draft, setField }) {
         >
           <View style={{ flex: 1, paddingRight: 12 }}>
             <Text style={{ fontSize: 16, color: COLORS.textPrimary, fontWeight: '400', marginBottom: 4 }}>
-              Friends mode
+              Friend Mode
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.textMuted, fontWeight: '400', lineHeight: 18 }}>
               See and be seen by people looking for friends
@@ -62,8 +62,8 @@ export default function ModesSection({ draft, setField }) {
           <Switch
             value={!!draft.isFriendsEnabled}
             onValueChange={(v) => setField('isFriendsEnabled', v)}
-            trackColor={{ false: COLORS.divider, true: COLORS.accentSoft }}
-            thumbColor={draft.isFriendsEnabled ? COLORS.accent : COLORS.surface}
+            trackColor={{ false: COLORS.divider, true: COLORS.textPrimary }}
+            thumbColor={draft.isFriendsEnabled ? '#555555' : '#CCCCCC'}
           />
         </View>
       </FormField>

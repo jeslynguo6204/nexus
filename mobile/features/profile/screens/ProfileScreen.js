@@ -27,7 +27,7 @@
  * photo data.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -62,10 +62,8 @@ const MAX_INTERESTS = 6;
 
 const INTEREST_OPTIONS = [
   'Coffee',
-  'Morning Runs',
   'Study Spots',
   'Live Music',
-  'Tech & HCI',
   'Boba',
   'Sports',
   'Movies',
@@ -76,6 +74,42 @@ const INTEREST_OPTIONS = [
   'Photography',
   'Traveling',
   'Fitness',
+  'Running',
+  'Camping',
+  'Baking',
+  'Yoga',
+  'Meditation',
+  'Writing',
+  'Painting',
+  'Drawing',
+  'Graphic Design',
+  'Fashion',
+  'Beauty & Skincare',
+  'Podcasts',
+  'Stand-up Comedy',
+  'Board Games',
+  'Puzzles',
+  'Volunteering',
+  'Activism',
+  'Sustainability',
+  'DIY Crafts',
+  'Gardening',
+  'Interior Design',
+  'Architecture',
+  'History',
+  'Philosophy',
+  'Science',
+  'Technology',
+  'Entrepreneurship',
+  'Public Speaking',
+  'Language Learning',
+  'Cultural Exchanges',
+  'Virtual Reality',
+  'Artificial Intelligence',
+  'Cryptocurrency',
+  'Blockchain',
+  'Investing',
+  'Personal Finance',
 ];
 
 export default function ProfileScreen({ onSignOut }) {
@@ -138,12 +172,34 @@ export default function ProfileScreen({ onSignOut }) {
     }
   }
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
-
   const selectedInterests =
     profile && Array.isArray(profile.interests) ? profile.interests : [];
 
   const normalize = (s) => (s || '').trim().toLowerCase();
+
+  const enrichedAffiliationsInfo = useMemo(() => {
+    // If backend already sent detailed affiliation objects, use them.
+    if (Array.isArray(profile?.affiliations_info) && profile.affiliations_info.length > 0) {
+      return profile.affiliations_info;
+    }
+
+    const ids = Array.isArray(profile?.affiliations) ? profile.affiliations : [];
+    if (ids.length === 0 || affiliations.length === 0) return [];
+
+    return ids
+      .map((id) => {
+        const normalizedId = typeof id === 'string' ? parseInt(id, 10) : id;
+        const found = affiliations.find((aff) => {
+          const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+          return affId === normalizedId;
+        });
+        if (!found) return null;
+        return { ...found, id: typeof found.id === 'string' ? parseInt(found.id, 10) : found.id };
+      })
+      .filter(Boolean);
+  }, [profile?.affiliations_info, profile?.affiliations, affiliations]);
+
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
   const availableInterests = INTEREST_OPTIONS.filter(
     (opt) => !selectedInterests.some((sel) => normalize(sel) === normalize(opt))
@@ -540,7 +596,7 @@ export default function ProfileScreen({ onSignOut }) {
         <ProfileCardNew 
           profile={{
             ...profile,
-            affiliations_info: affiliations
+            affiliations_info: enrichedAffiliationsInfo
           }} 
           photos={photos} 
         />
