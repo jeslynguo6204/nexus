@@ -15,10 +15,10 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import styles from '../styles/AuthStyles';
+import styles from '../../../styles/AuthStyles';
 
 // ✅ use the shared auth API instead of defining API_BASE here
-import { signup } from '../api/authAPI';
+import { signup } from '../../../api/authAPI';
 
 /**
  * Reusable select field:

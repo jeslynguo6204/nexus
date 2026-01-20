@@ -12,10 +12,10 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import styles from '../styles/AuthStyles';
+import styles from '../../../styles/AuthStyles';
 
 // ✅ use shared auth API
-import { login } from '../api/authAPI';
+import { login } from '../../../api/authAPI';
 
 export default function LoginScreen({ navigation, onSignedIn }) {
   const [email, setEmail] = useState('');

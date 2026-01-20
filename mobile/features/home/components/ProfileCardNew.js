@@ -13,7 +13,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles from '../styles/ProfileCardStylesNew';
+import styles from '../../../styles/ProfileCardStylesNew';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;

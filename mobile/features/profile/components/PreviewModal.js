@@ -23,7 +23,7 @@ import React from 'react';
 import { Modal, View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import { COLORS } from '../styles/ProfileFormStyles';
+import { COLORS } from '../../../styles/ProfileFormStyles';
 
 export default function PreviewModal({ visible, title, onClose, children }) {
   const insets = useSafeAreaInsets();

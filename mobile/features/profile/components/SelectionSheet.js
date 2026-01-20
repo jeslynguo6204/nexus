@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import { COLORS } from '../styles/themeNEW';
+import { COLORS } from '../../../styles/themeNEW';
 
 /**
  * SelectionSheet - A bottom sheet modal for selecting from predefined options

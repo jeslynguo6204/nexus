@@ -24,8 +24,8 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity, Switch, Alert, Sty
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS } from '../styles/themeNEW';
-import { getMySchoolDorms, getMySchoolAffiliations } from '../api/affiliationsAPI';
+import { COLORS } from '../../../styles/themeNEW';
+import { getMySchoolDorms, getMySchoolAffiliations } from '../../../api/affiliationsAPI';
 import SelectionSheet from './SelectionSheet';
 
 // Optional location import - gracefully handle if not installed

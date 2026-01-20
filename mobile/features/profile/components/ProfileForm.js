@@ -35,7 +35,7 @@ import {
   Alert,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
-import styles, { COLORS } from '../styles/ProfileFormStyles';
+import styles, { COLORS } from '../../../styles/ProfileFormStyles';
 
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 const GENDER_OPTIONS = ['male', 'female', 'non-binary', 'everyone'];

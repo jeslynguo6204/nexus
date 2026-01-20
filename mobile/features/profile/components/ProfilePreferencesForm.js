@@ -5,7 +5,7 @@ import { View, Text, ScrollView, Switch, TouchableOpacity, StyleSheet } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import { COLORS } from '../styles/themeNEW';
+import { COLORS } from '../../../styles/themeNEW';
 
 const GENDER_OPTIONS = ['male', 'female', 'non-binary', 'everyone'];
 

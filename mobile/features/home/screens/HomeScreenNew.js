@@ -13,9 +13,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import SwipeDeckNew from '../components/SwipeDeckNew';
-import { getFeedProfiles } from '../api/feedAPI';
-import { getMyProfile } from '../api/profileAPI';
-import styles from '../styles/HomeStylesNew';
+import { getFeedProfiles } from '../../../api/feedAPI';
+import { getMyProfile } from '../../../api/profileAPI';
+import styles from '../../../styles/HomeStylesNew';
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 

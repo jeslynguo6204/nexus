@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles from '../styles/AuthStyles';
+import styles from '../../../styles/AuthStyles';
 
 export default function EntryScreen({ navigation }) {
   return (

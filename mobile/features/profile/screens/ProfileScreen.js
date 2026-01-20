@@ -47,15 +47,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm';
-import ProfileCardNew from '../components/ProfileCardNew';
+import ProfileCardNew from '../../home/components/ProfileCardNew';
 import PreviewModal from '../components/PreviewModal';
 
-import { COLORS } from '../styles/ProfileFormStyles';
-import styles from '../styles/ProfileScreenStyles';
+import { COLORS } from '../../../styles/ProfileFormStyles';
+import styles from '../../../styles/ProfileScreenStyles';
 
 // ✅ API helpers
-import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../api/photosAPI';
-import { getMyProfile, updateMyProfile } from '../api/profileAPI';
+import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../../../api/photosAPI';
+import { getMyProfile, updateMyProfile } from '../../../api/profileAPI';
 
 const MAX_INTERESTS = 6;
 

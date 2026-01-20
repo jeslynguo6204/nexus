@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import { COLORS } from '../styles/themeNEW';
+import { COLORS } from '../../../styles/themeNEW';
 
 export default function MoreAboutMeSheet({
   visible,
