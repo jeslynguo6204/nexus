@@ -91,7 +91,7 @@ export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
         showsVerticalScrollIndicator={false}
       >
         {/* Modes */}
-        <View style={localStyles.section}>
+        <View style={[localStyles.section, { marginTop: 24 }]}>
           <Text style={localStyles.sectionTitle}>Modes</Text>
           
           <View style={localStyles.fieldGroup}>
@@ -294,26 +294,26 @@ const localStyles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 0,
     paddingBottom: 40,
   },
   section: {
-    marginTop: 40,
+    marginTop: 32,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
     color: COLORS.textPrimary,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   fieldGroup: {
-    marginTop: 20,
+    marginTop: 16,
   },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '400',
     color: COLORS.textMuted,
-    marginBottom: 10,
+    marginBottom: 8,
     letterSpacing: 0,
   },
   switchRow: {
@@ -323,7 +323,7 @@ const localStyles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSubtle,
     borderRadius: 10,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
   },
   switchLabel: {
     fontSize: 16,
@@ -338,7 +338,7 @@ const localStyles = StyleSheet.create({
     lineHeight: 18,
   },
   chipRow: {
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 4,
   },
   chipRowContent: {
@@ -369,7 +369,7 @@ const localStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   sliderValue: {
     fontSize: 14,
@@ -380,7 +380,7 @@ const localStyles = StyleSheet.create({
     backgroundColor: COLORS.backgroundSubtle,
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 12,
     marginTop: 8,
   },
 });

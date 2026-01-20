@@ -45,7 +45,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import ProfileDetailsForm from '../components/ProfileDetailsForm';
+import ProfileDetailsForm from '../components/ProfileDetailsForm/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm';
 import ProfileCardNew from '../../home/components/ProfileCardNew';
 import PreviewModal from '../components/PreviewModal';
