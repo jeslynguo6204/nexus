@@ -386,8 +386,7 @@ export default function ProfileScreen({ onSignOut }) {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.secondaryButton, { flex: 1, marginLeft: 8 }]}
-                    onPress={() => {/* Logic to show ProfileCard directly */}
-                    }
+                    onPress={() => setPreviewVisible(true)}
                   >
                     <Text style={styles.secondaryButtonText}>Preview Profile</Text>
                   </TouchableOpacity>
@@ -538,7 +537,13 @@ export default function ProfileScreen({ onSignOut }) {
         title="Profile preview"
         onClose={() => setPreviewVisible(false)}
       >
-        <ProfileCardNew profile={profile} photos={photos} />
+        <ProfileCardNew 
+          profile={{
+            ...profile,
+            affiliations_info: affiliations
+          }} 
+          photos={photos} 
+        />
       </PreviewModal>
 
     </View>
