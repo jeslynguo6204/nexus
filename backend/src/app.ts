@@ -9,6 +9,7 @@ import affiliationsRoutes from "./modules/affiliations/affiliations.routes";
 import swipesRoutes from "./modules/swipes/swipes.routes";
 import matchesRoutes from "./modules/matches/matches.routes";
 import messagesRoutes from "./modules/messages/messages.routes";
+import blocksRoutes from "./modules/blocks/blocks.routes";
 import { errorHandler } from "./middleware/errorHandlerMiddleware";
 
 export const app = express();
@@ -67,6 +68,7 @@ app.use("/affiliations", affiliationsRoutes);
 app.use("/swipes", swipesRoutes);
 app.use("/matches", matchesRoutes);
 app.use("/messages", messagesRoutes);
+app.use("/blocks", blocksRoutes);
 console.log("✅ Protected routes registered:");
 console.log("   - /users/*");
 console.log("   - /profiles/*");
@@ -76,6 +78,7 @@ console.log("   - /affiliations/*");
 console.log("   - /swipes/*");
 console.log("   - /matches/*");
 console.log("   - /messages/*");
+console.log("   - /blocks/*");
 
 // Global error handler (last)
 app.use(errorHandler);

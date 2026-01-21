@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../../../styles/ProfileCardStylesNew';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
+import BlockReportSheet from './BlockReportSheet';
 import { trackPhotoView } from '../../../api/photosAPI';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -141,6 +142,7 @@ export default function ProfileCardNew({
   const [moreOpen, setMoreOpen] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(false);
   const [moreAboutMeOpen, setMoreAboutMeOpen] = useState(false);
+  const [blockReportSheetOpen, setBlockReportSheetOpen] = useState(false);
 
   const scrollRef = useRef(null);
   const isClosingRef = useRef(false);
@@ -518,6 +520,15 @@ export default function ProfileCardNew({
                 pointerEvents="none"
               />
 
+              {/* Menu button for block/report */}
+              <TouchableOpacity
+                style={styles.menuButton}
+                onPress={() => setBlockReportSheetOpen(true)}
+                hitSlop={8}
+              >
+                <Text style={styles.menuButtonText}>⋯</Text>
+              </TouchableOpacity>
+
               <Pressable onPress={toggleMore} style={styles.captionTapArea} hitSlop={6}>
                 <Text style={styles.nameText}>
                   {firstName}
@@ -629,6 +640,18 @@ export default function ProfileCardNew({
         politicalAffiliation={politicalAffiliation}
         ethnicity={ethnicity}
         sexuality={coalesce(profile?.sexuality)}
+      />
+
+      {/* Block/Report Sheet */}
+      <BlockReportSheet
+        visible={blockReportSheetOpen}
+        onClose={() => setBlockReportSheetOpen(false)}
+        userId={profile?.user_id || profile?.id}
+        userName={firstName}
+        onBlocked={() => {
+          // Callback when user is blocked - could trigger a refresh or navigation
+          setBlockReportSheetOpen(false);
+        }}
       />
     </>
   );

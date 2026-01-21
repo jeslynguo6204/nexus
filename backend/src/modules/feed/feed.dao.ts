@@ -119,6 +119,24 @@ export async function getSimpleFeed(
   
   const showOldCards = totalSwipes >= 3;
   
+  // Exclude blocked users (bidirectional - exclude if either user blocked the other)
+  try {
+    const blockParam = paramIndex++;
+    conditions.push(`
+      NOT EXISTS (
+        SELECT 1 FROM blocks b
+        WHERE b.is_active = TRUE
+          AND (
+            (b.blocker_id = $${blockParam} AND b.blocked_id = p.user_id)
+            OR (b.blocker_id = p.user_id AND b.blocked_id = $${blockParam})
+          )
+      )
+    `);
+    params.push(userId);
+  } catch (e) {
+    console.warn('Could not add block exclusion (table might not exist):', e);
+  }
+  
   // Exclude users who are matched with the current user (only if table exists)
   // Use a safer approach that won't fail if tables don't exist
   try {

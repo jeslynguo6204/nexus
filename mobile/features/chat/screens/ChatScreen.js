@@ -18,6 +18,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendMessage as sendMessageAPI } from '../../../api/messagesAPI';
 import { unmatchUser as unmatchUserAPI } from '../../../api/matchesAPI';
+import { blockUser, reportUser } from '../../../api/blocksAPI';
+import BlockReportSheet from '../../home/components/BlockReportSheet';
 
 const DEFAULT_AVATAR = 'https://picsum.photos/200?88';
 
@@ -60,6 +62,10 @@ export default function ChatScreen({ navigation, route }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
   const moreBtnRef = useRef(null);
+  
+  // Block/Report sheet state
+  const [blockReportSheetOpen, setBlockReportSheetOpen] = useState(false);
+  const [blockReportMode, setBlockReportMode] = useState(null); // 'block' or 'report'
 
   // Hard-coded starter conversation
   // Note: Array gets reversed before passing to inverted FlatList, so first item appears at top
@@ -137,14 +143,64 @@ export default function ChatScreen({ navigation, route }) {
     );
   };
 
-  const handleBlock = () => {
+  const handleBlock = async () => {
     setMenuOpen(false);
-    Alert.alert('Coming Soon', 'Block functionality will be available soon.');
+    
+    Alert.alert(
+      'Block User',
+      `Are you sure you want to block ${displayName}? You won't be able to see each other or message anymore.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              if (!token) throw new Error('Not signed in');
+
+              // Block the user
+              await blockUser(token, matchUserId);
+              
+              // Also unmatch them (blocking should remove the match)
+              try {
+                await unmatchUserAPI(token, matchId, mode);
+              } catch (unmatchError) {
+                console.warn('Error unmatching after block:', unmatchError);
+                // Continue even if unmatch fails
+              }
+              
+              Alert.alert('Success', 'User blocked successfully', [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    // Navigate back to inbox
+                    navigation.goBack();
+                  },
+                },
+              ]);
+            } catch (error) {
+              console.error('Error blocking user:', error);
+              Alert.alert('Error', error.message || 'Failed to block user. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleReport = () => {
     setMenuOpen(false);
-    Alert.alert('Coming Soon', 'Report functionality will be available soon.');
+    setBlockReportMode('report');
+    setBlockReportSheetOpen(true);
+  };
+  
+  const handleReportSubmitted = () => {
+    setBlockReportSheetOpen(false);
+    setBlockReportMode(null);
   };
 
   const dataForList = useMemo(() => {
@@ -280,7 +336,7 @@ export default function ChatScreen({ navigation, route }) {
                 onPress={handleBlock}
                 style={styles.menuRow}
               >
-                <Text style={styles.menuRowText}>
+                <Text style={[styles.menuRowText, styles.menuRowTextDestructive]}>
                   Block
                 </Text>
               </Pressable>
@@ -290,12 +346,27 @@ export default function ChatScreen({ navigation, route }) {
                 style={styles.menuRow}
               >
                 <Text style={styles.menuRowText}>
-                  Report an issue
+                  Report
                 </Text>
               </Pressable>
             </Pressable>
           </Pressable>
         </Modal>
+
+        {/* Block/Report Sheet */}
+        {blockReportMode === 'report' && (
+          <BlockReportSheet
+            visible={blockReportSheetOpen}
+            onClose={() => {
+              setBlockReportSheetOpen(false);
+              setBlockReportMode(null);
+            }}
+            userId={matchUserId}
+            userName={displayName}
+            onBlocked={handleReportSubmitted}
+            initialMode="report"
+          />
+        )}
 
         {/* Messages */}
         <FlatList
