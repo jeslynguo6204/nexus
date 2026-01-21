@@ -1,11 +1,12 @@
 // mobile/api/profile.js
 import Constants from "expo-constants";
 
-const API_BASE = Constants.expoConfig.extra.apiBaseUrl;
-
-console.log("📡 Profile API Base URL:", API_BASE);
+const getApiBase = () => {
+  return Constants?.expoConfig?.extra?.apiBaseUrl || "http://localhost:4000";
+};
 
 export async function getMyProfile(token) {
+  const API_BASE = getApiBase();
   const res = await fetch(`${API_BASE}/profiles/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -22,6 +23,7 @@ export async function getMyProfile(token) {
 }
 
 export async function updateMyProfile(token, fields) {
+  const API_BASE = getApiBase();
   const res = await fetch(`${API_BASE}/profiles/me`, {
     method: "PATCH",
     headers: {

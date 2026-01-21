@@ -1,4 +1,4 @@
-// mobile/api/swipesAPI.js
+// mobile/api/matchesAPI.js
 
 import Constants from "expo-constants";
 
@@ -6,12 +6,11 @@ const getApiBase = () => {
   return Constants?.expoConfig?.extra?.apiBaseUrl || "http://localhost:4000";
 };
 
-// Record a like (swipe right)
-export async function likeUser(token, userId) {
+export async function getAllMatches(token) {
   try {
     const API_BASE = getApiBase();
-    const res = await fetch(`${API_BASE}/swipes/like/${userId}`, {
-      method: "POST",
+    const res = await fetch(`${API_BASE}/matches/all`, {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -20,23 +19,22 @@ export async function likeUser(token, userId) {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Failed to record like");
+      throw new Error(err.error || "Failed to fetch matches");
     }
 
     const data = await res.json();
-    return data; // { success: true, isMatch: boolean, like: {...} }
+    return data.matches || [];
   } catch (error) {
-    console.warn("Error recording like:", error);
+    console.warn("Error fetching all matches:", error);
     throw error;
   }
 }
 
-// Record a pass (swipe left)
-export async function passUser(token, userId) {
+export async function getChats(token) {
   try {
     const API_BASE = getApiBase();
-    const res = await fetch(`${API_BASE}/swipes/pass/${userId}`, {
-      method: "POST",
+    const res = await fetch(`${API_BASE}/matches/chats`, {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -45,13 +43,13 @@ export async function passUser(token, userId) {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Failed to record pass");
+      throw new Error(err.error || "Failed to fetch chats");
     }
 
     const data = await res.json();
-    return data; // { success: true, pass: {...} }
+    return data.chats || [];
   } catch (error) {
-    console.warn("Error recording pass:", error);
+    console.warn("Error fetching chats:", error);
     throw error;
   }
 }
