@@ -68,8 +68,11 @@ export async function getAllMatchesForUser(
  * Used for the message list in the inbox - shows conversations with messages
  */
 export async function getActiveChatMatches(
-  userId: number
+  userId: number,
+  mode: 'romantic' | 'platonic' = 'romantic'
 ): Promise<MatchWithUserRow[]> {
+  const matchesTable = mode === 'platonic' ? 'friend_matches' : 'dating_matches';
+  const chatsTable = mode === 'platonic' ? 'friend_chats' : 'chats';
   const rows = await dbQuery<MatchWithUserRow>(
     `
     SELECT 
@@ -94,8 +97,8 @@ export async function getActiveChatMatches(
         ELSE ph1.url
       END as avatar_url,
       c.last_message_preview
-    FROM dating_matches dm
-    JOIN chats c ON c.id = dm.chat_id
+    FROM ${matchesTable} dm
+    JOIN ${chatsTable} c ON c.id = dm.chat_id
     LEFT JOIN profiles p1 ON p1.user_id = dm.matcher_id
     LEFT JOIN profiles p2 ON p2.user_id = dm.matchee_id
     LEFT JOIN photos ph1 ON ph1.user_id = dm.matcher_id AND ph1.is_primary = TRUE
@@ -158,6 +161,7 @@ export async function unmatchUser(userId: number, matchId: number): Promise<void
     );
 
     // Delete chat and messages if chat exists (before deleting match due to foreign key constraints)
+    // Use dating mode tables: chats and messages
     if (chatId) {
       // Delete messages first (foreign key constraint)
       await client.query(
@@ -271,7 +275,7 @@ export async function getActiveFriendChatMatches(
       END as avatar_url,
       c.last_message_preview
     FROM friend_matches fm
-    JOIN chats c ON c.id = fm.chat_id
+    JOIN friend_chats c ON c.id = fm.chat_id
     LEFT JOIN profiles p1 ON p1.user_id = fm.matcher_id
     LEFT JOIN profiles p2 ON p2.user_id = fm.matchee_id
     LEFT JOIN photos ph1 ON ph1.user_id = fm.matcher_id AND ph1.is_primary = TRUE
@@ -334,11 +338,12 @@ export async function unmatchFriendUser(userId: number, matchId: number): Promis
     );
 
     // Delete chat and messages if chat exists (before deleting match due to foreign key constraints)
+    // Use friend mode tables: friend_chats and friend_messages
     if (chatId) {
       // Delete messages first (foreign key constraint)
       await client.query(
         `
-        DELETE FROM messages
+        DELETE FROM friend_messages
         WHERE chat_id = $1
         `,
         [chatId]
@@ -347,7 +352,7 @@ export async function unmatchFriendUser(userId: number, matchId: number): Promis
       // Delete chat
       await client.query(
         `
-        DELETE FROM chats
+        DELETE FROM friend_chats
         WHERE id = $1
         `,
         [chatId]

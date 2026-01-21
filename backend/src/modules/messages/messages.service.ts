@@ -66,9 +66,10 @@ export async function sendMessage(
 }
 
 export async function getMessages(
-  chatId: number
+  chatId: number,
+  mode: 'romantic' | 'platonic' = 'romantic'
 ): Promise<Array<MessageRow & { senderDisplayName?: string }>> {
-  const messages = await getChatMessages(chatId);
+  const messages = await getChatMessages(chatId, 50, mode);
   // Just return raw messages for now; you can join with profiles later if needed
   return messages;
 }

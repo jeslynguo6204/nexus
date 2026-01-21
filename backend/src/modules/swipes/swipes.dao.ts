@@ -32,9 +32,10 @@ export async function createDatingLike(
 ): Promise<DatingLikeRow> {
   const rows = await dbQuery<DatingLikeRow>(
     `
-    INSERT INTO dating_likes (liker_id, likee_id)
-    VALUES ($1, $2)
-    ON CONFLICT (liker_id, likee_id) DO NOTHING
+    INSERT INTO dating_likes (liker_id, likee_id, created_at)
+    VALUES ($1, $2, NOW())
+    ON CONFLICT (liker_id, likee_id) 
+    DO UPDATE SET created_at = NOW()
     RETURNING id, liker_id, likee_id, created_at
     `,
     [likerId, likeeId]
@@ -48,9 +49,10 @@ export async function createDatingPass(
 ): Promise<DatingPassRow> {
   const rows = await dbQuery<DatingPassRow>(
     `
-    INSERT INTO dating_passes (passer_id, passee_id)
-    VALUES ($1, $2)
-    ON CONFLICT (passer_id, passee_id) DO NOTHING
+    INSERT INTO dating_passes (passer_id, passee_id, created_at)
+    VALUES ($1, $2, NOW())
+    ON CONFLICT (passer_id, passee_id) 
+    DO UPDATE SET created_at = NOW()
     RETURNING id, passer_id, passee_id, created_at
     `,
     [passerId, passeeId]
@@ -170,9 +172,10 @@ export async function createFriendLike(
 ): Promise<FriendLikeRow> {
   const rows = await dbQuery<FriendLikeRow>(
     `
-    INSERT INTO friend_likes (liker_id, likee_id)
-    VALUES ($1, $2)
-    ON CONFLICT (liker_id, likee_id) DO NOTHING
+    INSERT INTO friend_likes (liker_id, likee_id, created_at)
+    VALUES ($1, $2, NOW())
+    ON CONFLICT (liker_id, likee_id) 
+    DO UPDATE SET created_at = NOW()
     RETURNING id, liker_id, likee_id, created_at
     `,
     [likerId, likeeId]
@@ -186,9 +189,10 @@ export async function createFriendPass(
 ): Promise<FriendPassRow> {
   const rows = await dbQuery<FriendPassRow>(
     `
-    INSERT INTO friend_passes (passer_id, passee_id)
-    VALUES ($1, $2)
-    ON CONFLICT (passer_id, passee_id) DO NOTHING
+    INSERT INTO friend_passes (passer_id, passee_id, created_at)
+    VALUES ($1, $2, NOW())
+    ON CONFLICT (passer_id, passee_id) 
+    DO UPDATE SET created_at = NOW()
     RETURNING id, passer_id, passee_id, created_at
     `,
     [passerId, passeeId]

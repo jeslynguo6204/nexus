@@ -41,7 +41,7 @@ export async function getChatsController(
     if (mode === 'platonic') {
       chats = await getFriendChats(req.userId!);
     } else {
-      chats = await getChats(req.userId!);
+      chats = await getChats(req.userId!, mode as 'romantic' | 'platonic');
     }
     
     res.status(200).json({ chats });

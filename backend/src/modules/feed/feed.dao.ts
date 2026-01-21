@@ -94,11 +94,76 @@ export async function getSimpleFeed(
     params.push(userSchoolId);
   }
   
+  // Determine which tables to use based on mode
+  const likesTable = mode === 'platonic' ? 'friend_likes' : 'dating_likes';
+  const passesTable = mode === 'platonic' ? 'friend_passes' : 'dating_passes';
+  const matchesTable = mode === 'platonic' ? 'friend_matches' : 'dating_matches';
+  
+  // Count total swipes (likes + passes) for this user in this mode
+  // If user has swiped 3+ times, allow showing previously liked/passed profiles
+  let totalSwipes = 0;
+  try {
+    const swipeCountResult = await dbQuery<{ count: string }>(
+      `
+      SELECT 
+        (SELECT COUNT(*) FROM ${likesTable} WHERE liker_id = $1) +
+        (SELECT COUNT(*) FROM ${passesTable} WHERE passer_id = $1) as count
+      `,
+      [userId]
+    );
+    totalSwipes = parseInt(swipeCountResult[0]?.count || '0', 10);
+  } catch (e) {
+    console.warn('Could not count swipes (tables might not exist):', e);
+    // Default to 0 if we can't count
+  }
+  
+  const showOldCards = totalSwipes >= 3;
+  
+  // Exclude users who are matched with the current user (only if table exists)
+  // Use a safer approach that won't fail if tables don't exist
+  try {
+    const matchParam = paramIndex++;
+    conditions.push(`
+      NOT EXISTS (
+        SELECT 1 FROM ${matchesTable} m
+        WHERE m.is_active = TRUE 
+          AND m.unmatched_at IS NULL
+          AND (
+            (m.matcher_id = $${matchParam} AND m.matchee_id = p.user_id)
+            OR (m.matchee_id = $${matchParam} AND m.matcher_id = p.user_id)
+          )
+      )
+    `);
+    params.push(userId);
+  } catch (e) {
+    console.warn('Could not add match exclusion (table might not exist):', e);
+  }
+  
+  // Exclude users who have been liked or passed ONLY if user has swiped < 3 times
+  // After 3 swipes, allow showing previously liked/passed profiles again
+  if (!showOldCards) {
+    try {
+      const likesParam = paramIndex++;
+      const passesParam = paramIndex++;
+      conditions.push(`
+        NOT EXISTS (
+          SELECT 1 FROM ${likesTable} WHERE liker_id = $${likesParam} AND likee_id = p.user_id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM ${passesTable} WHERE passer_id = $${passesParam} AND passee_id = p.user_id
+        )
+      `);
+      params.push(userId);
+      params.push(userId);
+    } catch (e) {
+      console.warn('Could not add like/pass exclusion (tables might not exist):', e);
+    }
+  }
+  
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const limitClause = includeAllForTesting ? 'LIMIT 100' : 'LIMIT 25';
-    
-  const profiles = await dbQuery<FeedProfileRow>(
-    `
+  
+  const query = `
     SELECT
       p.user_id,
       p.display_name,
@@ -130,9 +195,30 @@ export async function getSimpleFeed(
     ${whereClause}
     ORDER BY p.updated_at DESC
     ${limitClause}
-    `,
-    params
-  );
+  `;
+  
+  let profiles: FeedProfileRow[];
+  try {
+    console.log('Feed query params:', { userId, mode, scope, paramCount: params.length, totalSwipes, showOldCards });
+    console.log('Feed query (first 500 chars):', query.substring(0, 500));
+    console.log('Using tables:', { likesTable, passesTable, matchesTable });
+    profiles = await dbQuery<FeedProfileRow>(query, params);
+    console.log('Feed query succeeded, got', profiles.length, 'profiles');
+  } catch (error: any) {
+    console.error('=== FEED QUERY ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error detail:', error.detail);
+    console.error('Error hint:', error.hint);
+    console.error('Full query:', query);
+    console.error('Query params:', params);
+    console.error('Using tables:', { likesTable, passesTable, matchesTable });
+    console.error('========================');
+    // Re-throw with more context
+    const enhancedError = new Error(`Feed query failed: ${error.message || error}. Tables: ${likesTable}, ${passesTable}, ${matchesTable}`);
+    (enhancedError as any).originalError = error;
+    throw enhancedError;
+  }
 
   // For each profile, fetch their photos and resolve affiliations
   const profilesWithPhotos = await Promise.all(

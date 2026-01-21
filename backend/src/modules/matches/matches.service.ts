@@ -38,8 +38,8 @@ export async function getAllMatches(userId: number): Promise<FormattedMatch[]> {
   }));
 }
 
-export async function getChats(userId: number): Promise<FormattedChat[]> {
-  const rows = await getActiveChatMatches(userId);
+export async function getChats(userId: number, mode: 'romantic' | 'platonic' = 'romantic'): Promise<FormattedChat[]> {
+  const rows = await getActiveChatMatches(userId, mode);
   return rows.map((row) => ({
     id: row.id,
     match_user_id: row.match_user_id,

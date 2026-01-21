@@ -32,7 +32,9 @@ export async function getMessagesController(
 ): Promise<void> {
   try {
     const { chatId } = req.params;
-    const messages = await getMessages(parseInt(chatId));
+    // Get mode from query parameter (default to 'romantic' for backward compatibility)
+    const mode = ((req.query.mode as string) || 'romantic') as 'romantic' | 'platonic';
+    const messages = await getMessages(parseInt(chatId), mode);
     res.status(200).json(messages);
   } catch (error) {
     next(error);

@@ -34,13 +34,14 @@ export async function sendMessage(matchId, messageBody, mode = 'romantic') {
   }
 }
 
-export async function getMessages(chatId) {
+export async function getMessages(chatId, mode = 'romantic') {
   try {
     const API_BASE = getApiBase();
     const token = await AsyncStorage.getItem('token');
     if (!token) throw new Error('Not authenticated');
 
-    const response = await fetch(`${API_BASE}/messages/chat/${chatId}`, {
+    const url = `${API_BASE}/messages/chat/${chatId}?mode=${mode}`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

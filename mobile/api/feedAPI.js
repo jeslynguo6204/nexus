@@ -20,7 +20,10 @@ export async function getFeedProfiles(token, mode = 'romantic', scope = 'school'
   const json = await res.json();
 
   if (!res.ok) {
-    throw new Error(json.error || 'Failed to fetch profiles');
+    console.error('Feed API error response:', json);
+    const error = new Error(json.details || json.error || `HTTP ${res.status}: ${res.statusText}`);
+    error.response = res;
+    throw error;
   }
 
   return json.profiles || [];

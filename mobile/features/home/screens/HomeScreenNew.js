@@ -54,6 +54,16 @@ export default function HomeScreenNew() {
       setCurrentIndex(0);
     } catch (e) {
       console.warn('Error loading feed:', e);
+      console.warn('Error details:', e.message);
+      // Log the full error response if available
+      if (e.response) {
+        try {
+          const errorData = await e.response.json();
+          console.warn('Error response data:', errorData);
+        } catch (jsonError) {
+          console.warn('Could not parse error response as JSON');
+        }
+      }
       // Don't show alert for network errors - they're expected if server isn't running
       const isNetworkError = e.message?.includes('Network') || 
                             e.message?.includes('fetch') || 

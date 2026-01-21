@@ -1,4 +1,5 @@
 // backend/src/modules/swipes/swipes.service.ts
+import { dbQuery } from "../../db/pool";
 import {
   createDatingLike,
   createDatingPass,
@@ -24,18 +25,17 @@ export async function recordLike(likerId: number, likeeId: number) {
     throw err;
   }
 
-  // Check if already liked
-  const existingLike = await getDatingLike(likerId, likeeId);
-  if (existingLike) {
-    // Already liked - return existing like (idempotent)
-    return {
-      like: existingLike,
-      isMatch: false,
-      match: null,
-    };
+  // If user previously passed on this person, delete the pass (replacing old interaction)
+  const existingPass = await getDatingPass(likerId, likeeId);
+  if (existingPass) {
+    // Delete the old pass record - we're replacing it with a like
+    await dbQuery(
+      `DELETE FROM dating_passes WHERE passer_id = $1 AND passee_id = $2`,
+      [likerId, likeeId]
+    );
   }
 
-  // Create the like
+  // Create or update the like (will update timestamp if already exists)
   const like = await createDatingLike(likerId, likeeId);
 
   // Check for mutual like (match)
@@ -69,14 +69,17 @@ export async function recordPass(passerId: number, passeeId: number) {
     throw err;
   }
 
-  // Check if already passed
-  const existingPass = await getDatingPass(passerId, passeeId);
-  if (existingPass) {
-    // Already passed - return existing pass (idempotent)
-    return existingPass;
+  // If user previously liked this person, delete the like (replacing old interaction)
+  const existingLike = await getDatingLike(passerId, passeeId);
+  if (existingLike) {
+    // Delete the old like record - we're replacing it with a pass
+    await dbQuery(
+      `DELETE FROM dating_likes WHERE liker_id = $1 AND likee_id = $2`,
+      [passerId, passeeId]
+    );
   }
 
-  // Create the pass
+  // Create or update the pass (will update timestamp if already exists)
   const pass = await createDatingPass(passerId, passeeId);
   return pass;
 }
@@ -89,18 +92,17 @@ export async function recordFriendLike(likerId: number, likeeId: number) {
     throw err;
   }
 
-  // Check if already liked
-  const existingLike = await getFriendLike(likerId, likeeId);
-  if (existingLike) {
-    // Already liked - return existing like (idempotent)
-    return {
-      like: existingLike,
-      isMatch: false,
-      match: null,
-    };
+  // If user previously passed on this person, delete the pass (replacing old interaction)
+  const existingPass = await getFriendPass(likerId, likeeId);
+  if (existingPass) {
+    // Delete the old pass record - we're replacing it with a like
+    await dbQuery(
+      `DELETE FROM friend_passes WHERE passer_id = $1 AND passee_id = $2`,
+      [likerId, likeeId]
+    );
   }
 
-  // Create the like
+  // Create or update the like (will update timestamp if already exists)
   const like = await createFriendLike(likerId, likeeId);
 
   // Check for mutual like (match)
@@ -134,14 +136,17 @@ export async function recordFriendPass(passerId: number, passeeId: number) {
     throw err;
   }
 
-  // Check if already passed
-  const existingPass = await getFriendPass(passerId, passeeId);
-  if (existingPass) {
-    // Already passed - return existing pass (idempotent)
-    return existingPass;
+  // If user previously liked this person, delete the like (replacing old interaction)
+  const existingLike = await getFriendLike(passerId, passeeId);
+  if (existingLike) {
+    // Delete the old like record - we're replacing it with a pass
+    await dbQuery(
+      `DELETE FROM friend_likes WHERE liker_id = $1 AND likee_id = $2`,
+      [passerId, passeeId]
+    );
   }
 
-  // Create the pass
+  // Create or update the pass (will update timestamp if already exists)
   const pass = await createFriendPass(passerId, passeeId);
   return pass;
 }

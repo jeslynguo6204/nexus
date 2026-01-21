@@ -16,8 +16,19 @@ export async function getFeed(req: AuthedRequest, res: Response) {
     });
 
     return res.json({ profiles });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Failed to load feed" });
+  } catch (err: any) {
+    console.error("=== FEED CONTROLLER ERROR ===");
+    console.error("Error:", err);
+    console.error("Error message:", err.message);
+    console.error("Error stack:", err.stack);
+    if (err.originalError) {
+      console.error("Original error:", err.originalError);
+    }
+    console.error("============================");
+    return res.status(500).json({ 
+      error: "Failed to load feed", 
+      details: err.message || String(err),
+      originalError: err.originalError?.message
+    });
   }
 }

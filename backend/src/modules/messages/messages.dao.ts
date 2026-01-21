@@ -107,11 +107,14 @@ export async function sendFirstMessage(
     const match = matchResult.rows[0];
     let chatId = match.chat_id;
 
+    const chatsTable = mode === 'platonic' ? 'friend_chats' : 'chats';
+    const messagesTable = mode === 'platonic' ? 'friend_messages' : 'messages';
+
     // If no chat_id yet, create one and update the match
     if (!chatId) {
       const chatResult = await client.query(
         `
-        INSERT INTO chats (created_at, last_message_at, last_message_preview)
+        INSERT INTO ${chatsTable} (created_at, last_message_at, last_message_preview)
         VALUES (NOW(), NULL, NULL)
         RETURNING id
         `
@@ -132,7 +135,7 @@ export async function sendFirstMessage(
     // Insert the message
     const messageResult = await client.query(
       `
-      INSERT INTO messages (chat_id, sender_user_id, body, created_at)
+      INSERT INTO ${messagesTable} (chat_id, sender_user_id, body, created_at)
       VALUES ($1, $2, $3, NOW())
       RETURNING id
       `,
@@ -145,7 +148,7 @@ export async function sendFirstMessage(
     const preview = messageBody.substring(0, 120);
     await client.query(
       `
-      UPDATE chats
+      UPDATE ${chatsTable}
       SET last_message_at = NOW(),
           last_message_preview = $1
       WHERE id = $2
@@ -168,12 +171,14 @@ export async function sendFirstMessage(
  */
 export async function getChatMessages(
   chatId: number,
-  limit: number = 50
+  limit: number = 50,
+  mode: 'romantic' | 'platonic' = 'romantic'
 ): Promise<MessageRow[]> {
+  const messagesTable = mode === 'platonic' ? 'friend_messages' : 'messages';
   const rows = await dbQuery<MessageRow>(
     `
     SELECT id, chat_id, sender_user_id, body, created_at
-    FROM messages
+    FROM ${messagesTable}
     WHERE chat_id = $1
     ORDER BY created_at DESC
     LIMIT $2
