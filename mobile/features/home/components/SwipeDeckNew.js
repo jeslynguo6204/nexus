@@ -23,14 +23,17 @@ export default function SwipeDeckNew({
   const [isAnimating, setIsAnimating] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [shouldResetPan, setShouldResetPan] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   // Use refs to track current values for panResponder callbacks
   const profilesRef = useRef(profiles);
   const currentIndexRef = useRef(currentIndex);
+  const photoIndexRef = useRef(currentPhotoIndex);
   
   // Update refs whenever props change
   profilesRef.current = profiles;
   currentIndexRef.current = currentIndex;
+  photoIndexRef.current = currentPhotoIndex;
 
   // Reset pan after currentIndex updates to avoid showing old card at center
   useLayoutEffect(() => {
@@ -38,6 +41,7 @@ export default function SwipeDeckNew({
       pan.setValue({ x: 0, y: 0 });
       setIsAnimating(false);
       setShouldResetPan(false);
+      setCurrentPhotoIndex(0); // Reset to first photo when showing new profile
     }
   }, [shouldResetPan, pan]);
 
@@ -75,10 +79,11 @@ export default function SwipeDeckNew({
         if (Math.abs(dx) > SWIPE_THRESHOLD) {
           // Use refs to get current values, avoiding stale closure
           const topProfile = profilesRef.current[currentIndexRef.current];
+          const photoIdx = photoIndexRef.current;
           if (dx > 0) {
-            animateOut(true, topProfile);
+            animateOut(true, topProfile, photoIdx);
           } else {
-            animateOut(false, topProfile);
+            animateOut(false, topProfile, photoIdx);
           }
         } else {
           resetPosition();
@@ -91,7 +96,7 @@ export default function SwipeDeckNew({
     })
   ).current;
 
-  function animateOut(isRight, topProfile) {
+  function animateOut(isRight, topProfile, photoIdx) {
     if (isAnimating) return;
     setIsAnimating(true);
 
@@ -101,9 +106,9 @@ export default function SwipeDeckNew({
       duration: 240,
       useNativeDriver: false,
     }).start(() => {
-      // callbacks
-      if (isRight) onSwipeRight?.(topProfile);
-      else onSwipeLeft?.(topProfile);
+      // callbacks - pass photo index to handlers
+      if (isRight) onSwipeRight?.(topProfile, photoIdx);
+      else onSwipeLeft?.(topProfile, photoIdx);
 
       resetCard();
     });
@@ -190,6 +195,8 @@ export default function SwipeDeckNew({
                 profile={p}
                 photos={p?.photos || []}
                 onDetailsOpenChange={setDetailsOpen}
+                photoIndex={currentPhotoIndex}
+                onPhotoIndexChange={setCurrentPhotoIndex}
               />
             </Animated.View>
           );

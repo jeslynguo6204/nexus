@@ -15,6 +15,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SwipeDeckNew from '../components/SwipeDeckNew';
 import { getFeedProfiles } from '../../../api/feedAPI';
 import { getMyProfile } from '../../../api/profileAPI';
+import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
+import { likeUser, passUser } from '../../../api/swipesAPI';
 import styles from '../../../styles/HomeStylesNew';
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
@@ -93,27 +95,66 @@ export default function HomeScreenNew() {
     setCurrentIndex((prev) => prev + 1);
   }
 
-  async function handleSwipeRight(profile) {
+  async function handleSwipeRight(profile, photoIndex = 0) {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
+      
       console.log(`✅ Profile ${myUserId} LIKED profile ${profile?.user_id}`);
+      
+      // Record the like in dating_likes table
+      const likeResult = await likeUser(token, profile?.user_id);
+      
+      // Track the like on the photo that was being viewed
+      if (profile?.photos && profile.photos[photoIndex]?.id) {
+        await trackPhotoLike(token, profile.photos[photoIndex].id);
+      }
+      
+      // Check if it's a match
+      if (likeResult?.isMatch) {
+        console.log('🎉 It\'s a match!');
+        Alert.alert(
+          'It\'s a Match! 🎉', 
+          `You and ${profile?.display_name || 'this user'} liked each other!`
+        );
+      }
+      
       // moveToNextCard is handled by onNext callback from SwipeDeckNew
     } catch (e) {
       console.warn(e);
-      Alert.alert('Error', String(e.message || e));
+      // Don't show alert for tracking failures
+      if (e.message !== 'Not signed in') {
+        console.warn('Error processing like:', e);
+      } else {
+        Alert.alert('Error', String(e.message || e));
+      }
     }
   }
 
-  async function handleSwipeLeft(profile) {
+  async function handleSwipeLeft(profile, photoIndex = 0) {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
+      
       console.log(`⏭️  Profile ${myUserId} PASSED ON profile ${profile?.user_id}`);
+      
+      // Record the pass in dating_passes table
+      await passUser(token, profile?.user_id);
+      
+      // Track the pass on the photo that was being viewed
+      if (profile?.photos && profile.photos[photoIndex]?.id) {
+        await trackPhotoPass(token, profile.photos[photoIndex].id);
+      }
+      
       // moveToNextCard is handled by onNext callback from SwipeDeckNew
     } catch (e) {
       console.warn(e);
-      Alert.alert('Error', String(e.message || e));
+      // Don't show alert for tracking failures
+      if (e.message !== 'Not signed in') {
+        console.warn('Error processing pass:', e);
+      } else {
+        Alert.alert('Error', String(e.message || e));
+      }
     }
   }
 

@@ -80,3 +80,63 @@ export async function reorderPhotos(token, order) {
 
   return true;
 }
+
+// Track when a photo is viewed
+export async function trackPhotoView(token, photoId) {
+  try {
+    const res = await fetch(`${API_BASE}/photos/${photoId}/view`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      console.warn(`Failed to track photo view for photo ${photoId}`);
+    }
+  } catch (error) {
+    // Fail silently - don't disrupt user experience
+    console.warn('Error tracking photo view:', error);
+  }
+}
+
+// Track when a photo is liked (swipe right)
+export async function trackPhotoLike(token, photoId) {
+  try {
+    const res = await fetch(`${API_BASE}/photos/${photoId}/like`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      console.warn(`Failed to track photo like for photo ${photoId}`);
+    }
+  } catch (error) {
+    // Fail silently - don't disrupt user experience
+    console.warn('Error tracking photo like:', error);
+  }
+}
+
+// Track when a photo is passed (swipe left)
+export async function trackPhotoPass(token, photoId) {
+  try {
+    const res = await fetch(`${API_BASE}/photos/${photoId}/pass`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      console.warn(`Failed to track photo pass for photo ${photoId}`);
+    }
+  } catch (error) {
+    // Fail silently - don't disrupt user experience
+    console.warn('Error tracking photo pass:', error);
+  }
+}

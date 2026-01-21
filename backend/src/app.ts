@@ -6,6 +6,7 @@ import profileRoutes from "./modules/profiles/profiles.routes";
 import photosRoutes from "./modules/photos/photos.routes";
 import feedRoutes from "./modules/feed/feed.routes";
 import affiliationsRoutes from "./modules/affiliations/affiliations.routes";
+import swipesRoutes from "./modules/swipes/swipes.routes";
 import { errorHandler } from "./middleware/errorHandlerMiddleware";
 
 export const app = express();
@@ -61,12 +62,14 @@ app.use("/profiles", profileRoutes);
 app.use("/photos", photosRoutes);
 app.use("/feed", feedRoutes);
 app.use("/affiliations", affiliationsRoutes);
+app.use("/swipes", swipesRoutes);
 console.log("✅ Protected routes registered:");
 console.log("   - /users/*");
 console.log("   - /profiles/*");
 console.log("   - /photos/*");
 console.log("   - /feed/*");
 console.log("   - /affiliations/*");
+console.log("   - /swipes/*");
 
 // Global error handler (last)
 app.use(errorHandler);

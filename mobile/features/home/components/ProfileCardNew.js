@@ -13,8 +13,10 @@ import {
   StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../../../styles/ProfileCardStylesNew';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
+import { trackPhotoView } from '../../../api/photosAPI';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -106,11 +108,21 @@ const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeInd
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-export default function ProfileCardNew({ profile, photos, onDetailsOpenChange }) {
+export default function ProfileCardNew({ 
+  profile, 
+  photos, 
+  onDetailsOpenChange,
+  photoIndex: controlledPhotoIndex,
+  onPhotoIndexChange
+}) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
 
-  const [photoIndex, setPhotoIndex] = useState(0);
+  // Use controlled state if provided, otherwise use internal state
+  const isControlled = controlledPhotoIndex !== undefined && onPhotoIndexChange !== undefined;
+  const [internalPhotoIndex, setInternalPhotoIndex] = useState(0);
+  const photoIndex = isControlled ? controlledPhotoIndex : internalPhotoIndex;
+  const setPhotoIndex = isControlled ? onPhotoIndexChange : setInternalPhotoIndex;
   const [moreOpen, setMoreOpen] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(false);
   const [moreAboutMeOpen, setMoreAboutMeOpen] = useState(false);
@@ -184,6 +196,25 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
     chevronRotation.setValue(0);
     expansion.setValue(0);
   }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Track photo views
+  useEffect(() => {
+    const trackView = async () => {
+      if (safePhotos[photoIndex]?.id) {
+        try {
+          const token = await AsyncStorage.getItem('token');
+          if (token) {
+            await trackPhotoView(token, safePhotos[photoIndex].id);
+          }
+        } catch (error) {
+          // Fail silently
+          console.warn('Failed to track photo view:', error);
+        }
+      }
+    };
+    
+    trackView();
+  }, [photoIndex, safePhotos]);
 
   const currentUri = hasPhotos ? safePhotos[photoIndex]?.uri : null;
 
