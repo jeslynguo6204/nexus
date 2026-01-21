@@ -195,3 +195,179 @@ export async function unmatchUser(userId: number, matchId: number): Promise<void
     client.release();
   }
 }
+
+// Friend mode functions (mirror dating mode)
+/**
+ * Get all friend matches for a user (even if no chat started yet)
+ */
+export async function getAllFriendMatchesForUser(
+  userId: number
+): Promise<MatchWithUserRow[]> {
+  const rows = await dbQuery<MatchWithUserRow>(
+    `
+    SELECT 
+      fm.id,
+      fm.matcher_id,
+      fm.matchee_id,
+      fm.chat_id,
+      fm.created_at,
+      fm.last_message_at,
+      fm.is_active,
+      fm.unmatched_at,
+      CASE 
+        WHEN fm.matcher_id = $1 THEN p2.user_id
+        ELSE p1.user_id
+      END as match_user_id,
+      CASE 
+        WHEN fm.matcher_id = $1 THEN p2.display_name
+        ELSE p1.display_name
+      END as display_name,
+      CASE 
+        WHEN fm.matcher_id = $1 THEN ph2.url
+        ELSE ph1.url
+      END as avatar_url,
+      NULL::text as last_message_preview
+    FROM friend_matches fm
+    LEFT JOIN profiles p1 ON p1.user_id = fm.matcher_id
+    LEFT JOIN profiles p2 ON p2.user_id = fm.matchee_id
+    LEFT JOIN photos ph1 ON ph1.user_id = fm.matcher_id AND ph1.is_primary = TRUE
+    LEFT JOIN photos ph2 ON ph2.user_id = fm.matchee_id AND ph2.is_primary = TRUE
+    WHERE (fm.matcher_id = $1 OR fm.matchee_id = $1) AND fm.is_active = TRUE AND fm.unmatched_at IS NULL
+    ORDER BY fm.created_at DESC
+    `,
+    [userId]
+  );
+  return rows;
+}
+
+/**
+ * Get active friend chat matches for a user (only matches where a message has been sent)
+ */
+export async function getActiveFriendChatMatches(
+  userId: number
+): Promise<MatchWithUserRow[]> {
+  const rows = await dbQuery<MatchWithUserRow>(
+    `
+    SELECT 
+      fm.id,
+      fm.matcher_id,
+      fm.matchee_id,
+      fm.chat_id,
+      fm.created_at,
+      fm.last_message_at,
+      fm.is_active,
+      fm.unmatched_at,
+      CASE 
+        WHEN fm.matcher_id = $1 THEN p2.user_id
+        ELSE p1.user_id
+      END as match_user_id,
+      CASE 
+        WHEN fm.matcher_id = $1 THEN p2.display_name
+        ELSE p1.display_name
+      END as display_name,
+      CASE 
+        WHEN fm.matcher_id = $1 THEN ph2.url
+        ELSE ph1.url
+      END as avatar_url,
+      c.last_message_preview
+    FROM friend_matches fm
+    JOIN chats c ON c.id = fm.chat_id
+    LEFT JOIN profiles p1 ON p1.user_id = fm.matcher_id
+    LEFT JOIN profiles p2 ON p2.user_id = fm.matchee_id
+    LEFT JOIN photos ph1 ON ph1.user_id = fm.matcher_id AND ph1.is_primary = TRUE
+    LEFT JOIN photos ph2 ON ph2.user_id = fm.matchee_id AND ph2.is_primary = TRUE
+    WHERE (fm.matcher_id = $1 OR fm.matchee_id = $1) AND fm.is_active = TRUE AND fm.unmatched_at IS NULL
+    ORDER BY c.last_message_at DESC NULLS LAST
+    `,
+    [userId]
+  );
+  return rows;
+}
+
+export async function getFriendMatch(userId: number, otherUserId: number): Promise<MatchRow | null> {
+  const rows = await dbQuery<MatchRow>(
+    `
+    SELECT id, matcher_id, matchee_id, chat_id, created_at, last_message_at, is_active, unmatched_at
+    FROM friend_matches
+    WHERE (matcher_id = $1 AND matchee_id = $2) OR (matcher_id = $2 AND matchee_id = $1)
+    `,
+    [userId, otherUserId]
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Unmatch with a user in friend mode - deletes the match from friend_matches table
+ * Also deletes the associated chat, all messages, and both likes from friend_likes table
+ */
+export async function unmatchFriendUser(userId: number, matchId: number): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Get the match and verify it belongs to the user
+    const matchResult = await client.query(
+      `
+      SELECT id, matcher_id, matchee_id, chat_id
+      FROM friend_matches
+      WHERE id = $1 AND (matcher_id = $2 OR matchee_id = $2) AND is_active = TRUE AND unmatched_at IS NULL
+      FOR UPDATE
+      `,
+      [matchId, userId]
+    );
+
+    if (matchResult.rows.length === 0) {
+      throw new Error("Match not found or already unmatched");
+    }
+
+    const match = matchResult.rows[0];
+    const chatId = match.chat_id;
+    const otherUserId = match.matcher_id === userId ? match.matchee_id : match.matcher_id;
+
+    // Delete likes in both directions (user A liked user B, and user B liked user A)
+    await client.query(
+      `
+      DELETE FROM friend_likes
+      WHERE (liker_id = $1 AND likee_id = $2) OR (liker_id = $2 AND likee_id = $1)
+      `,
+      [userId, otherUserId]
+    );
+
+    // Delete chat and messages if chat exists (before deleting match due to foreign key constraints)
+    if (chatId) {
+      // Delete messages first (foreign key constraint)
+      await client.query(
+        `
+        DELETE FROM messages
+        WHERE chat_id = $1
+        `,
+        [chatId]
+      );
+
+      // Delete chat
+      await client.query(
+        `
+        DELETE FROM chats
+        WHERE id = $1
+        `,
+        [chatId]
+      );
+    }
+
+    // Delete the match from friend_matches table
+    await client.query(
+      `
+      DELETE FROM friend_matches
+      WHERE id = $1
+      `,
+      [matchId]
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}

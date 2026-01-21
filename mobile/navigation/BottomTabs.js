@@ -7,6 +7,7 @@ import HomeScreenNew from '../features/home/screens/HomeScreenNew';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
 import ChatScreen from '../features/chat/screens/ChatScreen';
+import LikesScreen from '../features/likes/screens/LikesScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -58,7 +59,7 @@ export default function BottomTabs({ onSignOut }) {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreenNew} />
-      <Tab.Screen name="Likes" children={() => <Placeholder name="Likes" />} />
+      <Tab.Screen name="Likes" component={LikesScreen} />
       <Tab.Screen name="Chat" component={ChatStack} />
       <Tab.Screen
         name="Profile"

@@ -80,17 +80,20 @@ export async function createMessage(
 export async function sendFirstMessage(
   matchId: number,
   senderUserId: number,
-  messageBody: string
+  messageBody: string,
+  mode: 'romantic' | 'platonic' = 'romantic'
 ): Promise<{ chatId: number; messageId: number }> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
+    const matchTable = mode === 'platonic' ? 'friend_matches' : 'dating_matches';
+
     // Lock the match row and check if chat_id exists
     const matchResult = await client.query(
       `
       SELECT id, chat_id, matcher_id, matchee_id
-      FROM dating_matches
+      FROM ${matchTable}
       WHERE id = $1
       FOR UPDATE
       `,
@@ -118,7 +121,7 @@ export async function sendFirstMessage(
       // Update the match with the new chat_id
       await client.query(
         `
-        UPDATE dating_matches
+        UPDATE ${matchTable}
         SET chat_id = $1
         WHERE id = $2
         `,

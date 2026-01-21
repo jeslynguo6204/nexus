@@ -6,13 +6,14 @@ const getApiBase = () => {
   return Constants?.expoConfig?.extra?.apiBaseUrl || 'http://localhost:4000';
 };
 
-export async function sendMessage(matchId, messageBody) {
+export async function sendMessage(matchId, messageBody, mode = 'romantic') {
   try {
     const API_BASE = getApiBase();
     const token = await AsyncStorage.getItem('token');
     if (!token) throw new Error('Not authenticated');
 
-    const response = await fetch(`${API_BASE}/messages/${matchId}/send`, {
+    const url = `${API_BASE}/messages/${matchId}/send?mode=${mode}`;
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

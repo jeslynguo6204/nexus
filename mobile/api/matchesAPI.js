@@ -6,10 +6,11 @@ const getApiBase = () => {
   return Constants?.expoConfig?.extra?.apiBaseUrl || "http://localhost:4000";
 };
 
-export async function getAllMatches(token) {
+export async function getAllMatches(token, mode = 'romantic') {
   try {
     const API_BASE = getApiBase();
-    const res = await fetch(`${API_BASE}/matches/all`, {
+    const url = `${API_BASE}/matches/all?mode=${mode}`;
+    const res = await fetch(url, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -30,10 +31,11 @@ export async function getAllMatches(token) {
   }
 }
 
-export async function getChats(token) {
+export async function getChats(token, mode = 'romantic') {
   try {
     const API_BASE = getApiBase();
-    const res = await fetch(`${API_BASE}/matches/chats`, {
+    const url = `${API_BASE}/matches/chats?mode=${mode}`;
+    const res = await fetch(url, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -54,10 +56,11 @@ export async function getChats(token) {
   }
 }
 
-export async function unmatchUser(token, matchId) {
+export async function unmatchUser(token, matchId, mode = 'romantic') {
   try {
     const API_BASE = getApiBase();
-    const res = await fetch(`${API_BASE}/matches/${matchId}`, {
+    const url = `${API_BASE}/matches/${matchId}?mode=${mode}`;
+    const res = await fetch(url, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,

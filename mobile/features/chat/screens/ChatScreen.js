@@ -44,10 +44,11 @@ export default function ChatScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   
   // Expect route params from InboxScreen:
-  // { match_user_id, display_name, avatar_url, matched_at }
+  // { match_user_id, display_name, avatar_url, matched_at, mode }
   const matchId = route?.params?.id; // The match ID for sending messages
   const matchUserId = route?.params?.match_user_id;
   const displayName = route?.params?.display_name ?? 'Noah';
+  const mode = route?.params?.mode || 'romantic'; // Get mode from route params
   const avatarUrl = route?.params?.avatar_url ?? DEFAULT_AVATAR;
   const matchedAtRaw = route?.params?.matched_at ?? '5/15/24';
   const matchedAt = formatMatchDate(matchedAtRaw);
@@ -122,7 +123,7 @@ export default function ChatScreen({ navigation, route }) {
               const token = await AsyncStorage.getItem('token');
               if (!token) throw new Error('Not signed in');
 
-              await unmatchUserAPI(token, matchId);
+              await unmatchUserAPI(token, matchId, mode);
               
               // Navigate back to inbox
               navigation.goBack();
@@ -159,7 +160,7 @@ export default function ChatScreen({ navigation, route }) {
     setSending(true);
     try {
       // Call backend to send message (creates chat if needed)
-      const result = await sendMessageAPI(matchId, trimmed);
+      const result = await sendMessageAPI(matchId, trimmed, mode);
       
       // Create local message object
       const newMsg = {

@@ -15,13 +15,6 @@ export default StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 0,
   },
-  
-  // Scope Mode Selector container
-  scopeModeContainer: {
-    paddingTop: 4,
-    paddingBottom: 8,
-    paddingHorizontal: 0,
-  },
 
   brandMark: {
     width: 44,

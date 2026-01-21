@@ -15,8 +15,10 @@ export async function sendMessageController(
     const userId = req.userId!;
     const { matchId } = req.params;
     const { body } = req.body;
+    // Get mode from query parameter (default to 'romantic' for backward compatibility)
+    const mode = ((req.query.mode as string) || 'romantic') as 'romantic' | 'platonic';
 
-    const result = await sendMessage(parseInt(matchId), userId, body);
+    const result = await sendMessage(parseInt(matchId), userId, body, mode);
     res.status(201).json(result);
   } catch (error) {
     next(error);

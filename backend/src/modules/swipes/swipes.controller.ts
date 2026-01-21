@@ -2,7 +2,7 @@
 import type { Response } from "express";
 import type { AuthedRequest } from "../../middleware/authMiddleware";
 
-import { recordLike, recordPass } from "./swipes.service";
+import { recordLike, recordPass, recordFriendLike, recordFriendPass } from "./swipes.service";
 
 export async function likeUserController(req: AuthedRequest, res: Response) {
   try {
@@ -11,7 +11,15 @@ export async function likeUserController(req: AuthedRequest, res: Response) {
       return res.status(400).json({ error: "Invalid userId" });
     }
 
-    const result = await recordLike(req.userId!, likeeId);
+    // Get mode from query parameter (default to 'romantic' for backward compatibility)
+    const mode = (req.query.mode as string) || 'romantic';
+
+    let result;
+    if (mode === 'platonic') {
+      result = await recordFriendLike(req.userId!, likeeId);
+    } else {
+      result = await recordLike(req.userId!, likeeId);
+    }
     
     res.json({
       success: true,
@@ -32,7 +40,15 @@ export async function passUserController(req: AuthedRequest, res: Response) {
       return res.status(400).json({ error: "Invalid userId" });
     }
 
-    const pass = await recordPass(req.userId!, passeeId);
+    // Get mode from query parameter (default to 'romantic' for backward compatibility)
+    const mode = (req.query.mode as string) || 'romantic';
+
+    let pass;
+    if (mode === 'platonic') {
+      pass = await recordFriendPass(req.userId!, passeeId);
+    } else {
+      pass = await recordPass(req.userId!, passeeId);
+    }
     
     res.json({
       success: true,

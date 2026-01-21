@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import styles from '../../../styles/ChatStyles';
 import { getChats, getAllMatches } from '../../../api/matchesAPI';
-import ScopeModeSelector from '../../../navigation/ScopeModeSelector';
+import { getMyProfile } from '../../../api/profileAPI';
+import ModeToggleButton from '../../../navigation/ModeToggleButton';
 
 // Helper to format time ago
 const formatTimeAgo = (dateString) => {
@@ -98,14 +99,23 @@ const HARDCODED_CHATS = [
 
 export default function InboxScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
+  const [hasLoadedMatches, setHasLoadedMatches] = useState(false);
 
   const [matches, setMatches] = useState([]);
   const [chats, setChats] = useState([]);
+  const [myProfile, setMyProfile] = useState(null);
   
-  const [scope, setScope] = useState('school'); // school | league | area
   const [mode, setMode] = useState('romantic'); // romantic | platonic
+  const hasSetInitialMode = useRef(false);
+  const isLoadingRef = useRef(false);
 
   const loadInboxData = useCallback(async (showLoading = false) => {
+    // Prevent multiple simultaneous loads
+    if (isLoadingRef.current) {
+      return;
+    }
+    
+    isLoadingRef.current = true;
     if (showLoading) {
       setLoading(true);
     }
@@ -114,8 +124,12 @@ export default function InboxScreen({ navigation }) {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
 
+      // Fetch my profile (always fetch to ensure it's up to date)
+      const profile = await getMyProfile(token);
+      setMyProfile(profile);
+
       // Fetch all matches (for top row - includes no-chat-yet)
-      const allMatches = await getAllMatches(token);
+      const allMatches = await getAllMatches(token, mode);
 
       // Normalize shape for UI
       const formattedMatches = (Array.isArray(allMatches) ? allMatches : []).map(
@@ -131,9 +145,10 @@ export default function InboxScreen({ navigation }) {
       );
 
       setMatches(formattedMatches);
+      setHasLoadedMatches(true);
 
       // Fetch active chats (for message list)
-      const fetchedChats = await getChats(token);
+      const fetchedChats = await getChats(token, mode);
       
       // Normalize shape for UI
       const formattedChats = (Array.isArray(fetchedChats) ? fetchedChats : []).map(
@@ -155,23 +170,74 @@ export default function InboxScreen({ navigation }) {
       setChats(formattedChats.length > 0 ? formattedChats : HARDCODED_CHATS);
     } catch (e) {
       console.warn('Error loading inbox:', e);
-      Alert.alert('Error', 'Failed to load inbox');
+      // Don't show alert for network errors - they're expected if server isn't running
+      const isNetworkError = e.message?.includes('Network') || 
+                            e.message?.includes('fetch') || 
+                            e.message?.includes('connection') ||
+                            e.message?.includes('ECONNREFUSED');
+      if (!isNetworkError) {
+        Alert.alert('Error', 'Failed to load inbox');
+      }
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, []);
+  }, [mode]);
+
+  // Set initial mode once when profile is loaded, and update if modes change
+  useEffect(() => {
+    if (!myProfile) {
+      return;
+    }
+    
+    if (!hasSetInitialMode.current) {
+      hasSetInitialMode.current = true;
+      if (myProfile.is_dating_enabled && !myProfile.is_friends_enabled) {
+        setMode('romantic');
+      } else if (myProfile.is_friends_enabled && !myProfile.is_dating_enabled) {
+        setMode('platonic');
+      }
+      // If both are enabled, keep default 'romantic' (or could check if user had a preference)
+    } else {
+      // After initial load, ONLY update mode if current mode was disabled
+      // Don't reset mode if both modes are enabled - preserve user's current selection
+      setMode((currentMode) => {
+        if (currentMode === 'romantic' && !myProfile.is_dating_enabled) {
+          // Romantic mode was disabled, switch to platonic if available
+          return myProfile.is_friends_enabled ? 'platonic' : currentMode;
+        } else if (currentMode === 'platonic' && !myProfile.is_friends_enabled) {
+          // Platonic mode was disabled, switch to romantic if available
+          return myProfile.is_dating_enabled ? 'romantic' : currentMode;
+        }
+        // Both modes are enabled or current mode is still valid - preserve current selection
+        return currentMode;
+      });
+    }
+  }, [myProfile]);
 
   // Load data on mount (with loading spinner)
   useEffect(() => {
     loadInboxData(true);
-  }, [loadInboxData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Reload data when screen comes into focus (e.g., after unmatching) - silent refresh
+  // Reload data when screen comes into focus (e.g., after unmatching or preference changes) - silent refresh
   useFocusEffect(
     useCallback(() => {
-      loadInboxData(false);
-    }, [loadInboxData])
+      if (!loading) {
+        loadInboxData(false);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loading, mode, loadInboxData])
   );
+
+  // Reload inbox data when mode changes
+  useEffect(() => {
+    if (!loading && myProfile && hasSetInitialMode.current) {
+      loadInboxData(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   const onOpenChat = (chatOrMatch) => {
     navigation.navigate('ChatScreen', {
@@ -180,6 +246,7 @@ export default function InboxScreen({ navigation }) {
       display_name: chatOrMatch.display_name,
       avatar_url: chatOrMatch.avatar_url,
       matched_at: chatOrMatch.created_at || '5/15/24',
+      mode: mode, // Pass current mode
     });
   };
 
@@ -239,7 +306,7 @@ export default function InboxScreen({ navigation }) {
     );
   };
 
-  if (loading) {
+  if (loading || !hasLoadedMatches) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator style={{ flex: 1 }} />
@@ -261,7 +328,13 @@ export default function InboxScreen({ navigation }) {
             <Text style={styles.title}>Matches</Text>
           </View>
 
-          <View style={styles.rightSlot} />
+          {/* Mode toggle button */}
+          <ModeToggleButton
+            mode={mode}
+            onModeChange={setMode}
+            isDatingEnabled={myProfile?.is_dating_enabled ?? false}
+            isFriendsEnabled={myProfile?.is_friends_enabled ?? false}
+          />
         </View>
 
         {/* Centered empty state for no matches */}
@@ -285,23 +358,12 @@ export default function InboxScreen({ navigation }) {
           <Text style={styles.title}>Matches</Text>
         </View>
 
-        {/* Right side left empty for now (keeps spacing similar to your Home top bar) */}
-        <View style={styles.rightSlot} />
-      </View>
-
-      {/* Scope Mode Selector */}
-      <View style={styles.scopeModeContainer}>
-        <ScopeModeSelector
-          scope={scope}
+        {/* Mode toggle button */}
+        <ModeToggleButton
           mode={mode}
-          onScopeChange={setScope}
           onModeChange={setMode}
-          scopeLabels={{
-            school: 'Penn',
-            league: 'Ivy League',
-            area: 'Philadelphia',
-          }}
-          style={{ flex: 0 }}
+          isDatingEnabled={myProfile?.is_dating_enabled ?? false}
+          isFriendsEnabled={myProfile?.is_friends_enabled ?? false}
         />
       </View>
 

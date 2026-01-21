@@ -7,10 +7,11 @@ const getApiBase = () => {
 };
 
 // Record a like (swipe right)
-export async function likeUser(token, userId) {
+export async function likeUser(token, userId, mode = 'romantic') {
   try {
     const API_BASE = getApiBase();
-    const res = await fetch(`${API_BASE}/swipes/like/${userId}`, {
+    const url = `${API_BASE}/swipes/like/${userId}?mode=${mode}`;
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -32,10 +33,11 @@ export async function likeUser(token, userId) {
 }
 
 // Record a pass (swipe left)
-export async function passUser(token, userId) {
+export async function passUser(token, userId, mode = 'romantic') {
   try {
     const API_BASE = getApiBase();
-    const res = await fetch(`${API_BASE}/swipes/pass/${userId}`, {
+    const url = `${API_BASE}/swipes/pass/${userId}?mode=${mode}`;
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
