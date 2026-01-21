@@ -53,3 +53,27 @@ export async function getChats(token) {
     throw error;
   }
 }
+
+export async function unmatchUser(token, matchId) {
+  try {
+    const API_BASE = getApiBase();
+    const res = await fetch(`${API_BASE}/matches/${matchId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "Failed to unmatch");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.warn("Error unmatching user:", error);
+    throw error;
+  }
+}

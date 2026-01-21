@@ -1,5 +1,5 @@
 // backend/src/modules/matches/matches.dao.ts
-import { dbQuery } from "../../db/pool";
+import { dbQuery, pool } from "../../db/pool";
 
 export type MatchRow = {
   id: number;
@@ -118,4 +118,80 @@ export async function getMatch(userId: number, otherUserId: number): Promise<Mat
     [userId, otherUserId]
   );
   return rows[0] ?? null;
+}
+
+/**
+ * Unmatch with a user - deletes the match from dating_matches table
+ * Also deletes the associated chat, all messages, and both likes from dating_likes table
+ */
+export async function unmatchUser(userId: number, matchId: number): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Get the match and verify it belongs to the user
+    const matchResult = await client.query(
+      `
+      SELECT id, matcher_id, matchee_id, chat_id
+      FROM dating_matches
+      WHERE id = $1 AND (matcher_id = $2 OR matchee_id = $2) AND is_active = TRUE AND unmatched_at IS NULL
+      FOR UPDATE
+      `,
+      [matchId, userId]
+    );
+
+    if (matchResult.rows.length === 0) {
+      throw new Error("Match not found or already unmatched");
+    }
+
+    const match = matchResult.rows[0];
+    const chatId = match.chat_id;
+    const otherUserId = match.matcher_id === userId ? match.matchee_id : match.matcher_id;
+
+    // Delete likes in both directions (user A liked user B, and user B liked user A)
+    await client.query(
+      `
+      DELETE FROM dating_likes
+      WHERE (liker_id = $1 AND likee_id = $2) OR (liker_id = $2 AND likee_id = $1)
+      `,
+      [userId, otherUserId]
+    );
+
+    // Delete chat and messages if chat exists (before deleting match due to foreign key constraints)
+    if (chatId) {
+      // Delete messages first (foreign key constraint)
+      await client.query(
+        `
+        DELETE FROM messages
+        WHERE chat_id = $1
+        `,
+        [chatId]
+      );
+
+      // Delete chat
+      await client.query(
+        `
+        DELETE FROM chats
+        WHERE id = $1
+        `,
+        [chatId]
+      );
+    }
+
+    // Delete the match from dating_matches table
+    await client.query(
+      `
+      DELETE FROM dating_matches
+      WHERE id = $1
+      `,
+      [matchId]
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }

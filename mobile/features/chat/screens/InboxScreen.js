@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import styles from '../../../styles/ChatStyles';
@@ -65,59 +66,73 @@ export default function InboxScreen({ navigation }) {
   const [matches, setMatches] = useState([]);
   const [chats, setChats] = useState([]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        if (!token) throw new Error('Not signed in');
+  const loadInboxData = useCallback(async (showLoading = false) => {
+    if (showLoading) {
+      setLoading(true);
+    }
+    
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not signed in');
 
-        // Fetch all matches (for top row - includes no-chat-yet)
-        const allMatches = await getAllMatches(token);
+      // Fetch all matches (for top row - includes no-chat-yet)
+      const allMatches = await getAllMatches(token);
 
-        // Normalize shape for UI
-        const formattedMatches = (Array.isArray(allMatches) ? allMatches : []).map(
-          (m) => ({
-            id: String(m.id),
-            match_user_id: m.match_user_id,
-            display_name: m.display_name || 'Match',
-            avatar_url:
-              m.avatar_url ||
-              'https://picsum.photos/200?99',
-            created_at: m.created_at,
-          })
-        );
+      // Normalize shape for UI
+      const formattedMatches = (Array.isArray(allMatches) ? allMatches : []).map(
+        (m) => ({
+          id: String(m.id),
+          match_user_id: m.match_user_id,
+          display_name: m.display_name || 'Match',
+          avatar_url:
+            m.avatar_url ||
+            'https://picsum.photos/200?99',
+          created_at: m.created_at,
+        })
+      );
 
-        setMatches(formattedMatches);
+      setMatches(formattedMatches);
 
-        // Fetch active chats (for message list)
-        const fetchedChats = await getChats(token);
-        
-        // Normalize shape for UI
-        const formattedChats = (Array.isArray(fetchedChats) ? fetchedChats : []).map(
-          (c) => ({
-            id: String(c.id),
-            match_user_id: c.match_user_id,
-            display_name: c.display_name || 'Chat',
-            avatar_url:
-              c.avatar_url ||
-              'https://picsum.photos/200?99',
-            last_message: c.last_message_preview || 'No messages yet',
-            time: c.last_message_at ? formatTimeAgo(c.last_message_at) : null,
-            unread: false, // TODO: implement unread status when messages are fetched
-          })
-        );
+      // Fetch active chats (for message list)
+      const fetchedChats = await getChats(token);
+      
+      // Normalize shape for UI
+      const formattedChats = (Array.isArray(fetchedChats) ? fetchedChats : []).map(
+        (c) => ({
+          id: String(c.id),
+          match_user_id: c.match_user_id,
+          display_name: c.display_name || 'Chat',
+          avatar_url:
+            c.avatar_url ||
+            'https://picsum.photos/200?99',
+          last_message: c.last_message_preview || 'No messages yet',
+          time: c.last_message_at ? formatTimeAgo(c.last_message_at) : null,
+          unread: false, // TODO: implement unread status when messages are fetched
+        })
+      );
 
-        // For now, use hardcoded chat to see what it looks like when you start a chat
-        // TODO: Remove this when real messaging is implemented
-        setChats(formattedChats.length > 0 ? formattedChats : HARDCODED_STARTED_CHAT);
-      } catch (e) {
-        console.warn('Error loading inbox:', e);
-        Alert.alert('Error', 'Failed to load inbox');
-      } finally {
-        setLoading(false);
-      }
-    })();
+      // For now, use hardcoded chat to see what it looks like when you start a chat
+      // TODO: Remove this when real messaging is implemented
+      setChats(formattedChats.length > 0 ? formattedChats : HARDCODED_STARTED_CHAT);
+    } catch (e) {
+      console.warn('Error loading inbox:', e);
+      Alert.alert('Error', 'Failed to load inbox');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Load data on mount (with loading spinner)
+  useEffect(() => {
+    loadInboxData(true);
+  }, [loadInboxData]);
+
+  // Reload data when screen comes into focus (e.g., after unmatching) - silent refresh
+  useFocusEffect(
+    useCallback(() => {
+      loadInboxData(false);
+    }, [loadInboxData])
+  );
 
   const onOpenChat = (chatOrMatch) => {
     navigation.navigate('ChatScreen', {

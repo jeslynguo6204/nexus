@@ -1,7 +1,7 @@
 // backend/src/modules/matches/matches.routes.ts
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/authMiddleware";
-import { getAllMatchesController, getChatsController } from "./matches.controller";
+import { getAllMatchesController, getChatsController, unmatchController } from "./matches.controller";
 
 const router = Router();
 
@@ -13,5 +13,8 @@ router.get("/all", getAllMatchesController);
 
 // GET /matches/chats - Get only matches with active chats
 router.get("/chats", getChatsController);
+
+// DELETE /matches/:matchId - Unmatch with a user
+router.delete("/:matchId", unmatchController);
 
 export default router;

@@ -11,11 +11,17 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
+  Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendMessage as sendMessageAPI } from '../../../api/messagesAPI';
+import { unmatchUser as unmatchUserAPI } from '../../../api/matchesAPI';
 
 const DEFAULT_AVATAR = 'https://picsum.photos/200?88';
+
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 const formatMatchDate = (dateString) => {
   if (!dateString) return '5/15/24';
@@ -30,7 +36,13 @@ const formatMatchDate = (dateString) => {
   }
 };
 
+const POPOVER_W = 200;
+const POPOVER_H = 180;
+const EDGE = 12;
+
 export default function ChatScreen({ navigation, route }) {
+  const insets = useSafeAreaInsets();
+  
   // Expect route params from InboxScreen:
   // { match_user_id, display_name, avatar_url, matched_at }
   const matchId = route?.params?.id; // The match ID for sending messages
@@ -42,6 +54,11 @@ export default function ChatScreen({ navigation, route }) {
 
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  
+  // Menu popover state
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+  const moreBtnRef = useRef(null);
 
   // Hard-coded starter conversation
   // Note: Array gets reversed before passing to inverted FlatList, so first item appears at top
@@ -61,6 +78,73 @@ export default function ChatScreen({ navigation, route }) {
   ]);
 
   const listRef = useRef(null);
+
+  const openMenu = () => {
+    requestAnimationFrame(() => {
+      if (!moreBtnRef.current?.measureInWindow) {
+        setMenuOpen(true);
+        return;
+      }
+
+      moreBtnRef.current.measureInWindow((x, y, w, h) => {
+        const { width: winW, height: winH } = Dimensions.get('window');
+
+        // Align popover right edge with button right edge
+        let left = x + w - POPOVER_W;
+        let top = y + h + 8;
+
+        // Clamp inside visible area (respect safe areas)
+        left = clamp(left, EDGE, winW - POPOVER_W - EDGE);
+        top = clamp(top, insets.top + EDGE, winH - POPOVER_H - EDGE);
+
+        setPopoverPos({ top, left });
+        setMenuOpen(true);
+      });
+    });
+  };
+
+  const handleUnmatch = async () => {
+    setMenuOpen(false);
+    
+    Alert.alert(
+      'Unmatch',
+      `Are you sure you want to unmatch with ${displayName}? This will delete your conversation and you won't be able to message them again.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Unmatch',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              if (!token) throw new Error('Not signed in');
+
+              await unmatchUserAPI(token, matchId);
+              
+              // Navigate back to inbox
+              navigation.goBack();
+            } catch (error) {
+              console.error('Error unmatching:', error);
+              Alert.alert('Error', 'Failed to unmatch. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleBlock = () => {
+    setMenuOpen(false);
+    Alert.alert('Coming Soon', 'Block functionality will be available soon.');
+  };
+
+  const handleReport = () => {
+    setMenuOpen(false);
+    Alert.alert('Coming Soon', 'Report functionality will be available soon.');
+  };
 
   const dataForList = useMemo(() => {
     // FlatList inverted wants newest first (index 0)
@@ -155,10 +239,62 @@ export default function ChatScreen({ navigation, route }) {
             </Text>
           </View>
 
-          <Pressable hitSlop={12} style={styles.moreBtn}>
+          <Pressable 
+            ref={moreBtnRef}
+            onPress={openMenu}
+            hitSlop={12} 
+            style={styles.moreBtn}
+          >
             <Text style={styles.moreGlyph}>•••</Text>
           </Pressable>
         </View>
+
+        {/* Menu popover */}
+        <Modal
+          visible={menuOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <Pressable style={styles.popoverOverlay} onPress={() => setMenuOpen(false)}>
+            <Pressable
+              onPress={() => {}}
+              style={[
+                styles.menuPopover,
+                { width: POPOVER_W, top: popoverPos.top, left: popoverPos.left },
+              ]}
+            >
+              <Pressable
+                onPress={handleUnmatch}
+                style={styles.menuRow}
+              >
+                <Text style={[styles.menuRowText, styles.menuRowTextDestructive]}>
+                  Unmatch
+                </Text>
+              </Pressable>
+
+              <View style={styles.menuSeparator} />
+
+              <Pressable
+                onPress={handleBlock}
+                style={styles.menuRow}
+              >
+                <Text style={styles.menuRowText}>
+                  Block
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleReport}
+                style={styles.menuRow}
+              >
+                <Text style={styles.menuRowText}>
+                  Report an issue
+                </Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
 
         {/* Messages */}
         <FlatList
@@ -440,5 +576,42 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     backgroundColor: '#F2F2F7',
+  },
+
+  // Menu popover
+  popoverOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+  menuPopover: {
+    position: 'absolute',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    padding: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  menuRow: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  menuRowText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111111',
+  },
+  menuRowTextDestructive: {
+    color: '#EF4444',
+  },
+  menuSeparator: {
+    height: 1,
+    backgroundColor: '#F2F2F7',
+    marginVertical: 4,
   },
 });

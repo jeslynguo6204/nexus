@@ -1,5 +1,5 @@
 // backend/src/modules/matches/matches.service.ts
-import { getAllMatchesForUser, getActiveChatMatches } from "./matches.dao";
+import { getAllMatchesForUser, getActiveChatMatches, unmatchUser } from "./matches.dao";
 
 export interface FormattedMatch {
   id: number;
@@ -41,4 +41,8 @@ export async function getChats(userId: number): Promise<FormattedChat[]> {
     last_message_preview: row.last_message_preview,
     last_message_at: row.last_message_at,
   }));
+}
+
+export async function unmatch(userId: number, matchId: number): Promise<void> {
+  await unmatchUser(userId, matchId);
 }
