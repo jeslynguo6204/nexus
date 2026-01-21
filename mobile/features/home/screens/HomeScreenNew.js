@@ -18,6 +18,7 @@ import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/HomeStylesNew';
+import chatStyles from '../../../styles/ChatStyles';
 
 export default function HomeScreenNew() {
   const [loading, setLoading] = useState(true);
@@ -251,7 +252,7 @@ export default function HomeScreenNew() {
 
   if (loading || loadingFeed) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <ActivityIndicator style={{ flex: 1 }} />
       </SafeAreaView>
     );
@@ -260,14 +261,15 @@ export default function HomeScreenNew() {
   const current = profiles[currentIndex];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
-        <Pressable style={styles.brandMark} hitSlop={10}>
-          <Text style={styles.brandMarkText}>6°</Text>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Top bar (use ChatStyles to match Matches and Likes exactly) */}
+      <View style={chatStyles.topBar}>
+        <Pressable style={chatStyles.brandMark} hitSlop={10}>
+          <Text style={chatStyles.brandMarkText}>6°</Text>
         </Pressable>
 
-        <View style={styles.centerSlot}>
-          {/* Empty center slot for spacing */}
+        <View style={chatStyles.centerSlot}>
+          <Text style={chatStyles.title}>Discover</Text>
         </View>
 
         <ModeToggleButton

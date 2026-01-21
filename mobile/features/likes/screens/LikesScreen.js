@@ -23,18 +23,31 @@ export default function LikesScreen() {
   const [mode, setMode] = useState('romantic');
   const hasSetInitialMode = useRef(false);
 
-  const loadProfile = useCallback(async () => {
+  const loadProfile = useCallback(async (showLoading = false) => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
+
+      if (showLoading) {
+        setLoading(true);
+      }
 
       const profile = await getMyProfile(token);
       setMyProfile(profile);
     } catch (e) {
       console.warn('Error loading profile:', e);
-      Alert.alert('Error', 'Failed to load profile');
+      // Don't show alert for network errors - they're expected if server isn't running
+      const isNetworkError = e.message?.includes('Network') || 
+                            e.message?.includes('fetch') || 
+                            e.message?.includes('connection') ||
+                            e.message?.includes('ECONNREFUSED');
+      if (!isNetworkError) {
+        Alert.alert('Error', 'Failed to load profile');
+      }
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -64,14 +77,20 @@ export default function LikesScreen() {
     }
   }, [myProfile]);
 
+  // Load profile on mount (with loading spinner)
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    loadProfile(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // Reload profile when screen comes into focus (silent refresh, no loading spinner)
   useFocusEffect(
     useCallback(() => {
-      loadProfile();
-    }, [loadProfile])
+      if (!loading) {
+        loadProfile(false);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loading])
   );
 
   if (loading) {
