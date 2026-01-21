@@ -92,6 +92,21 @@ function normalizeList(maybeList) {
   return [];
 }
 
+function normalizeIdArray(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((id) => {
+      if (id === null || id === undefined) return null;
+      if (typeof id === 'number') return id;
+      if (typeof id === 'string') {
+        const n = parseInt(id, 10);
+        return Number.isNaN(n) ? null : n;
+      }
+      return null;
+    })
+    .filter((x) => x !== null && Number.isInteger(x) && x > 0);
+}
+
 const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeIndex }) {
   if (!count || count <= 1) return null;
 
@@ -323,6 +338,8 @@ export default function ProfileCardNew({
   const featuredAffiliationIds = profile?.featured_affiliations || profile?.featuredAffiliations || [];
   let featuredAffiliations = [];
 
+  // Only process featured affiliations if they exist and have items
+  // If empty array or no items, featuredAffiliations will remain empty (no fallback)
   if (Array.isArray(featuredAffiliationIds) && featuredAffiliationIds.length > 0) {
     // Map in order to preserve selection order - first selected appears first
     featuredAffiliations = featuredAffiliationIds
@@ -338,10 +355,6 @@ export default function ProfileCardNew({
       .filter(Boolean);
   }
 
-  if (featuredAffiliations.length === 0 && affiliations.length > 0) {
-    featuredAffiliations = affiliations.slice(0, 2);
-  }
-
   const schoolName = coalesce(profile?.school?.short_name, profile?.school?.name);
   const major = coalesce(profile?.major);
   const schoolAffiliations = normalizeList(
@@ -349,7 +362,7 @@ export default function ProfileCardNew({
   );
   const interests = normalizeList(profile?.interests).slice(0, 8);
 
-  // Filter out dorms and reorder: featured affiliations first (in selection order), then the rest
+  // Filter out dorms
   const allNonDormAffiliations = affiliationsInfo.filter((aff) => !aff.is_dorm);
   
   // Get featured affiliation IDs in order (normalized)
@@ -365,19 +378,22 @@ export default function ProfileCardNew({
     affMap.set(affId, aff);
   });
   
-  // Get featured affiliations in selection order
+  // Get the order from profile.affiliations array (this is the order from the profile editor)
+  const profileAffiliationIds = normalizeIdArray(profile?.affiliations || []);
+  const featuredIdsSet = new Set(featuredIds);
+  
+  // Get featured affiliations in selection order (first selected first, second selected second)
   const featuredAffils = featuredIds
     .map(id => affMap.get(id))
     .filter(Boolean); // Remove any not found
   
-  // Get other affiliations (not featured)
-  const featuredIdsSet = new Set(featuredIds);
-  const otherAffils = allNonDormAffiliations.filter(aff => {
-    const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
-    return !featuredIdsSet.has(affId);
-  });
+  // Get other affiliations (not featured) in the order they appear in profile.affiliations
+  const otherAffils = profileAffiliationIds
+    .filter(affId => !featuredIdsSet.has(affId))
+    .map(affId => affMap.get(affId))
+    .filter(Boolean); // Remove any not found
   
-  // Combine: featured affiliations first (in selection order), then the rest
+  // Combine: featured affiliations first (in selection order), then the rest (in profile order)
   const nonDormAffiliations = [...featuredAffils, ...otherAffils];
 
   const buildAtPennSentence = () => {
