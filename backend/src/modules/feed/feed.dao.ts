@@ -41,17 +41,60 @@ export interface FeedProfileRow {
   ethnicity: string | null;
   affiliations: number[] | null;
   featured_affiliations: number[] | null;
+  gender: string | null;
+  dating_gender_preference: string | null;
+  friends_gender_preference: string | null;
   affiliations_info?: AffiliationInfo[] | null; // Resolved affiliation names
   dorm?: AffiliationInfo | null; // Dorm affiliation if any
 }
 
-export async function getSimpleFeed(includeAllForTesting = false): Promise<FeedProfileRow[]> {
-  // Fetch all profiles with show_me_in_discovery = true
-  // If includeAllForTesting is true, include all profiles (for hardcoded ordering testing)
-  const whereClause = includeAllForTesting 
-    ? '1=1' // Include all profiles
-    : 'p.show_me_in_discovery = TRUE';
+export async function getSimpleFeed(
+  userId: number,
+  options?: {
+    mode?: 'romantic' | 'platonic';
+    scope?: 'school' | 'league' | 'area';
+    includeAllForTesting?: boolean;
+  }
+): Promise<FeedProfileRow[]> {
+  const includeAllForTesting = options?.includeAllForTesting || false;
+  const mode = options?.mode || 'romantic';
+  const scope = options?.scope || 'school';
   
+  // Get user's school_id for filtering
+  const userSchoolResult = await dbQuery<{ school_id: number | null }>(
+    `SELECT school_id FROM users WHERE id = $1`,
+    [userId]
+  );
+  const userSchoolId = userSchoolResult[0]?.school_id;
+  
+  // Build WHERE clause conditions
+  const conditions: string[] = [];
+  const params: any[] = [];
+  let paramIndex = 1;
+  
+  // Exclude current user
+  conditions.push(`p.user_id != $${paramIndex++}`);
+  params.push(userId);
+  
+  // Show me in discovery flag (unless testing)
+  if (!includeAllForTesting) {
+    conditions.push(`p.show_me_in_discovery = TRUE`);
+  }
+  
+  // Mode filtering: is_dating_enabled for romantic, is_friends_enabled for platonic
+  if (mode === 'romantic') {
+    conditions.push(`p.is_dating_enabled = TRUE`);
+  } else if (mode === 'platonic') {
+    conditions.push(`p.is_friends_enabled = TRUE`);
+  }
+  
+  // Scope filtering: same school for now (league and area will be added later)
+  if (scope === 'school' && userSchoolId) {
+    conditions.push(`u.school_id = $${paramIndex++}`);
+    params.push(userSchoolId);
+  }
+  
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const limitClause = includeAllForTesting ? 'LIMIT 100' : 'LIMIT 25';
     
   const profiles = await dbQuery<FeedProfileRow>(
@@ -75,16 +118,20 @@ export async function getSimpleFeed(includeAllForTesting = false): Promise<FeedP
       p.ethnicity,
       p.affiliations,
       p.featured_affiliations,
+      p.gender,
+      p.dating_gender_preference,
+      p.friends_gender_preference,
       u.school_id,
       s.name AS school_name,
       s.short_name AS school_short_name
     FROM profiles p
     JOIN users u ON u.id = p.user_id
     LEFT JOIN schools s ON s.id = u.school_id
-    WHERE ${whereClause}
+    ${whereClause}
     ORDER BY p.updated_at DESC
     ${limitClause}
-    `
+    `,
+    params
   );
 
   // For each profile, fetch their photos and resolve affiliations

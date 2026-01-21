@@ -126,6 +126,91 @@ export function rankAndOrderProfiles(
 }
 
 /**
+ * Check if a preference includes a specific gender
+ * 
+ * Examples:
+ * - "everyone" includes all genders
+ * - "male" includes "male"
+ * - "female" includes "female"
+ * - "non-binary" includes "non-binary"
+ */
+function preferenceIncludesGender(preference: string, gender: string): boolean {
+  const pref = preference.toLowerCase().trim();
+  const gen = gender.toLowerCase().trim();
+  
+  // "everyone" matches all genders
+  if (pref === 'everyone') return true;
+  
+  // Exact match
+  if (pref === gen) return true;
+  
+  // Handle non-binary
+  if (pref === 'non-binary' && gen === 'non-binary') return true;
+  
+  return false;
+}
+
+/**
+ * Check if gender preferences match bidirectionally
+ * 
+ * For dating mode: Requires strict bidirectional matching
+ * - A woman who wants to see men should only see men who want to see women
+ * - A man who wants to see women should only see women who want to see men
+ * - If someone has "everyone" selected, they can be shown to anyone whose preference includes their gender
+ *   (e.g., woman with "everyone" can be shown to men/women/non-binary who want women or "everyone")
+ * 
+ * @param userGender - Current user's gender
+ * @param userPreference - Current user's gender preference
+ * @param profileGender - Profile's gender
+ * @param profilePreference - Profile's gender preference
+ * @param mode - 'romantic' or 'platonic'
+ * @returns true if preferences match bidirectionally
+ */
+function genderPreferencesMatch(
+  userGender: string | null,
+  userPreference: string | null,
+  profileGender: string | null,
+  profilePreference: string | null,
+  mode: 'romantic' | 'platonic' = 'romantic'
+): boolean {
+  // If user or profile hasn't set gender, skip filtering (can't match without gender)
+  if (!userGender || !profileGender) {
+    return false;
+  }
+  
+  // For romantic mode, require both preferences to be set for strict matching
+  if (mode === 'romantic') {
+    if (!userPreference || !profilePreference) {
+      return false; // Require preferences to be set for dating
+    }
+  } else {
+    // For platonic mode, be more lenient - allow if preferences aren't set
+    if (!userPreference || !profilePreference) {
+      return true;
+    }
+  }
+  
+  // Normalize to lowercase for comparison
+  const userPref = userPreference.toLowerCase().trim();
+  const profilePref = profilePreference.toLowerCase().trim();
+  const userGen = userGender.toLowerCase().trim();
+  const profileGen = profileGender.toLowerCase().trim();
+  
+  // Check bidirectional matching:
+  // 1. User's preference includes profile's gender
+  //    - If user has "everyone", they want to see all genders (including profile's gender)
+  //    - If user has specific preference (e.g., "male"), check if it matches profile's gender
+  // 2. Profile's preference includes user's gender
+  //    - If profile has "everyone", they want to see all genders (including user's gender)
+  //    - If profile has specific preference (e.g., "female"), check if it matches user's gender
+  const userWantsProfile = preferenceIncludesGender(userPref, profileGen);
+  const profileWantsUser = preferenceIncludesGender(profilePref, userGen);
+  
+  // Both must match for bidirectional compatibility
+  return userWantsProfile && profileWantsUser;
+}
+
+/**
  * Filter profiles based on discovery context
  * 
  * @param profiles - Array of profiles to filter
@@ -138,16 +223,35 @@ export function filterProfiles(
 ): FeedProfileRow[] {
   let filtered = [...profiles];
   
-  // For testing: Include current user's profile (they want to see their own profile first)
-  // TODO: In production, exclude the current user:
-  // filtered = filtered.filter(p => p.user_id !== context.userId);
+  // Exclude current user
+  filtered = filtered.filter(p => p.user_id !== context.userId);
+  
+  // Filter by gender preferences (bidirectional matching)
+  // For dating mode: woman who wants men should only see men who want women (and vice versa)
+  if (context.userProfile?.gender && context.mode) {
+    const userGender = context.userProfile.gender;
+    const userPreference = context.mode === 'romantic' 
+      ? context.userProfile.dating_gender_preference
+      : context.userProfile.friends_gender_preference;
+    
+    filtered = filtered.filter(profile => {
+      const profilePreference = context.mode === 'romantic'
+        ? profile.dating_gender_preference
+        : profile.friends_gender_preference;
+      
+      return genderPreferencesMatch(
+        userGender,
+        userPreference || null,
+        profile.gender,
+        profilePreference || null,
+        context.mode
+      );
+    });
+  }
   
   // TODO: Add more filtering logic based on:
-  // - Gender preferences (dating_gender_preference, friends_gender_preference)
   // - Age preferences (min_age_preference, max_age_preference)
   // - Distance preferences (max_distance_km)
-  // - Mode (romantic vs platonic)
-  // - Scope (school, league, area)
   // - Already swiped/matched users
   // - Blocked users
   

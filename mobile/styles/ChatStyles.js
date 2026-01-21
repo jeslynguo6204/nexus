@@ -9,10 +9,18 @@ export default StyleSheet.create({
 
   // Top bar
   topBar: {
-    height: 56,
+    height: 50,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingBottom: 0,
+  },
+  
+  // Scope Mode Selector container
+  scopeModeContainer: {
+    paddingTop: 4,
+    paddingBottom: 8,
+    paddingHorizontal: 0,
   },
 
   brandMark: {
@@ -48,7 +56,7 @@ export default StyleSheet.create({
   // Matches row
   matchesSection: {
     paddingTop: 8,
-    paddingBottom: 10,
+    paddingBottom: 6,
   },
   matchesRow: {
     paddingRight: 10,
@@ -74,8 +82,8 @@ export default StyleSheet.create({
 
   // Section header
   sectionHeader: {
-    paddingTop: 6,
-    paddingBottom: 10,
+    paddingTop: 4,
+    paddingBottom: 6,
   },
   sectionHeaderText: {
     fontSize: 22,
@@ -85,7 +93,8 @@ export default StyleSheet.create({
 
   // List
   listContent: {
-    paddingBottom: 18,
+    paddingBottom: 8,
+    flexGrow: 1,
   },
   separator: {
     height: 1,
@@ -182,6 +191,12 @@ export default StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  centeredEmptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   emptyStateText: {
     fontSize: 18,

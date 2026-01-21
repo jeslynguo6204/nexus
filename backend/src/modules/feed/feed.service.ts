@@ -9,9 +9,15 @@ export async function getFeedForUser(
     scope?: 'school' | 'league' | 'area';
   }
 ) {
-  // Fetch all available profiles
-  // For hardcoded ordering testing, include all profiles (not just show_me_in_discovery = true)
-  const allProfiles = await FeedDao.getSimpleFeed(true);
+  const mode = options?.mode || 'romantic';
+  const scope = options?.scope || 'school';
+  
+  // Fetch profiles with school and mode filtering already applied
+  const allProfiles = await FeedDao.getSimpleFeed(userId, {
+    mode,
+    scope,
+    includeAllForTesting: false,
+  });
   
   // Get user's profile for context (preferences, school, etc.)
   const userProfile = await getProfileByUserId(userId);
@@ -19,8 +25,8 @@ export async function getFeedForUser(
   // Build discovery context
   const context: DiscoveryContext = {
     userId,
-    mode: options?.mode || 'romantic',
-    scope: options?.scope || 'school',
+    mode,
+    scope,
     userProfile: userProfile ? {
       school_id: userProfile.school_id || null,
       gender: userProfile.gender,
@@ -32,7 +38,7 @@ export async function getFeedForUser(
     } : undefined,
   };
   
-  // Apply discovery logic (filtering, ranking, ordering)
+  // Apply discovery logic (gender preference filtering, ranking, ordering)
   const discoveryProfiles = getDiscoveryFeed(allProfiles, context);
 
   // Shape school object for frontend consumers

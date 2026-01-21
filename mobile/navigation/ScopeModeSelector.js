@@ -192,9 +192,9 @@ export default function ScopeModeSelector({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 40,
   },
 
   // Center: segmented control

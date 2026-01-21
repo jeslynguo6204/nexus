@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import styles from '../../../styles/ChatStyles';
 import { getChats, getAllMatches } from '../../../api/matchesAPI';
+import ScopeModeSelector from '../../../navigation/ScopeModeSelector';
 
 // Helper to format time ago
 const formatTimeAgo = (dateString) => {
@@ -37,25 +38,60 @@ const formatTimeAgo = (dateString) => {
   }
 };
 
-// Hard-coded sample chat to simulate starting a chat with a match
-// This represents what it looks like when you start a chat with someone
-const HARDCODED_STARTED_CHAT = [
+// Hard-coded sample chats for preview
+const HARDCODED_CHATS = [
   {
     id: 'c1',
     match_user_id: 'match_123',
     display_name: 'Alex',
     avatar_url: 'https://picsum.photos/200?31',
-    last_message: 'You started the conversation',
+    last_message: 'Hey! How are you doing?',
     time: 'now',
-    unread: false,
+    unread: true,
   },
   {
     id: 'c2',
     match_user_id: 'match_456',
     display_name: 'Paige',
     avatar_url: 'https://picsum.photos/200?32',
+    last_message: 'That sounds great! Let me know when you\'re free',
+    time: '5m',
+    unread: true,
+  },
+  {
+    id: 'c3',
+    match_user_id: 'match_789',
+    display_name: 'Jordan',
+    avatar_url: 'https://picsum.photos/200?33',
+    last_message: 'Thanks for the recommendation!',
+    time: '1h',
+    unread: false,
+  },
+  {
+    id: 'c4',
+    match_user_id: 'match_101',
+    display_name: 'Sam',
+    avatar_url: 'https://picsum.photos/200?34',
+    last_message: 'See you tomorrow!',
+    time: '3h',
+    unread: false,
+  },
+  {
+    id: 'c5',
+    match_user_id: 'match_202',
+    display_name: 'Taylor',
+    avatar_url: 'https://picsum.photos/200?35',
     last_message: 'You started the conversation',
-    time: 'now',
+    time: '1d',
+    unread: false,
+  },
+  {
+    id: 'c6',
+    match_user_id: 'match_303',
+    display_name: 'Morgan',
+    avatar_url: 'https://picsum.photos/200?36',
+    last_message: 'Looking forward to it!',
+    time: '2d',
     unread: false,
   },
 ];
@@ -65,6 +101,9 @@ export default function InboxScreen({ navigation }) {
 
   const [matches, setMatches] = useState([]);
   const [chats, setChats] = useState([]);
+  
+  const [scope, setScope] = useState('school'); // school | league | area
+  const [mode, setMode] = useState('romantic'); // romantic | platonic
 
   const loadInboxData = useCallback(async (showLoading = false) => {
     if (showLoading) {
@@ -111,9 +150,9 @@ export default function InboxScreen({ navigation }) {
         })
       );
 
-      // For now, use hardcoded chat to see what it looks like when you start a chat
-      // TODO: Remove this when real messaging is implemented
-      setChats(formattedChats.length > 0 ? formattedChats : HARDCODED_STARTED_CHAT);
+      // For preview: use hardcoded chats if no real chats exist
+      // TODO: Remove hardcoded chats when real messaging is fully implemented
+      setChats(formattedChats.length > 0 ? formattedChats : HARDCODED_CHATS);
     } catch (e) {
       console.warn('Error loading inbox:', e);
       Alert.alert('Error', 'Failed to load inbox');
@@ -208,8 +247,34 @@ export default function InboxScreen({ navigation }) {
     );
   }
 
+  // If no matches, show centered empty state
+  if (matches.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {/* Top bar */}
+        <View style={styles.topBar}>
+          <Pressable style={styles.brandMark} hitSlop={10}>
+            <Text style={styles.brandMarkText}>6°</Text>
+          </Pressable>
+
+          <View style={styles.centerSlot}>
+            <Text style={styles.title}>Matches</Text>
+          </View>
+
+          <View style={styles.rightSlot} />
+        </View>
+
+        {/* Centered empty state for no matches */}
+        <View style={styles.centeredEmptyState}>
+          <Text style={styles.emptyStateText}>No matches yet</Text>
+          <Text style={styles.emptyStateSubtext}>Start swiping to find matches!</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Top bar */}
       <View style={styles.topBar}>
         <Pressable style={styles.brandMark} hitSlop={10}>
@@ -224,22 +289,31 @@ export default function InboxScreen({ navigation }) {
         <View style={styles.rightSlot} />
       </View>
 
+      {/* Scope Mode Selector */}
+      <View style={styles.scopeModeContainer}>
+        <ScopeModeSelector
+          scope={scope}
+          mode={mode}
+          onScopeChange={setScope}
+          onModeChange={setMode}
+          scopeLabels={{
+            school: 'Penn',
+            league: 'Ivy League',
+            area: 'Philadelphia',
+          }}
+          style={{ flex: 0 }}
+        />
+      </View>
+
       {/* Matches row */}
       <View style={styles.matchesSection}>
-        {matches.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.matchesRow}
-          >
-            {matches.map(renderMatch)}
-          </ScrollView>
-        ) : (
-          <View style={styles.emptyStateContainer}>
-            <Text style={styles.emptyStateText}>No matches yet</Text>
-            <Text style={styles.emptyStateSubtext}>Start swiping to find matches!</Text>
-          </View>
-        )}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.matchesRow}
+        >
+          {matches.map(renderMatch)}
+        </ScrollView>
       </View>
 
       {/* Messages header */}
@@ -256,6 +330,7 @@ export default function InboxScreen({ navigation }) {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          style={{ flex: 1 }}
         />
       ) : (
         <View style={styles.emptyStateContainer}>
