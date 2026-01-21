@@ -54,21 +54,22 @@ export default StyleSheet.create({
     paddingRight: 10,
   },
   matchItem: {
-    width: 78,
+    width: 90,
     marginRight: 14,
     alignItems: 'center',
   },
   matchAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#EDEDED',
   },
   matchName: {
-    marginTop: 6,
-    fontSize: 12,
+    marginTop: 8,
+    fontSize: 14,
     color: '#111111',
-    maxWidth: 78,
+    maxWidth: 90,
+    fontWeight: '600',
   },
 
   // Section header
@@ -173,5 +174,26 @@ export default StyleSheet.create({
     width: 10,
     height: 10,
     marginLeft: 10,
+  },
+
+  // Empty states
+  emptyStateContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111111',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyStateSubtext: {
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

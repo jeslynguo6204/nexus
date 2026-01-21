@@ -36,55 +36,26 @@ const formatTimeAgo = (dateString) => {
   }
 };
 
-// Hard-coded sample chats to use until messaging is implemented
-const SAMPLE_CHATS = [
+// Hard-coded sample chat to simulate starting a chat with a match
+// This represents what it looks like when you start a chat with someone
+const HARDCODED_STARTED_CHAT = [
   {
     id: 'c1',
-    display_name: 'Paige',
+    match_user_id: 'match_123',
+    display_name: 'Alex',
     avatar_url: 'https://picsum.photos/200?31',
-    last_message: '4+ new messages',
-    time: '1h',
-    unread: true,
-  },
-  {
-    id: 'c2',
-    display_name: 'Sydney',
-    avatar_url: 'https://picsum.photos/200?32',
-    last_message: '4+ new messages',
-    time: '4h',
-    unread: true,
-  },
-  {
-    id: 'c3',
-    display_name: 'Jeslyn Guo',
-    avatar_url: 'https://picsum.photos/200?33',
-    last_message: 'Liked a message',
-    time: '22h',
-    unread: true,
-  },
-  {
-    id: 'c4',
-    display_name: 'Lauren',
-    avatar_url: 'https://picsum.photos/200?34',
-    last_message: '3 new messages',
-    time: '22h',
-    unread: true,
-  },
-  {
-    id: 'c5',
-    display_name: 'Giulia',
-    avatar_url: 'https://picsum.photos/200?35',
-    last_message: 'aaawwwweee',
-    time: '1d',
+    last_message: 'You started the conversation',
+    time: 'now',
     unread: false,
   },
   {
-    id: 'c6',
-    display_name: 'Eugenia',
-    avatar_url: 'https://picsum.photos/200?36',
-    last_message: '4+ new messages',
-    time: '1d',
-    unread: true,
+    id: 'c2',
+    match_user_id: 'match_456',
+    display_name: 'Paige',
+    avatar_url: 'https://picsum.photos/200?32',
+    last_message: 'You started the conversation',
+    time: 'now',
+    unread: false,
   },
 ];
 
@@ -92,7 +63,7 @@ export default function InboxScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   const [matches, setMatches] = useState([]);
-  const [chats, setChats] = useState(SAMPLE_CHATS);
+  const [chats, setChats] = useState([]);
 
   useEffect(() => {
     (async () => {
@@ -125,6 +96,7 @@ export default function InboxScreen({ navigation }) {
         const formattedChats = (Array.isArray(fetchedChats) ? fetchedChats : []).map(
           (c) => ({
             id: String(c.id),
+            match_user_id: c.match_user_id,
             display_name: c.display_name || 'Chat',
             avatar_url:
               c.avatar_url ||
@@ -135,7 +107,9 @@ export default function InboxScreen({ navigation }) {
           })
         );
 
-        setChats(formattedChats);
+        // For now, use hardcoded chat to see what it looks like when you start a chat
+        // TODO: Remove this when real messaging is implemented
+        setChats(formattedChats.length > 0 ? formattedChats : HARDCODED_STARTED_CHAT);
       } catch (e) {
         console.warn('Error loading inbox:', e);
         Alert.alert('Error', 'Failed to load inbox');
@@ -237,13 +211,20 @@ export default function InboxScreen({ navigation }) {
 
       {/* Matches row */}
       <View style={styles.matchesSection}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.matchesRow}
-        >
-          {matches.map(renderMatch)}
-        </ScrollView>
+        {matches.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.matchesRow}
+          >
+            {matches.map(renderMatch)}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateText}>No matches yet</Text>
+            <Text style={styles.emptyStateSubtext}>Start swiping to find matches!</Text>
+          </View>
+        )}
       </View>
 
       {/* Messages header */}
@@ -252,14 +233,21 @@ export default function InboxScreen({ navigation }) {
       </View>
 
       {/* Chats */}
-      <FlatList
-        data={chats}
-        keyExtractor={(x) => String(x.id)}
-        renderItem={renderChatRow}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {chats.length > 0 ? (
+        <FlatList
+          data={chats}
+          keyExtractor={(x) => String(x.id)}
+          renderItem={renderChatRow}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>No messages yet</Text>
+          <Text style={styles.emptyStateSubtext}>Start a conversation with one of your matches!</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

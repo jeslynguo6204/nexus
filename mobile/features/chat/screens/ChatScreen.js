@@ -44,6 +44,7 @@ export default function ChatScreen({ navigation, route }) {
   const [sending, setSending] = useState(false);
 
   // Hard-coded starter conversation
+  // Note: Array gets reversed before passing to inverted FlatList, so first item appears at top
   const [messages, setMessages] = useState(() => [
     {
       id: 'm1',
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    height: 72,
+    height: 80,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -256,14 +257,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#EDEDED',
   },
   headerName: {
-    marginTop: 6,
-    fontSize: 16,
+    marginTop: 8,
+    fontSize: 20,
     fontWeight: '700',
     color: '#111111',
   },
