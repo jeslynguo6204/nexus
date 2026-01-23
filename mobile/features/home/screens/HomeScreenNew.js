@@ -18,6 +18,7 @@ import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/ChatStyles';
+import homeStyles from '../../../styles/HomeStylesNew';
 
 export default function HomeScreenNew() {
   const [loading, setLoading] = useState(true);
@@ -301,26 +302,28 @@ export default function HomeScreenNew() {
         />
       </View>
 
-      <View style={styles.centeredEmptyState}>
-        {loadingFeed ? (
+      {loadingFeed ? (
+        <View style={styles.centeredEmptyState}>
           <ActivityIndicator />
-        ) : current ? (
-          <SwipeDeckNew
-            profiles={profiles}
-            currentIndex={currentIndex}
-            onSwipeRight={handleSwipeRight}
-            onSwipeLeft={handleSwipeLeft}
-            onNext={moveToNextCard}
-          />
-        ) : (
-          <View style={styles.centeredEmptyState}>
-            <Text style={styles.emptyStateText}>
+        </View>
+      ) : current ? (
+        <SwipeDeckNew
+          profiles={profiles}
+          currentIndex={currentIndex}
+          onSwipeRight={handleSwipeRight}
+          onSwipeLeft={handleSwipeLeft}
+          onNext={moveToNextCard}
+        />
+      ) : (
+        <View style={homeStyles.emptyWrap}>
+          <View style={homeStyles.emptyCard}>
+            <Text style={homeStyles.emptyTitle}>
               That's all for now!
             </Text>
-            <Text style={styles.emptyStateSubtext}>Check back later for new profiles.</Text>
+            <Text style={homeStyles.emptySub}>Check back later for new profiles.</Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

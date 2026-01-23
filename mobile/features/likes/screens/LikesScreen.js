@@ -15,6 +15,7 @@ import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import { getMyProfile } from '../../../api/profileAPI';
 
 import styles from '../../../styles/ChatStyles';
+import homeStyles from '../../../styles/HomeStylesNew';
 
 export default function LikesScreen() {
   const [loading, setLoading] = useState(true);
@@ -120,9 +121,11 @@ export default function LikesScreen() {
         />
       </View>
 
-      <View style={styles.centeredEmptyState}>
-        <Text style={styles.emptyStateText}>No likes yet</Text>
-        <Text style={styles.emptyStateSubtext}>Check back later to see who's liked you.</Text>
+      <View style={homeStyles.emptyWrap}>
+        <View style={homeStyles.emptyCard}>
+          <Text style={homeStyles.emptyTitle}>No likes yet</Text>
+          <Text style={homeStyles.emptySub}>Check back later to see who's liked you.</Text>
+        </View>
       </View>
     </SafeAreaView>
   );
