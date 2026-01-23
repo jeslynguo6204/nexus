@@ -520,15 +520,6 @@ export default function ProfileCardNew({
                 pointerEvents="none"
               />
 
-              {/* Menu button for block/report */}
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => setBlockReportSheetOpen(true)}
-                hitSlop={8}
-              >
-                <Text style={styles.menuButtonText}>⋯</Text>
-              </TouchableOpacity>
-
               <Pressable onPress={toggleMore} style={styles.captionTapArea} hitSlop={6}>
                 <Text style={styles.nameText}>
                   {firstName}
