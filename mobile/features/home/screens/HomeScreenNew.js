@@ -272,7 +272,7 @@ export default function HomeScreenNew() {
     }
   }
 
-  if (loading || loadingFeed) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <ActivityIndicator style={{ flex: 1 }} />
@@ -303,7 +303,9 @@ export default function HomeScreenNew() {
       </View>
 
       <View style={styles.content}>
-        {current ? (
+        {loadingFeed ? (
+          <ActivityIndicator style={{ flex: 1 }} />
+        ) : current ? (
           <SwipeDeckNew
             profiles={profiles}
             currentIndex={currentIndex}
