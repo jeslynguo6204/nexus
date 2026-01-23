@@ -149,16 +149,24 @@ export async function unmatchUser(userId: number, matchId: number): Promise<void
 
     const match = matchResult.rows[0];
     const chatId = match.chat_id;
-    const otherUserId = match.matcher_id === userId ? match.matchee_id : match.matcher_id;
+    
+    // Ensure userId is a number for comparison
+    const userIdNum = Number(userId);
+    const otherUserId = match.matcher_id === userIdNum ? match.matchee_id : match.matcher_id;
+    
+    console.log(`[Unmatch] Match record:`, match);
+    console.log(`[Unmatch] Unmatching dating mode - userId: ${userIdNum}, matchId: ${matchId}, otherUserId: ${otherUserId}`);
 
-    // Delete likes in both directions (user A liked user B, and user B liked user A)
-    await client.query(
+    // Delete likes in both directions FIRST (user A liked user B, and user B liked user A)
+    const likesResult = await client.query(
       `
       DELETE FROM dating_likes
       WHERE (liker_id = $1 AND likee_id = $2) OR (liker_id = $2 AND likee_id = $1)
       `,
-      [userId, otherUserId]
+      [userIdNum, otherUserId]
     );
+
+    console.log(`[Unmatch] Deleted ${likesResult.rowCount} likes rows from dating_likes`);
 
     // Delete chat and messages if chat exists (before deleting match due to foreign key constraints)
     // Use dating mode tables: chats and messages
@@ -183,7 +191,7 @@ export async function unmatchUser(userId: number, matchId: number): Promise<void
     }
 
     // Delete the match from dating_matches table
-    await client.query(
+    const matchDeleteResult = await client.query(
       `
       DELETE FROM dating_matches
       WHERE id = $1
@@ -191,9 +199,12 @@ export async function unmatchUser(userId: number, matchId: number): Promise<void
       [matchId]
     );
 
+    console.log(`[Unmatch] Deleted match row from dating_matches. Rows deleted: ${matchDeleteResult.rowCount}`);
+
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
+    console.error(`[Unmatch] Error during unmatch:`, error);
     throw error;
   } finally {
     client.release();
@@ -326,16 +337,24 @@ export async function unmatchFriendUser(userId: number, matchId: number): Promis
 
     const match = matchResult.rows[0];
     const chatId = match.chat_id;
-    const otherUserId = match.matcher_id === userId ? match.matchee_id : match.matcher_id;
+    
+    // Ensure userId is a number for comparison
+    const userIdNum = Number(userId);
+    const otherUserId = match.matcher_id === userIdNum ? match.matchee_id : match.matcher_id;
+    
+    console.log(`[Unmatch] Match record:`, match);
+    console.log(`[Unmatch] Unmatching friend mode - userId: ${userIdNum}, matchId: ${matchId}, otherUserId: ${otherUserId}`);
 
-    // Delete likes in both directions (user A liked user B, and user B liked user A)
-    await client.query(
+    // Delete likes in both directions FIRST (user A liked user B, and user B liked user A)
+    const likesResult = await client.query(
       `
       DELETE FROM friend_likes
       WHERE (liker_id = $1 AND likee_id = $2) OR (liker_id = $2 AND likee_id = $1)
       `,
-      [userId, otherUserId]
+      [userIdNum, otherUserId]
     );
+
+    console.log(`[Unmatch] Deleted ${likesResult.rowCount} likes rows from friend_likes`);
 
     // Delete chat and messages if chat exists (before deleting match due to foreign key constraints)
     // Use friend mode tables: friend_chats and friend_messages
@@ -360,7 +379,7 @@ export async function unmatchFriendUser(userId: number, matchId: number): Promis
     }
 
     // Delete the match from friend_matches table
-    await client.query(
+    const matchDeleteResult = await client.query(
       `
       DELETE FROM friend_matches
       WHERE id = $1
@@ -368,9 +387,12 @@ export async function unmatchFriendUser(userId: number, matchId: number): Promis
       [matchId]
     );
 
+    console.log(`[Unmatch] Deleted match row from friend_matches. Rows deleted: ${matchDeleteResult.rowCount}`);
+
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
+    console.error(`[Unmatch] Error during unmatch:`, error);
     throw error;
   } finally {
     client.release();
