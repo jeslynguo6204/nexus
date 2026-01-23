@@ -17,8 +17,7 @@ import { getMyProfile } from '../../../api/profileAPI';
 import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
-import styles from '../../../styles/HomeStylesNew';
-import chatStyles from '../../../styles/ChatStyles';
+import styles from '../../../styles/ChatStyles';
 
 export default function HomeScreenNew() {
   const [loading, setLoading] = useState(true);
@@ -285,13 +284,13 @@ export default function HomeScreenNew() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Top bar (use ChatStyles to match Matches and Likes exactly) */}
-      <View style={chatStyles.topBar}>
-        <Pressable style={chatStyles.brandMark} hitSlop={10}>
-          <Text style={chatStyles.brandMarkText}>6°</Text>
+      <View style={styles.topBar}>
+        <Pressable style={styles.brandMark} hitSlop={10}>
+          <Text style={styles.brandMarkText}>6°</Text>
         </Pressable>
 
-        <View style={chatStyles.centerSlot}>
-          <Text style={chatStyles.title}>Discover</Text>
+        <View style={styles.centerSlot}>
+          <Text style={styles.title}>Discover</Text>
         </View>
 
         <ModeToggleButton
@@ -302,9 +301,9 @@ export default function HomeScreenNew() {
         />
       </View>
 
-      <View style={styles.content}>
+      <View style={styles.centeredEmptyState}>
         {loadingFeed ? (
-          <ActivityIndicator style={{ flex: 1 }} />
+          <ActivityIndicator />
         ) : current ? (
           <SwipeDeckNew
             profiles={profiles}
@@ -314,13 +313,11 @@ export default function HomeScreenNew() {
             onNext={moveToNextCard}
           />
         ) : (
-          <View style={styles.emptyWrap}>
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>
-                That&apos;s all for now!{'\n'}Check back later for new profiles.
-              </Text>
-              <Text style={styles.emptySub}>Six Degrees</Text>
-            </View>
+          <View style={styles.centeredEmptyState}>
+            <Text style={styles.emptyStateText}>
+              That's all for now!
+            </Text>
+            <Text style={styles.emptyStateSubtext}>Check back later for new profiles.</Text>
           </View>
         )}
       </View>

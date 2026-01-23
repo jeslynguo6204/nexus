@@ -14,8 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import { getMyProfile } from '../../../api/profileAPI';
 
-import likesStyles from '../../../styles/LikesStyles';
-import chatStyles from '../../../styles/ChatStyles'; // ✅ add this
+import styles from '../../../styles/ChatStyles';
 
 export default function LikesScreen() {
   const [loading, setLoading] = useState(true);
@@ -95,22 +94,22 @@ export default function LikesScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={likesStyles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <ActivityIndicator style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={likesStyles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Top bar (use ChatStyles so it matches Matches exactly) */}
-      <View style={chatStyles.topBar}>
-        <Pressable style={chatStyles.brandMark} hitSlop={10}>
-          <Text style={chatStyles.brandMarkText}>6°</Text>
+      <View style={styles.topBar}>
+        <Pressable style={styles.brandMark} hitSlop={10}>
+          <Text style={styles.brandMarkText}>6°</Text>
         </Pressable>
 
-        <View style={chatStyles.centerSlot}>
-          <Text style={chatStyles.title}>Likes</Text>
+        <View style={styles.centerSlot}>
+          <Text style={styles.title}>Likes</Text>
         </View>
 
         <ModeToggleButton
@@ -121,8 +120,9 @@ export default function LikesScreen() {
         />
       </View>
 
-      <View style={likesStyles.content}>
-        <Text style={likesStyles.placeholderText}>Likes screen coming soon</Text>
+      <View style={styles.centeredEmptyState}>
+        <Text style={styles.emptyStateText}>No likes yet</Text>
+        <Text style={styles.emptyStateSubtext}>Check back later to see who's liked you.</Text>
       </View>
     </SafeAreaView>
   );
