@@ -33,7 +33,13 @@ export default function HomeScreenNew() {
   const isLoadingFeedRef = useRef(false);
   const lastLoadedModeRef = useRef(null);
   const isMountedRef = useRef(false);
-  const previousGenderPrefsRef = useRef({ dating: null, friends: null });
+  const previousProfileStateRef = useRef({
+    gender: null,
+    dating_gender_preference: null,
+    friends_gender_preference: null,
+    location_description: null,
+    school_id: null,
+  });
 
   const loadFeed = useCallback(async () => {
     // Prevent multiple simultaneous loads or loading the same mode twice
@@ -88,24 +94,30 @@ export default function HomeScreenNew() {
       // Fetch my profile
       const profile = await getMyProfile(token);
       if (isMountedRef.current) {
-        const prevPrefs = previousGenderPrefsRef.current;
-        const newPrefs = {
-          dating: profile?.dating_gender_preference,
-          friends: profile?.friends_gender_preference,
+        const prevState = previousProfileStateRef.current;
+        const newState = {
+          gender: profile?.gender,
+          dating_gender_preference: profile?.dating_gender_preference,
+          friends_gender_preference: profile?.friends_gender_preference,
+          location_description: profile?.location_description,
+          school_id: profile?.school_id,
         };
         
-        // Check if gender preferences changed - if so, reload feed
-        const prefsChanged = 
-          prevPrefs.dating !== newPrefs.dating || 
-          prevPrefs.friends !== newPrefs.friends;
+        // Check if ANY eligibility-affecting field changed
+        const eligibilityChanged =
+          prevState.gender !== newState.gender ||
+          prevState.dating_gender_preference !== newState.dating_gender_preference ||
+          prevState.friends_gender_preference !== newState.friends_gender_preference ||
+          prevState.location_description !== newState.location_description ||
+          prevState.school_id !== newState.school_id;
         
-        if (prefsChanged && prevPrefs.dating !== null && !loading && hasSetInitialMode) {
-          // Preferences changed, reload feed
-          lastLoadedModeRef.current = null; // Reset to force reload
+        // If eligibility changed and this isn't the first load, reload feed
+        if (eligibilityChanged && prevState.gender !== null && !loading && hasSetInitialMode) {
+          lastLoadedModeRef.current = null; // Force reload
           loadFeed();
         }
         
-        previousGenderPrefsRef.current = newPrefs;
+        previousProfileStateRef.current = newState;
         setMyProfile(profile);
         setMyUserId(profile?.user_id);
       }
