@@ -9,6 +9,9 @@ import {
   setPrimaryPhoto,
   reorderPhotos,
   removePhoto,
+  trackPhotoView,
+  trackPhotoLike,
+  trackPhotoPass,
 } from "./photos.service";
 
 export async function getMyPhotosController(req: AuthedRequest, res: Response) {
@@ -72,6 +75,45 @@ export async function deletePhotoController(req: AuthedRequest, res: Response) {
     res.json({ success: true });
   } catch (err: any) {
     console.error("DELETE /photos/me/:photoId error:", err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+}
+
+export async function trackPhotoViewController(req: AuthedRequest, res: Response) {
+  try {
+    const photoId = Number(req.params.photoId);
+    if (isNaN(photoId)) return res.status(400).json({ error: "Invalid photoId" });
+
+    await trackPhotoView(photoId);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("POST /photos/:photoId/view error:", err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+}
+
+export async function trackPhotoLikeController(req: AuthedRequest, res: Response) {
+  try {
+    const photoId = Number(req.params.photoId);
+    if (isNaN(photoId)) return res.status(400).json({ error: "Invalid photoId" });
+
+    await trackPhotoLike(photoId);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("POST /photos/:photoId/like error:", err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+}
+
+export async function trackPhotoPassController(req: AuthedRequest, res: Response) {
+  try {
+    const photoId = Number(req.params.photoId);
+    if (isNaN(photoId)) return res.status(400).json({ error: "Invalid photoId" });
+
+    await trackPhotoPass(photoId);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("POST /photos/:photoId/pass error:", err);
     res.status(err.statusCode || 500).json({ error: err.message });
   }
 }

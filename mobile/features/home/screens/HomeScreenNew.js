@@ -1,125 +1,279 @@
 // mobile/screens/HomeScreenNew.js
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   ActivityIndicator,
   Alert,
   Pressable,
-  Modal,
-  Dimensions,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import SwipeDeckNew from '../components/SwipeDeckNew';
 import { getFeedProfiles } from '../../../api/feedAPI';
 import { getMyProfile } from '../../../api/profileAPI';
-import styles from '../../../styles/HomeStylesNew';
-
-const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
+import { likeUser, passUser } from '../../../api/swipesAPI';
+import ModeToggleButton from '../../../navigation/ModeToggleButton';
+import styles from '../../../styles/ChatStyles';
 
 export default function HomeScreenNew() {
-  const insets = useSafeAreaInsets();
-
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [myUserId, setMyUserId] = useState(null);
+  const [myProfile, setMyProfile] = useState(null);
+  const [loadingFeed, setLoadingFeed] = useState(false);
 
-  const [scope, setScope] = useState('school'); // school | league | area
   const [mode, setMode] = useState('romantic'); // romantic | platonic
+  const [hasSetInitialMode, setHasSetInitialMode] = useState(false);
+  const isLoadingFeedRef = useRef(false);
+  const lastLoadedModeRef = useRef(null);
+  const isMountedRef = useRef(false);
+  const previousProfileStateRef = useRef({
+    gender: null,
+    dating_gender_preference: null,
+    friends_gender_preference: null,
+    location_description: null,
+    school_id: null,
+  });
 
-  // Mode menu (popover)
-  const [modeMenuOpen, setModeMenuOpen] = useState(false);
-  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
-  const modeChipRef = useRef(null);
+  const loadFeed = useCallback(async () => {
+    // Prevent multiple simultaneous loads or loading the same mode twice
+    if (isLoadingFeedRef.current || lastLoadedModeRef.current === mode) {
+      return;
+    }
+    
+    isLoadingFeedRef.current = true;
+    setLoadingFeed(true);
+    lastLoadedModeRef.current = mode;
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not signed in');
 
-  const modeGlyph = mode === 'romantic' ? '♡' : '⟡';
-
-  const POPOVER_W = 200;
-  const POPOVER_H = 150;
-  const EDGE = 12;
-
-  const openModeMenu = () => {
-    requestAnimationFrame(() => {
-      if (!modeChipRef.current?.measureInWindow) {
-        setModeMenuOpen(true);
-        return;
+      // Fetch feed profiles with current mode (default scope: school)
+      const fetchedProfiles = await getFeedProfiles(token, mode, 'school');
+      setProfiles(Array.isArray(fetchedProfiles) ? fetchedProfiles : []);
+      setCurrentIndex(0);
+    } catch (e) {
+      console.warn('Error loading feed:', e);
+      console.warn('Error details:', e.message);
+      // Log the full error response if available
+      if (e.response) {
+        try {
+          const errorData = await e.response.json();
+          console.warn('Error response data:', errorData);
+        } catch (jsonError) {
+          console.warn('Could not parse error response as JSON');
+        }
       }
+      // Don't show alert for network errors - they're expected if server isn't running
+      const isNetworkError = e.message?.includes('Network') || 
+                            e.message?.includes('fetch') || 
+                            e.message?.includes('connection') ||
+                            e.message?.includes('ECONNREFUSED');
+      if (!isNetworkError) {
+        Alert.alert('Error', String(e.message || e));
+      }
+      // Reset on error so we can retry
+      lastLoadedModeRef.current = null;
+    } finally {
+      isLoadingFeedRef.current = false;
+      setLoadingFeed(false);
+    }
+  }, [mode]);
 
-      modeChipRef.current.measureInWindow((x, y, w, h) => {
-        const { width: winW, height: winH } = Dimensions.get('window');
+  const loadProfile = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not signed in');
 
-        // Align popover right edge with chip right edge
-        let left = x + w - POPOVER_W;
-        let top = y + h + 8;
-
-        // Clamp inside visible area (respect safe areas)
-        left = clamp(left, EDGE, winW - POPOVER_W - EDGE);
-        top = clamp(top, insets.top + EDGE, winH - POPOVER_H - EDGE);
-
-        setPopoverPos({ top, left });
-        setModeMenuOpen(true);
-      });
-    });
-  };
+      // Fetch my profile
+      const profile = await getMyProfile(token);
+      if (isMountedRef.current) {
+        const prevState = previousProfileStateRef.current;
+        const newState = {
+          gender: profile?.gender,
+          dating_gender_preference: profile?.dating_gender_preference,
+          friends_gender_preference: profile?.friends_gender_preference,
+          location_description: profile?.location_description,
+          school_id: profile?.school_id,
+        };
+        
+        // Check if ANY eligibility-affecting field changed
+        const eligibilityChanged =
+          prevState.gender !== newState.gender ||
+          prevState.dating_gender_preference !== newState.dating_gender_preference ||
+          prevState.friends_gender_preference !== newState.friends_gender_preference ||
+          prevState.location_description !== newState.location_description ||
+          prevState.school_id !== newState.school_id;
+        
+        // If eligibility changed and this isn't the first load, reload feed
+        if (eligibilityChanged && prevState.gender !== null && !loading && hasSetInitialMode) {
+          lastLoadedModeRef.current = null; // Force reload
+          loadFeed();
+        }
+        
+        previousProfileStateRef.current = newState;
+        setMyProfile(profile);
+        setMyUserId(profile?.user_id);
+      }
+    } catch (e) {
+      console.warn('Error loading profile:', e);
+      // Don't show alert for network errors - they're expected if server isn't running
+      const isNetworkError = e.message?.includes('Network') || 
+                            e.message?.includes('fetch') || 
+                            e.message?.includes('connection') ||
+                            e.message?.includes('ECONNREFUSED');
+      if (!isNetworkError && isMountedRef.current) {
+        Alert.alert('Error', String(e.message || e));
+      }
+    }
+  }, [loading, hasSetInitialMode, loadFeed]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        if (!token) throw new Error('Not signed in');
-
-        // Fetch both my profile and feed profiles
-        const [myProfile, fetchedProfiles] = await Promise.all([
-          getMyProfile(token),
-          getFeedProfiles(token)
-        ]);
-        
-        setMyUserId(myProfile?.user_id);
-        setProfiles(Array.isArray(fetchedProfiles) ? fetchedProfiles : []);
-        setCurrentIndex(0);
-      } catch (e) {
-        console.warn(e);
-        Alert.alert('Error', String(e.message || e));
-      } finally {
+    isMountedRef.current = true;
+    loadProfile().finally(() => {
+      if (isMountedRef.current) {
         setLoading(false);
       }
-    })();
+    });
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
+
+  // Reload profile when screen comes into focus (to pick up preference changes)
+  useFocusEffect(
+    useCallback(() => {
+      if (!loading) {
+        loadProfile();
+      }
+    }, [loadProfile, loading])
+  );
+
+  // Set initial mode once when profile is loaded, and update if modes change
+  useEffect(() => {
+    if (!myProfile) {
+      return;
+    }
+    
+    // Set initial mode on first load
+    if (!hasSetInitialMode) {
+      setHasSetInitialMode(true);
+      setMode((currentMode) => {
+        if (myProfile.is_dating_enabled && !myProfile.is_friends_enabled) {
+          return 'romantic';
+        } else if (myProfile.is_friends_enabled && !myProfile.is_dating_enabled) {
+          return 'platonic';
+        }
+        return currentMode;
+      });
+    } else {
+      // After initial load, check if current mode is still valid
+      // If current mode was disabled, switch to the other one
+      setMode((currentMode) => {
+        if (currentMode === 'romantic' && !myProfile.is_dating_enabled) {
+          // Romantic mode disabled, switch to platonic if available
+          return myProfile.is_friends_enabled ? 'platonic' : currentMode;
+        } else if (currentMode === 'platonic' && !myProfile.is_friends_enabled) {
+          // Platonic mode disabled, switch to romantic if available
+          return myProfile.is_dating_enabled ? 'romantic' : currentMode;
+        }
+        return currentMode;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myProfile]);
+
+  // Load feed once when profile and mode are ready
+  useEffect(() => {
+    if (!isMountedRef.current) return;
+    
+    // Only load feed if:
+    // 1. Initial loading is complete
+    // 2. Profile is loaded
+    // 3. Initial mode has been set (to prevent running during initial setup)
+    // 4. Mode is different from what we last loaded
+    if (!loading && myProfile && hasSetInitialMode && lastLoadedModeRef.current !== mode) {
+      loadFeed();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, myProfile, mode, hasSetInitialMode]);
 
   function moveToNextCard() {
     setCurrentIndex((prev) => prev + 1);
   }
 
-  async function handleSwipeRight(profile) {
+  async function handleSwipeRight(profile, photoIndex = 0) {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
-      console.log(`✅ Profile ${myUserId} LIKED profile ${profile?.user_id}`);
+      
+      console.log(`✅ Profile ${myUserId} LIKED profile ${profile?.user_id} (mode: ${mode})`);
+      
+      // Record the like (dating_likes or friend_likes depending on mode)
+      const likeResult = await likeUser(token, profile?.user_id, mode);
+      
+      // Track the like on the photo that was being viewed
+      if (profile?.photos && profile.photos[photoIndex]?.id) {
+        await trackPhotoLike(token, profile.photos[photoIndex].id);
+      }
+      
+      // Check if it's a match
+      if (likeResult?.isMatch) {
+        console.log('🎉 It\'s a match!');
+        Alert.alert(
+          'It\'s a Match! 🎉', 
+          `You and ${profile?.display_name || 'this user'} liked each other!`
+        );
+      }
+      
       // moveToNextCard is handled by onNext callback from SwipeDeckNew
     } catch (e) {
       console.warn(e);
-      Alert.alert('Error', String(e.message || e));
+      // Don't show alert for tracking failures
+      if (e.message !== 'Not signed in') {
+        console.warn('Error processing like:', e);
+      } else {
+        Alert.alert('Error', String(e.message || e));
+      }
     }
   }
 
-  async function handleSwipeLeft(profile) {
+  async function handleSwipeLeft(profile, photoIndex = 0) {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not signed in');
-      console.log(`⏭️  Profile ${myUserId} PASSED ON profile ${profile?.user_id}`);
+      
+      console.log(`⏭️  Profile ${myUserId} PASSED ON profile ${profile?.user_id} (mode: ${mode})`);
+      
+      // Record the pass (dating_passes or friend_passes depending on mode)
+      await passUser(token, profile?.user_id, mode);
+      
+      // Track the pass on the photo that was being viewed
+      if (profile?.photos && profile.photos[photoIndex]?.id) {
+        await trackPhotoPass(token, profile.photos[photoIndex].id);
+      }
+      
       // moveToNextCard is handled by onNext callback from SwipeDeckNew
     } catch (e) {
       console.warn(e);
-      Alert.alert('Error', String(e.message || e));
+      // Don't show alert for tracking failures
+      if (e.message !== 'Not signed in') {
+        console.warn('Error processing pass:', e);
+      } else {
+        Alert.alert('Error', String(e.message || e));
+      }
     }
   }
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <ActivityIndicator style={{ flex: 1 }} />
       </SafeAreaView>
     );
@@ -128,129 +282,29 @@ export default function HomeScreenNew() {
   const current = profiles[currentIndex];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Top bar (use ChatStyles to match Matches and Likes exactly) */}
       <View style={styles.topBar}>
         <Pressable style={styles.brandMark} hitSlop={10}>
           <Text style={styles.brandMarkText}>6°</Text>
         </Pressable>
 
         <View style={styles.centerSlot}>
-          <View style={styles.segmented}>
-            <Pressable
-              onPress={() => setScope('school')}
-              style={[styles.segment, scope === 'school' && styles.segmentActive]}
-              hitSlop={8}
-            >
-              <Text style={[styles.segmentText, scope === 'school' && styles.segmentTextActive]}>
-                Penn
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => setScope('league')}
-              style={[styles.segment, scope === 'league' && styles.segmentActive]}
-              hitSlop={8}
-            >
-              <Text style={[styles.segmentText, scope === 'league' && styles.segmentTextActive]}>
-                Ivy League
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => setScope('area')}
-              style={[styles.segment, scope === 'area' && styles.segmentActive]}
-              hitSlop={8}
-            >
-              <Text style={[styles.segmentText, scope === 'area' && styles.segmentTextActive]}>
-                Philadelphia
-              </Text>
-            </Pressable>
-          </View>
+          <Text style={styles.title}>Discover</Text>
         </View>
 
-        {/* Glyph-only mode chip */}
-        <Pressable
-          ref={modeChipRef}
-          onPress={openModeMenu}
-          style={styles.modeGlyphChip}
-          hitSlop={10}
-        >
-          <Text style={styles.modeGlyph}>{modeGlyph}</Text>
-        </Pressable>
+        <ModeToggleButton
+          mode={mode}
+          onModeChange={setMode}
+          isDatingEnabled={myProfile?.is_dating_enabled ?? false}
+          isFriendsEnabled={myProfile?.is_friends_enabled ?? false}
+        />
       </View>
 
-      {/* Mode popover */}
-      <Modal
-        visible={modeMenuOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModeMenuOpen(false)}
-      >
-        <Pressable style={styles.popoverOverlay} onPress={() => setModeMenuOpen(false)}>
-          <Pressable
-            onPress={() => {}}
-            style={[
-              styles.modePopover,
-              { width: POPOVER_W, top: popoverPos.top, left: popoverPos.left },
-            ]}
-          >
-            <Text style={styles.popoverTitle}>Mode</Text>
-
-            <Pressable
-              onPress={() => {
-                setMode('romantic');
-                setModeMenuOpen(false);
-              }}
-              style={[styles.popoverRow, mode === 'romantic' && styles.popoverRowActive]}
-            >
-              <Text
-                style={[
-                  styles.popoverRowGlyph,
-                  mode === 'romantic' && styles.popoverRowGlyphActive,
-                ]}
-              >
-                ♡
-              </Text>
-              <Text
-                style={[
-                  styles.popoverRowText,
-                  mode === 'romantic' && styles.popoverRowTextActive,
-                ]}
-              >
-                Romantic
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                setMode('platonic');
-                setModeMenuOpen(false);
-              }}
-              style={[styles.popoverRow, mode === 'platonic' && styles.popoverRowActive]}
-            >
-              <Text
-                style={[
-                  styles.popoverRowGlyph,
-                  mode === 'platonic' && styles.popoverRowGlyphActive,
-                ]}
-              >
-                ⟡
-              </Text>
-              <Text
-                style={[
-                  styles.popoverRowText,
-                  mode === 'platonic' && styles.popoverRowTextActive,
-                ]}
-              >
-                Platonic
-              </Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <View style={styles.content}>
-        {current ? (
+      <View style={styles.centeredEmptyState}>
+        {loadingFeed ? (
+          <ActivityIndicator />
+        ) : current ? (
           <SwipeDeckNew
             profiles={profiles}
             currentIndex={currentIndex}
@@ -259,13 +313,11 @@ export default function HomeScreenNew() {
             onNext={moveToNextCard}
           />
         ) : (
-          <View style={styles.emptyWrap}>
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>
-                That&apos;s all for now!{'\n'}Check back later for new profiles.
-              </Text>
-              <Text style={styles.emptySub}>Six Degrees</Text>
-            </View>
+          <View style={styles.centeredEmptyState}>
+            <Text style={styles.emptyStateText}>
+              That's all for now!
+            </Text>
+            <Text style={styles.emptyStateSubtext}>Check back later for new profiles.</Text>
           </View>
         )}
       </View>

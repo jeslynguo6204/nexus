@@ -6,6 +6,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    paddingHorizontal: 16,
   },
 
   topBar: {
@@ -83,7 +84,6 @@ const styles = StyleSheet.create({
   // Content
   content: {
     flex: 1,
-    paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 0,
   },

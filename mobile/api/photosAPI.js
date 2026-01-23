@@ -7,11 +7,12 @@
 
 import Constants from "expo-constants";
 
-const API_BASE = Constants.expoConfig.extra.apiBaseUrl;
-
-console.log("📡 Photos API Base URL:", API_BASE);
+const getApiBase = () => {
+  return Constants?.expoConfig?.extra?.apiBaseUrl || "http://localhost:4000";
+};
   
 export async function fetchMyPhotos(token) {
+  const API_BASE = getApiBase();
   const res = await fetch(`${API_BASE}/photos/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -29,6 +30,7 @@ export async function fetchMyPhotos(token) {
 }
 
 export async function addPhoto(token, url) {
+  const API_BASE = getApiBase();
   const res = await fetch(`${API_BASE}/photos/me`, {
     method: "POST",
     headers: {
@@ -48,6 +50,7 @@ export async function addPhoto(token, url) {
 }
 
 export async function deletePhoto(token, photoId) {
+  const API_BASE = getApiBase();
   const res = await fetch(`${API_BASE}/photos/me/${photoId}`, {
     method: "DELETE",
     headers: {
@@ -64,6 +67,7 @@ export async function deletePhoto(token, photoId) {
 }
 
 export async function reorderPhotos(token, order) {
+  const API_BASE = getApiBase();
   const res = await fetch(`${API_BASE}/photos/me/reorder`, {
     method: "POST",
     headers: {
@@ -79,4 +83,67 @@ export async function reorderPhotos(token, order) {
   }
 
   return true;
+}
+
+// Track when a photo is viewed
+export async function trackPhotoView(token, photoId) {
+  try {
+    const API_BASE = getApiBase();
+    const res = await fetch(`${API_BASE}/photos/${photoId}/view`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      console.warn(`Failed to track photo view for photo ${photoId}`);
+    }
+  } catch (error) {
+    // Fail silently - don't disrupt user experience
+    console.warn('Error tracking photo view:', error);
+  }
+}
+
+// Track when a photo is liked (swipe right)
+export async function trackPhotoLike(token, photoId) {
+  try {
+    const API_BASE = getApiBase();
+    const res = await fetch(`${API_BASE}/photos/${photoId}/like`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      console.warn(`Failed to track photo like for photo ${photoId}`);
+    }
+  } catch (error) {
+    // Fail silently - don't disrupt user experience
+    console.warn('Error tracking photo like:', error);
+  }
+}
+
+// Track when a photo is passed (swipe left)
+export async function trackPhotoPass(token, photoId) {
+  try {
+    const API_BASE = getApiBase();
+    const res = await fetch(`${API_BASE}/photos/${photoId}/pass`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      console.warn(`Failed to track photo pass for photo ${photoId}`);
+    }
+  } catch (error) {
+    // Fail silently - don't disrupt user experience
+    console.warn('Error tracking photo pass:', error);
+  }
 }

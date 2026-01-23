@@ -9,6 +9,9 @@ import {
   setPrimaryPhotoController,
   reorderPhotosController,
   deletePhotoController,
+  trackPhotoViewController,
+  trackPhotoLikeController,
+  trackPhotoPassController,
 } from "./photos.controller";
 
 const router = Router();
@@ -21,5 +24,10 @@ router.post("/me", addPhotoController);
 router.patch("/me/:photoId/primary", setPrimaryPhotoController);
 router.post("/me/reorder", reorderPhotosController);
 router.delete("/me/:photoId", deletePhotoController);
+
+// Photo tracking endpoints
+router.post("/:photoId/view", trackPhotoViewController);
+router.post("/:photoId/like", trackPhotoLikeController);
+router.post("/:photoId/pass", trackPhotoPassController);
 
 export default router;

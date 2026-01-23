@@ -7,6 +7,9 @@ import {
   deletePhotoForUser,
   updatePhotoPrimaryForUser,
   updateSortOrdersForUser,
+  incrementPhotoSeenCount,
+  incrementPhotoLikeCount,
+  incrementPhotoPassCount,
   PhotoRow,
 } from "./photos.dao";
 import { pool } from "../../db/pool";
@@ -115,4 +118,16 @@ export async function removePhoto(userId: number, photoId: number) {
       await setPrimaryPhoto(userId, remaining[0].id);
     }
   }
+}
+
+export async function trackPhotoView(photoId: number) {
+  await incrementPhotoSeenCount(photoId);
+}
+
+export async function trackPhotoLike(photoId: number) {
+  await incrementPhotoLikeCount(photoId);
+}
+
+export async function trackPhotoPass(photoId: number) {
+  await incrementPhotoPassCount(photoId);
 }

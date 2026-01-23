@@ -1,10 +1,11 @@
 import Constants from "expo-constants";
 
-const API_BASE = Constants.expoConfig.extra.apiBaseUrl;
-
-console.log("📡 Auth API Base URL:", API_BASE);
+const getApiBase = () => {
+  return Constants?.expoConfig?.extra?.apiBaseUrl || "http://localhost:4000";
+};
 
 async function request(path, body) {
+  const API_BASE = getApiBase();
   console.log('📡 Making request to:', `${API_BASE}${path}`);
   console.log('📤 Request body:', body);
   

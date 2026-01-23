@@ -27,8 +27,24 @@ export default function FeaturedAffiliationsSection({ draft, setField, dorms, af
       });
     });
 
-    return Array.from(map.values());
-  }, [affiliationsByCategory, dorms, draft.affiliations]);
+    // Order affiliations: featured ones first (in selection order), then the rest in profile order
+    const featuredIds = (draft.featuredAffiliations || []).map(Number);
+    const featuredSet = new Set(featuredIds);
+    
+    // Get featured affiliations in selection order
+    const featured = featuredIds
+      .map(id => map.get(id))
+      .filter(Boolean);
+    
+    // Get other affiliations in the order they appear in draft.affiliations
+    const other = (draft.affiliations || [])
+      .map(id => Number(id))
+      .filter(id => !featuredSet.has(id))
+      .map(id => map.get(id))
+      .filter(Boolean);
+    
+    return [...featured, ...other];
+  }, [affiliationsByCategory, dorms, draft.affiliations, draft.featuredAffiliations]);
 
   const featuredSet = useMemo(() => new Set((draft.featuredAffiliations || []).map(Number)), [draft.featuredAffiliations]);
 

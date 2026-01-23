@@ -1,11 +1,32 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import HomeScreenNew from '../features/home/screens/HomeScreenNew';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
+import InboxScreen from '../features/chat/screens/InboxScreen';
+import ChatScreen from '../features/chat/screens/ChatScreen';
+import LikesScreen from '../features/likes/screens/LikesScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function ChatStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="InboxScreenTab" component={InboxScreen} />
+      <Stack.Screen 
+        name="ChatScreen" 
+        component={ChatScreen}
+        options={{
+          animationEnabled: true,
+          cardStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
 
 function Placeholder({ name }) {
   return (
@@ -38,8 +59,8 @@ export default function BottomTabs({ onSignOut }) {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreenNew} />
-      <Tab.Screen name="Likes" children={() => <Placeholder name="Likes" />} />
-      <Tab.Screen name="Chat" children={() => <Placeholder name="Chat" />} />
+      <Tab.Screen name="Likes" component={LikesScreen} />
+      <Tab.Screen name="Chat" component={ChatStack} />
       <Tab.Screen
         name="Profile"
         children={() => <ProfileScreen onSignOut={onSignOut} />}

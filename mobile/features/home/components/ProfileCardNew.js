@@ -13,8 +13,11 @@ import {
   StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../../../styles/ProfileCardStylesNew';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
+import BlockReportSheet from './BlockReportSheet';
+import { trackPhotoView } from '../../../api/photosAPI';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -90,6 +93,21 @@ function normalizeList(maybeList) {
   return [];
 }
 
+function normalizeIdArray(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((id) => {
+      if (id === null || id === undefined) return null;
+      if (typeof id === 'number') return id;
+      if (typeof id === 'string') {
+        const n = parseInt(id, 10);
+        return Number.isNaN(n) ? null : n;
+      }
+      return null;
+    })
+    .filter((x) => x !== null && Number.isInteger(x) && x > 0);
+}
+
 const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeIndex }) {
   if (!count || count <= 1) return null;
 
@@ -106,14 +124,25 @@ const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeInd
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-export default function ProfileCardNew({ profile, photos, onDetailsOpenChange }) {
+export default function ProfileCardNew({ 
+  profile, 
+  photos, 
+  onDetailsOpenChange,
+  photoIndex: controlledPhotoIndex,
+  onPhotoIndexChange
+}) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
 
-  const [photoIndex, setPhotoIndex] = useState(0);
+  // Use controlled state if provided, otherwise use internal state
+  const isControlled = controlledPhotoIndex !== undefined && onPhotoIndexChange !== undefined;
+  const [internalPhotoIndex, setInternalPhotoIndex] = useState(0);
+  const photoIndex = isControlled ? controlledPhotoIndex : internalPhotoIndex;
+  const setPhotoIndex = isControlled ? onPhotoIndexChange : setInternalPhotoIndex;
   const [moreOpen, setMoreOpen] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(false);
   const [moreAboutMeOpen, setMoreAboutMeOpen] = useState(false);
+  const [blockReportSheetOpen, setBlockReportSheetOpen] = useState(false);
 
   const scrollRef = useRef(null);
   const isClosingRef = useRef(false);
@@ -184,6 +213,25 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
     chevronRotation.setValue(0);
     expansion.setValue(0);
   }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Track photo views
+  useEffect(() => {
+    const trackView = async () => {
+      if (safePhotos[photoIndex]?.id) {
+        try {
+          const token = await AsyncStorage.getItem('token');
+          if (token) {
+            await trackPhotoView(token, safePhotos[photoIndex].id);
+          }
+        } catch (error) {
+          // Fail silently
+          console.warn('Failed to track photo view:', error);
+        }
+      }
+    };
+    
+    trackView();
+  }, [photoIndex, safePhotos]);
 
   const currentUri = hasPhotos ? safePhotos[photoIndex]?.uri : null;
 
@@ -292,6 +340,8 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
   const featuredAffiliationIds = profile?.featured_affiliations || profile?.featuredAffiliations || [];
   let featuredAffiliations = [];
 
+  // Only process featured affiliations if they exist and have items
+  // If empty array or no items, featuredAffiliations will remain empty (no fallback)
   if (Array.isArray(featuredAffiliationIds) && featuredAffiliationIds.length > 0) {
     // Map in order to preserve selection order - first selected appears first
     featuredAffiliations = featuredAffiliationIds
@@ -307,10 +357,6 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
       .filter(Boolean);
   }
 
-  if (featuredAffiliations.length === 0 && affiliations.length > 0) {
-    featuredAffiliations = affiliations.slice(0, 2);
-  }
-
   const schoolName = coalesce(profile?.school?.short_name, profile?.school?.name);
   const major = coalesce(profile?.major);
   const schoolAffiliations = normalizeList(
@@ -318,7 +364,7 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
   );
   const interests = normalizeList(profile?.interests).slice(0, 8);
 
-  // Filter out dorms and reorder: featured affiliations first (in selection order), then the rest
+  // Filter out dorms
   const allNonDormAffiliations = affiliationsInfo.filter((aff) => !aff.is_dorm);
   
   // Get featured affiliation IDs in order (normalized)
@@ -334,19 +380,22 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
     affMap.set(affId, aff);
   });
   
-  // Get featured affiliations in selection order
+  // Get the order from profile.affiliations array (this is the order from the profile editor)
+  const profileAffiliationIds = normalizeIdArray(profile?.affiliations || []);
+  const featuredIdsSet = new Set(featuredIds);
+  
+  // Get featured affiliations in selection order (first selected first, second selected second)
   const featuredAffils = featuredIds
     .map(id => affMap.get(id))
     .filter(Boolean); // Remove any not found
   
-  // Get other affiliations (not featured)
-  const featuredIdsSet = new Set(featuredIds);
-  const otherAffils = allNonDormAffiliations.filter(aff => {
-    const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
-    return !featuredIdsSet.has(affId);
-  });
+  // Get other affiliations (not featured) in the order they appear in profile.affiliations
+  const otherAffils = profileAffiliationIds
+    .filter(affId => !featuredIdsSet.has(affId))
+    .map(affId => affMap.get(affId))
+    .filter(Boolean); // Remove any not found
   
-  // Combine: featured affiliations first (in selection order), then the rest
+  // Combine: featured affiliations first (in selection order), then the rest (in profile order)
   const nonDormAffiliations = [...featuredAffils, ...otherAffils];
 
   const buildAtPennSentence = () => {
@@ -582,6 +631,18 @@ export default function ProfileCardNew({ profile, photos, onDetailsOpenChange })
         politicalAffiliation={politicalAffiliation}
         ethnicity={ethnicity}
         sexuality={coalesce(profile?.sexuality)}
+      />
+
+      {/* Block/Report Sheet */}
+      <BlockReportSheet
+        visible={blockReportSheetOpen}
+        onClose={() => setBlockReportSheetOpen(false)}
+        userId={profile?.user_id || profile?.id}
+        userName={firstName}
+        onBlocked={() => {
+          // Callback when user is blocked - could trigger a refresh or navigation
+          setBlockReportSheetOpen(false);
+        }}
       />
     </>
   );

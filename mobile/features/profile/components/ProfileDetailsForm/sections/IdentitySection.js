@@ -8,7 +8,11 @@ import {
   ChipRow,
 } from '@/features/profile/components/form-editor-components';
 
-const GENDER_OPTIONS = ['Male', 'Female', 'Non-Binary'];
+const GENDER_OPTIONS = [
+  { label: 'Male', value: 'male' },
+  { label: 'Female', value: 'female' },
+  { label: 'Non-Binary', value: 'non-binary' },
+];
 const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'He/They', 'She/They', 'Other'];
 const SEXUALITY_OPTIONS = [
   'Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Queer', 'Prefer not to say',

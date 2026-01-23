@@ -102,3 +102,36 @@ export async function updateSortOrdersForUser(input: {
     );
   }
 }
+
+export async function incrementPhotoSeenCount(photoId: number) {
+  await dbQuery(
+    `
+    UPDATE photos
+    SET seen_count = COALESCE(seen_count, 0) + 1
+    WHERE id = $1
+    `,
+    [photoId]
+  );
+}
+
+export async function incrementPhotoLikeCount(photoId: number) {
+  await dbQuery(
+    `
+    UPDATE photos
+    SET like_count = COALESCE(like_count, 0) + 1
+    WHERE id = $1
+    `,
+    [photoId]
+  );
+}
+
+export async function incrementPhotoPassCount(photoId: number) {
+  await dbQuery(
+    `
+    UPDATE photos
+    SET pass_count = COALESCE(pass_count, 0) + 1
+    WHERE id = $1
+    `,
+    [photoId]
+  );
+}

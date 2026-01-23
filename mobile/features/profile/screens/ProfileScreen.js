@@ -389,6 +389,8 @@ export default function ProfileScreen({ onSignOut }) {
                           : schoolShortName || gradYearShort;
                         
                         // Get featured affiliations (up to 2)
+                        // Only show featured affiliations if they are explicitly selected
+                        // If empty or not set, don't show any (no fallback to regular affiliations)
                         const featuredAffiliationIds = profile?.featured_affiliations || [];
                         let featuredAffiliationNames = [];
                         
@@ -404,22 +406,6 @@ export default function ProfileScreen({ onSignOut }) {
                               return found ? (found.short_name || found.name) : null;
                             })
                             .filter(Boolean);
-                        }
-                        
-                        // Fallback to first 2 affiliations if no featured ones
-                        if (featuredAffiliationNames.length === 0 && profile?.affiliations?.length > 0 && affiliations.length > 0) {
-                          featuredAffiliationNames = profile.affiliations
-                            .slice(0, 2)
-                            .map((affId) => {
-                              const normalizedId = typeof affId === 'string' ? parseInt(affId, 10) : affId;
-                              const found = affiliations.find((aff) => {
-                                const affIdNorm = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
-                                return affIdNorm === normalizedId;
-                              });
-                              return found ? (found.short_name || found.name) : null;
-                            })
-                            .filter(Boolean)
-                            .slice(0, 2);
                         }
                         
                         const parts = [schoolAndYear, ...featuredAffiliationNames].filter(Boolean);

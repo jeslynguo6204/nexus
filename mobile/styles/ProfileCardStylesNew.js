@@ -171,6 +171,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Menu button (three dots)
+  menuButton: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 19,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    zIndex: 40,
+  },
+  menuButtonText: {
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+
   // Chevron
   moreChevronBtn: {
     position: 'absolute',
