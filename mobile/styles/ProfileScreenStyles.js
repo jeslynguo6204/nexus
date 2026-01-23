@@ -7,7 +7,7 @@ const AVATAR_SIZE = 64;
 const styles = {
   container: {
     flex: 1,
-    backgroundColor: '#F3F7FC',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
@@ -17,9 +17,11 @@ const styles = {
 
   // Card styles
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F0F0F0",
     borderRadius: 24,
     padding: 20,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
     shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 12,

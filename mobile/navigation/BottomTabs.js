@@ -47,14 +47,30 @@ export default function BottomTabs({ onSignOut }) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: false,                // optional, hides top header
-        tabBarShowLabel: true,             // you can set false if you want icon-only
-        tabBarActiveTintColor: '#000',     // active icon color
-        tabBarInactiveTintColor: '#888',   // inactive icon color
-
-        tabBarIcon: ({ color, size }) => {
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: '#111111',
+        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#F2F2F7',
+          height: 70,
+          paddingBottom: 20,
+          paddingTop: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '400',
+          letterSpacing: 0.1,
+          marginTop: -4,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
+        },
+        tabBarIcon: ({ color, size, focused }) => {
           const iconName = ICON_MAP[route.name];
-          return <FontAwesome name={iconName} size={size} color={color} />;
+          return <FontAwesome name={iconName} size={focused ? 24 : 22} color={color} />;
         },
       })}
     >
