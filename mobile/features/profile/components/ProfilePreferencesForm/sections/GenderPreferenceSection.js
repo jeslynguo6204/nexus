@@ -8,7 +8,7 @@ import { FormSection, FormField, ChipRow } from '@/features/profile/components/f
 const GENDER_OPTIONS = [
   { label: 'Male', value: 'male' },
   { label: 'Female', value: 'female' },
-  { label: 'Non-binary', value: 'non-binary' },
+  { label: 'Non-Binary', value: 'non-binary' },
   { label: 'Everyone', value: 'everyone' },
 ];
 

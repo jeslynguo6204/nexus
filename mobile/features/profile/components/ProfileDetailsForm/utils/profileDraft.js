@@ -30,6 +30,17 @@ export function arrayToCsvOrNull(arr) {
   return arr.join(', ');
 }
 
+function normalizeGenderValue(value) {
+  if (!value) return '';
+  const v = String(value).toLowerCase().trim();
+  const map = {
+    male: 'male', m: 'male', man: 'male', men: 'male',
+    female: 'female', f: 'female', woman: 'female', women: 'female',
+    'non-binary': 'non-binary', nonbinary: 'non-binary', nb: 'non-binary',
+  };
+  return map[v] || v;
+}
+
 export function extractDormIdFromAffiliations(affiliations, dorms) {
   const ids = normalizeIdArray(affiliations);
   const dormIdSet = new Set((dorms || []).map((d) => normalizeId(d.id)).filter(Boolean));
@@ -51,7 +62,7 @@ export function profileToDraft(profile) {
 
     // Identity
     displayName: profile?.display_name ?? '',
-    gender: profile?.gender ?? '',
+    gender: normalizeGenderValue(profile?.gender),
     pronouns: profile?.pronouns ?? '',
     sexuality: profile?.sexuality ?? '',
 
