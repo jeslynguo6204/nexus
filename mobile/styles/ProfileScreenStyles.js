@@ -10,9 +10,8 @@ const styles = {
     backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    flexGrow: 1,
     padding: 16,
-    paddingBottom: 0, // Ensure bottom padding is set to 0
+    paddingBottom: 24,
   },
 
   // Card styles
@@ -202,6 +201,9 @@ const styles = {
     paddingHorizontal: 16,
     paddingBottom: 24,
     justifyContent: "center",
+  },
+  previewCardWrap: {
+    alignSelf: "center",
   },
 };
 

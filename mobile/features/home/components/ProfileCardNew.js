@@ -130,7 +130,8 @@ export default function ProfileCardNew({
   photos, 
   onDetailsOpenChange,
   photoIndex: controlledPhotoIndex,
-  onPhotoIndexChange
+  onPhotoIndexChange,
+  isOwnProfile = false,
 }) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
@@ -215,8 +216,9 @@ export default function ProfileCardNew({
     expansion.setValue(0);
   }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Track photo views
+  // Track photo views (skip when previewing own profile)
   useEffect(() => {
+    if (isOwnProfile) return;
     const trackView = async () => {
       if (safePhotos[photoIndex]?.id) {
         try {
@@ -232,7 +234,7 @@ export default function ProfileCardNew({
     };
     
     trackView();
-  }, [photoIndex, safePhotos]);
+  }, [isOwnProfile, photoIndex, safePhotos]);
 
   const currentUri = hasPhotos ? safePhotos[photoIndex]?.uri : null;
 
@@ -265,7 +267,7 @@ export default function ProfileCardNew({
 
   const cardTranslateY = expansion.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, EXPAND_UPWARD_OFFSET],
+    outputRange: [0, isOwnProfile ? 0 : EXPAND_UPWARD_OFFSET],
   });
 
   const photoHeight = expansion.interpolate({
@@ -478,7 +480,12 @@ export default function ProfileCardNew({
         <AnimatedScrollView
           ref={scrollRef}
           style={{ flex: 1 }}
-          contentContainerStyle={[styles.expandedScrollContent, !moreOpen && { paddingBottom: 0 }]}
+          contentContainerStyle={[
+            styles.expandedScrollContent,
+            !moreOpen && { paddingBottom: 0 },
+            moreOpen && !isOwnProfile && { paddingBottom: 36 },
+            isOwnProfile && moreOpen && { paddingBottom: 8, flexGrow: 0 },
+          ]}
           scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator={false}
           bounces={moreOpen}
@@ -564,7 +571,7 @@ export default function ProfileCardNew({
             </View>
           </Animated.View>
 
-          <View style={styles.expandedContent}>
+          <View style={[styles.expandedContent, isOwnProfile && { paddingBottom: 8 }]}>
             {/* ABOUT section (with heading) */}
             {(academicYear || major || dormName || hometown) && (
               <View style={styles.section}>
@@ -671,7 +678,7 @@ export default function ProfileCardNew({
               </View>
             )}
 
-            <View style={{ height: 26 }} />
+            <View style={{ height: isOwnProfile ? 0 : 14 }} />
           </View>
         </AnimatedScrollView>
       </Animated.View>
@@ -688,17 +695,18 @@ export default function ProfileCardNew({
         sexuality={coalesce(profile?.sexuality)}
       />
 
-      {/* Block/Report Sheet */}
-      <BlockReportSheet
-        visible={blockReportSheetOpen}
-        onClose={() => setBlockReportSheetOpen(false)}
-        userId={profile?.user_id || profile?.id}
-        userName={firstName}
-        onBlocked={() => {
-          // Callback when user is blocked - could trigger a refresh or navigation
-          setBlockReportSheetOpen(false);
-        }}
-      />
+      {/* Block/Report Sheet (hidden when previewing own profile) */}
+      {!isOwnProfile && (
+        <BlockReportSheet
+          visible={blockReportSheetOpen}
+          onClose={() => setBlockReportSheetOpen(false)}
+          userId={profile?.user_id || profile?.id}
+          userName={firstName}
+          onBlocked={() => {
+            setBlockReportSheetOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }

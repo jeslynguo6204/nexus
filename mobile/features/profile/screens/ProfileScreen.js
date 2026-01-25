@@ -39,6 +39,7 @@ import {
   Pressable,
   Modal,
   Image,
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -201,6 +202,23 @@ export default function ProfileScreen({ onSignOut }) {
       })
       .filter(Boolean);
   }, [profile?.affiliations_info, profile?.affiliations, affiliations]);
+
+  const { width: winW, height: winH } = Dimensions.get('window');
+  const PREVIEW_CARD_WIDTH = winW - 32;
+  const PREVIEW_CARD_HEIGHT = Math.min(PREVIEW_CARD_WIDTH * 1.6, winH * 0.55);
+
+  // Shape own profile for ProfileCardNew (same format as discover feed cards)
+  const previewProfile = useMemo(() => {
+    if (!profile) return null;
+    return {
+      ...profile,
+      id: profile.user_id,
+      affiliations_info: enrichedAffiliationsInfo,
+      // school already from API; ensure school_short_name for card subtitle
+      school_short_name: profile.school?.short_name ?? profile.school_short_name,
+      school_name: profile.school?.name ?? profile.school_name,
+    };
+  }, [profile, enrichedAffiliationsInfo]);
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
@@ -587,16 +605,17 @@ export default function ProfileScreen({ onSignOut }) {
 
       <PreviewModal
         visible={previewVisible}
-        title="Profile preview"
         onClose={() => setPreviewVisible(false)}
       >
-        <ProfileCardNew 
-          profile={{
-            ...profile,
-            affiliations_info: enrichedAffiliationsInfo
-          }} 
-          photos={photos} 
-        />
+        {previewProfile && (
+          <View style={[styles.previewCardWrap, { width: PREVIEW_CARD_WIDTH, height: PREVIEW_CARD_HEIGHT }]}>
+            <ProfileCardNew
+              profile={previewProfile}
+              photos={photos}
+              isOwnProfile
+            />
+          </View>
+        )}
       </PreviewModal>
     </SafeAreaView>
   );
