@@ -38,6 +38,8 @@ export interface FeedProfileRow {
   graduation_year: number | null;
   academic_year: string | null;
   interests?: string[] | null;
+  likes?: string[] | null;
+  dislikes?: string[] | null;
   photos?: PhotoRow[];
   school_id: number | null;
   school_name: string | null;
@@ -232,6 +234,8 @@ export async function getEligibleFeedProfiles(
       p.graduation_year,
       p.academic_year,
       p.interests,
+      p.likes,
+      p.dislikes,
       p.age,
       p.date_of_birth,
       p.location_description,

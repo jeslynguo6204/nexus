@@ -74,31 +74,31 @@ export default function FeaturedAffiliationsSection({ draft, setField, dorms, af
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 14 }}>
         {selectedAffiliations.map((aff) => {
-          const id = Number(aff.id);
-          const isSelected = featuredSet.has(id);
-          const disabled = !isSelected && (draft.featuredAffiliations || []).length >= 2;
+            const id = Number(aff.id);
+            const isSelected = featuredSet.has(id);
+            const disabled = !isSelected && (draft.featuredAffiliations || []).length >= 2;
 
-          return (
-            <TouchableOpacity
-              key={String(aff.id)}
-              onPress={() => toggleFeatured(id)}
-              disabled={disabled}
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderRadius: 20,
-                marginRight: 8,
-                marginBottom: 8,
-                backgroundColor: isSelected ? COLORS.textPrimary : COLORS.backgroundSubtle,
-                opacity: disabled ? 0.4 : 1,
-              }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: '400', color: isSelected ? COLORS.surface : COLORS.textPrimary }}>
-                {aff.name}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+            return (
+              <TouchableOpacity
+                key={String(aff.id)}
+                onPress={() => toggleFeatured(id)}
+                disabled={disabled}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 20,
+                  marginRight: 8,
+                  marginBottom: 8,
+                  backgroundColor: isSelected ? COLORS.textPrimary : COLORS.backgroundSubtle,
+                  opacity: disabled ? 0.4 : 1,
+                }}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '400', color: isSelected ? COLORS.surface : COLORS.textPrimary }}>
+                  {aff.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
       </View>
     </FormSection>
   );

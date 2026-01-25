@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import HomeScreenNew from '../features/home/screens/HomeScreenNew';
+import HomeScreen from '../features/home/screens/HomeScreen';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
 import ChatScreen from '../features/chat/screens/ChatScreen';
@@ -47,18 +47,34 @@ export default function BottomTabs({ onSignOut }) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: false,                // optional, hides top header
-        tabBarShowLabel: true,             // you can set false if you want icon-only
-        tabBarActiveTintColor: '#000',     // active icon color
-        tabBarInactiveTintColor: '#888',   // inactive icon color
-
-        tabBarIcon: ({ color, size }) => {
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: '#111111',
+        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#F2F2F7',
+          height: 70,
+          paddingBottom: 20,
+          paddingTop: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '400',
+          letterSpacing: 0.1,
+          marginTop: -4,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
+        },
+        tabBarIcon: ({ color, size, focused }) => {
           const iconName = ICON_MAP[route.name];
-          return <FontAwesome name={iconName} size={size} color={color} />;
+          return <FontAwesome name={iconName} size={focused ? 24 : 22} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreenNew} />
+      <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Likes" component={LikesScreen} />
       <Tab.Screen name="Chat" component={ChatStack} />
       <Tab.Screen

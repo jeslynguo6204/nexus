@@ -7,19 +7,22 @@ const AVATAR_SIZE = 64;
 const styles = {
   container: {
     flex: 1,
-    backgroundColor: '#F3F7FC',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 0, // Ensure bottom padding is set to 0
+    paddingHorizontal: 10,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
 
   // Card styles
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F0F0F0",
     borderRadius: 24,
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
     shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -134,12 +137,10 @@ const styles = {
     paddingBottom: 4,
   },
   photoRow: {
-    gap: 12,
+    gap: 8,
     paddingBottom: 12,
   },
   photoSlot: {
-    width: 110,
-    height: 110,
     borderRadius: 16,
     backgroundColor: "#E8EDF6",
     alignItems: "center",
@@ -200,6 +201,9 @@ const styles = {
     paddingHorizontal: 16,
     paddingBottom: 24,
     justifyContent: "center",
+  },
+  previewCardWrap: {
+    alignSelf: "center",
   },
 };
 

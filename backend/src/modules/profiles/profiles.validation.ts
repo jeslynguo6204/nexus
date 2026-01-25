@@ -33,6 +33,8 @@ export const profileUpdateSchema = z
     locationLon: z.string().trim().optional().nullable(),
     locationDescription: z.string().trim().max(500).optional().nullable(),
     interests: z.array(z.string().trim().min(1).max(100)).max(50).optional().nullable(),
+    likes: z.array(z.string().trim().min(1).max(100)).max(3).optional().nullable(),
+    dislikes: z.array(z.string().trim().min(1).max(100)).max(3).optional().nullable(),
     photos: z.array(z.string().trim().max(500)).max(6).optional().nullable(),
     affiliations: z.array(z.number().int().positive()).max(20).optional().nullable(), // Array of affiliation IDs
     gender: z.string().trim().max(50).optional().nullable(),

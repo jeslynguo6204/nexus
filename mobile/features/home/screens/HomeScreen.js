@@ -1,4 +1,4 @@
-// mobile/screens/HomeScreenNew.js
+// mobile/screens/HomeScreen.js
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
@@ -11,15 +11,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import SwipeDeckNew from '../components/SwipeDeckNew';
+import SwipeDeck from '../components/SwipeDeck';
 import { getFeedProfiles } from '../../../api/feedAPI';
 import { getMyProfile } from '../../../api/profileAPI';
 import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/ChatStyles';
+import homeStyles from '../../../styles/HomeStyles';
 
-export default function HomeScreenNew() {
+export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -232,7 +233,7 @@ export default function HomeScreenNew() {
         );
       }
       
-      // moveToNextCard is handled by onNext callback from SwipeDeckNew
+      // moveToNextCard is handled by onNext callback from SwipeDeck
     } catch (e) {
       console.warn(e);
       // Don't show alert for tracking failures
@@ -259,7 +260,7 @@ export default function HomeScreenNew() {
         await trackPhotoPass(token, profile.photos[photoIndex].id);
       }
       
-      // moveToNextCard is handled by onNext callback from SwipeDeckNew
+      // moveToNextCard is handled by onNext callback from SwipeDeck
     } catch (e) {
       console.warn(e);
       // Don't show alert for tracking failures
@@ -301,26 +302,28 @@ export default function HomeScreenNew() {
         />
       </View>
 
-      <View style={styles.centeredEmptyState}>
-        {loadingFeed ? (
+      {loadingFeed ? (
+        <View style={styles.centeredEmptyState}>
           <ActivityIndicator />
-        ) : current ? (
-          <SwipeDeckNew
-            profiles={profiles}
-            currentIndex={currentIndex}
-            onSwipeRight={handleSwipeRight}
-            onSwipeLeft={handleSwipeLeft}
-            onNext={moveToNextCard}
-          />
-        ) : (
-          <View style={styles.centeredEmptyState}>
-            <Text style={styles.emptyStateText}>
+        </View>
+      ) : current ? (
+        <SwipeDeck
+          profiles={profiles}
+          currentIndex={currentIndex}
+          onSwipeRight={handleSwipeRight}
+          onSwipeLeft={handleSwipeLeft}
+          onNext={moveToNextCard}
+        />
+      ) : (
+        <View style={homeStyles.emptyWrap}>
+          <View style={homeStyles.emptyCard}>
+            <Text style={homeStyles.emptyTitle}>
               That's all for now!
             </Text>
-            <Text style={styles.emptyStateSubtext}>Check back later for new profiles.</Text>
+            <Text style={homeStyles.emptySub}>Check back later for new profiles.</Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

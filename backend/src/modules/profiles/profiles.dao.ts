@@ -27,6 +27,8 @@ export interface ProfileRow {
   location_lon: string | null;
   location_description: string | null;
   interests: string[] | null;
+  likes: string[] | null;
+  dislikes: string[] | null;
   photos: string[] | null;
   affiliations: number[] | null; // Array of affiliation IDs
   gender: string | null;
@@ -68,6 +70,8 @@ export async function getProfileByUserId(
       p.location_lon,
       p.location_description,
       p.interests,
+      p.likes,
+      p.dislikes,
       p.photos,
       p.affiliations,
       p.gender,
@@ -114,6 +118,8 @@ export interface ProfileUpdateInput {
   location_lon?: string | null;
   location_description?: string | null;
   interests?: string[] | null;
+  likes?: string[] | null;
+  dislikes?: string[] | null;
   photos?: string[] | null;
   affiliations?: number[] | null; // Array of affiliation IDs
   gender?: string | null;
@@ -180,6 +186,8 @@ export async function updateProfileByUserId(
       location_lon,
       location_description,
       interests,
+      likes,
+      dislikes,
       photos,
       affiliations,
       gender,
