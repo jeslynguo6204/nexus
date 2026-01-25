@@ -10,7 +10,8 @@ const styles = {
     backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 10,
+    paddingTop: 16,
     paddingBottom: 24,
   },
 
@@ -18,7 +19,8 @@ const styles = {
   card: {
     backgroundColor: "#F0F0F0",
     borderRadius: 24,
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     borderWidth: 1,
     borderColor: "#E0E0E0",
     shadowColor: "#000",
@@ -135,12 +137,10 @@ const styles = {
     paddingBottom: 4,
   },
   photoRow: {
-    gap: 12,
+    gap: 8,
     paddingBottom: 12,
   },
   photoSlot: {
-    width: 110,
-    height: 110,
     borderRadius: 16,
     backgroundColor: "#E8EDF6",
     alignItems: "center",

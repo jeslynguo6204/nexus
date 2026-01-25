@@ -39,7 +39,7 @@ import {
   Pressable,
   Modal,
   Image,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -203,9 +203,14 @@ export default function ProfileScreen({ onSignOut }) {
       .filter(Boolean);
   }, [profile?.affiliations_info, profile?.affiliations, affiliations]);
 
-  const { width: winW, height: winH } = Dimensions.get('window');
+  const { width: winW, height: winH } = useWindowDimensions();
   const PREVIEW_CARD_WIDTH = winW - 32;
   const PREVIEW_CARD_HEIGHT = Math.min(PREVIEW_CARD_WIDTH * 1.6, winH * 0.55);
+  const PHOTO_GAP = 8;
+  const scrollPaddingH = 20;
+  const safeH = (insets?.left ?? 0) + (insets?.right ?? 0);
+  const photoAreaWidth = winW - safeH - scrollPaddingH;
+  const photoSize = Math.floor((photoAreaWidth - 2 * PHOTO_GAP - 42) / 3);
 
   // Shape own profile for ProfileCardNew (same format as discover feed cards)
   const previewProfile = useMemo(() => {
@@ -345,10 +350,11 @@ export default function ProfileScreen({ onSignOut }) {
     photos.length < 6 ? [...photos, { id: 'add-tile', isAdd: true }] : photos;
 
   const renderPhotoItem = ({ item, drag, isActive }) => {
+    const slotStyle = [styles.photoSlot, { width: photoSize, height: photoSize }];
     if (item.isAdd) {
       return (
         <TouchableOpacity
-          style={[styles.photoSlot, styles.addPhotoSlot]}
+          style={[...slotStyle, styles.addPhotoSlot]}
           onPress={pickPhoto}
           disabled={photoBusy}
         >
@@ -359,7 +365,7 @@ export default function ProfileScreen({ onSignOut }) {
 
     return (
       <TouchableOpacity
-        style={[styles.photoSlot, isActive && styles.photoSlotActive]}
+        style={[...slotStyle, isActive && styles.photoSlotActive]}
         onLongPress={drag}
         delayLongPress={120}
         onPress={() => removePhoto(item.id)}
@@ -515,7 +521,7 @@ export default function ProfileScreen({ onSignOut }) {
               scrollEnabled={false}
               activationDistance={12}
               contentContainerStyle={styles.photoGrid}
-              columnWrapperStyle={styles.photoRow}
+              columnWrapperStyle={[styles.photoRow, { gap: PHOTO_GAP }]}
               onDragBegin={() => setPhotoBusy(true)}
               onDragEnd={({ data, from, to }) => handlePhotoReorder(data, from, to)}
             />
