@@ -16,6 +16,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: 0,
+    marginTop: -6,
   },
 
   brandMark: {

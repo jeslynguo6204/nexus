@@ -1,28 +1,33 @@
 // mobile/features/profile/components/ProfileDetailsForm/sections/AboutSection.js
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { View, Text } from 'react-native';
 import {
   FormSection,
   FormField,
   FormInput,
 } from '@/features/profile/components/form-editor-components';
+import { COLORS } from '@/styles/themeNEW';
+
+function pad3(arr) {
+  const a = Array.isArray(arr) ? arr.slice(0, 3) : [];
+  return [a[0] ?? '', a[1] ?? '', a[2] ?? ''];
+}
 
 export default function AboutSection({ draft, setField }) {
-  // Local text state to avoid trimming while typing and space glitches
-  const [likesText, setLikesText] = useState(() => (Array.isArray(draft.likes) ? draft.likes.join(', ') : ''));
-  const [dislikesText, setDislikesText] = useState(() => (Array.isArray(draft.dislikes) ? draft.dislikes.join(', ') : ''));
+  const likes = pad3(draft.likes);
+  const dislikes = pad3(draft.dislikes);
 
-  // Keep local state in sync if draft changes externally
-  useEffect(() => {
-    const next = Array.isArray(draft.likes) ? draft.likes.join(', ') : '';
-    if (next !== likesText) setLikesText(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.likes]);
+  const updateLike = (index, value) => {
+    const next = [...likes];
+    next[index] = value;
+    setField('likes', next);
+  };
 
-  useEffect(() => {
-    const next = Array.isArray(draft.dislikes) ? draft.dislikes.join(', ') : '';
-    if (next !== dislikesText) setDislikesText(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.dislikes]);
+  const updateDislike = (index, value) => {
+    const next = [...dislikes];
+    next[index] = value;
+    setField('dislikes', next);
+  };
 
   return (
     <FormSection title="About Me" first>
@@ -35,47 +40,61 @@ export default function AboutSection({ draft, setField }) {
         />
       </FormField>
 
-      <FormField label="Likes (up to 3)">
+      <Text style={styles.subheading}>Likes</Text>
+      <FormField label="Like #1" compact>
         <FormInput
-          value={likesText}
-          onChangeText={setLikesText}
-          onBlur={() => {
-            const items = String(likesText || '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0)
-              .slice(0, 3);
-            setField('likes', items);
-          }}
-          placeholder="e.g. Sushi, AirPods, Candlelit dinners"
+          value={likes[0]}
+          onChangeText={(v) => updateLike(0, v)}
+          placeholder="e.g. Sushi"
+        />
+      </FormField>
+      <FormField label="Like #2" compact>
+        <FormInput
+          value={likes[1]}
+          onChangeText={(v) => updateLike(1, v)}
+          placeholder="e.g. AirPods"
+        />
+      </FormField>
+      <FormField label="Like #3" compact>
+        <FormInput
+          value={likes[2]}
+          onChangeText={(v) => updateLike(2, v)}
+          placeholder="e.g. Candlelit dinners"
         />
       </FormField>
 
-      <FormField label="Dislikes (up to 3)">
+      <Text style={styles.subheading}>Dislikes</Text>
+      <FormField label="Dislike #1" compact>
         <FormInput
-          value={dislikesText}
-          onChangeText={setDislikesText}
-          onBlur={() => {
-            const items = String(dislikesText || '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0)
-              .slice(0, 3);
-            setField('dislikes', items);
-          }}
-          placeholder="e.g. Studying late, Crowded buses, Rainy days"
+          value={dislikes[0]}
+          onChangeText={(v) => updateDislike(0, v)}
+          placeholder="e.g. Studying late"
         />
       </FormField>
-
-      {/* Keep prompts in draft only if you actually use it later; otherwise remove from draft + section
-      <FormField label="Prompts">
+      <FormField label="Dislike #2" compact>
         <FormInput
-          value={draft.prompts || ''}
-          onChangeText={(v) => setField('prompts', v)}
-          placeholder="Answer prompts to help others get to know you"
-          multiline
+          value={dislikes[1]}
+          onChangeText={(v) => updateDislike(1, v)}
+          placeholder="e.g. Crowded buses"
         />
-      </FormField> */}
+      </FormField>
+      <FormField label="Dislike #3" compact>
+        <FormInput
+          value={dislikes[2]}
+          onChangeText={(v) => updateDislike(2, v)}
+          placeholder="e.g. Rainy days"
+        />
+      </FormField>
     </FormSection>
   );
 }
+
+const styles = {
+  subheading: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginTop: 20,
+    marginBottom: 6,
+  },
+};
