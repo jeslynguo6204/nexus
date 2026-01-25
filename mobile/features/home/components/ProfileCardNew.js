@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COLORS } from '../../../styles/themeNEW';
 import styles from '../../../styles/ProfileCardStylesNew';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
 import BlockReportSheet from './BlockReportSheet';
@@ -363,6 +364,8 @@ export default function ProfileCardNew({
     profile?.school_affiliations || profile?.residential_house || profile?.college_affiliation
   );
   const interests = normalizeList(profile?.interests).slice(0, 8);
+  const likes = normalizeList(profile?.likes).slice(0, 3);
+  const dislikes = normalizeList(profile?.dislikes).slice(0, 3);
 
   // Filter out dorms
   const allNonDormAffiliations = affiliationsInfo.filter((aff) => !aff.is_dorm);
@@ -562,7 +565,7 @@ export default function ProfileCardNew({
           </Animated.View>
 
           <View style={styles.expandedContent}>
-            {/* ABOUT */}
+            {/* ABOUT section (with heading) */}
             {(academicYear || major || dormName || hometown) && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>ABOUT</Text>
@@ -573,9 +576,54 @@ export default function ProfileCardNew({
                   </Text>
                 )}
 
-                {dormName && <Text style={styles.aboutLineSecondary}>Lives in {dormName}</Text>}
+                {dormName && (
+                  <Text style={styles.aboutLineSecondary}>Lives in {dormName}</Text>
+                )}
 
-                {hometown && <Text style={styles.aboutLineSecondary}>From {hometown}</Text>}
+                {hometown && (
+                  <Text style={styles.aboutLineSecondary}>From {hometown}</Text>
+                )}
+              </View>
+            )}
+
+            {(academicYear || major || dormName || hometown) && (
+              <View style={styles.divider} />
+            )}
+
+            {/* Likes & Dislikes */}
+            {(likes.length > 0 || dislikes.length > 0) && (
+              <View style={styles.section}>
+                {likes.length > 0 && (
+                  <>
+                    <Text style={styles.sectionLabel}>LIKES</Text>
+                    <View style={styles.inlineLine} pointerEvents="none">
+                      {likes.map((like, idx) => (
+                        <React.Fragment key={`like-${idx}`}>
+                          {idx > 0 ? <View style={styles.inlineDot} /> : null}
+                          <Text style={styles.inlineItem} numberOfLines={1}>
+                            {like}
+                          </Text>
+                        </React.Fragment>
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                {dislikes.length > 0 && (
+                  <View style={{ marginTop: 14 }}>
+                    <Text style={styles.sectionLabel}>DISLIKES</Text>
+                    <View style={styles.inlineLine} pointerEvents="none">
+                      {dislikes.map((dislike, idx) => (
+                        <React.Fragment key={`dislike-${idx}`}>
+                          {idx > 0 ? <View style={styles.inlineDot} /> : null}
+                          <Text style={styles.inlineItem} numberOfLines={1}>
+                            {dislike}
+                          </Text>
+                        </React.Fragment>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
             )}
 
@@ -610,9 +658,16 @@ export default function ProfileCardNew({
             {interests.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>INTERESTS</Text>
-                <Text style={styles.inlineText} numberOfLines={2}>
-                  {interests.slice(0, 8).join(' · ')}
-                </Text>
+                <View style={styles.inlineLine} pointerEvents="none">
+                  {interests.slice(0, 8).map((interest, idx) => (
+                    <React.Fragment key={`interest-${idx}`}>
+                      {idx > 0 ? <View style={styles.inlineDot} /> : null}
+                      <Text style={styles.inlineItem} numberOfLines={1}>
+                        {interest}
+                      </Text>
+                    </React.Fragment>
+                  ))}
+                </View>
               </View>
             )}
 

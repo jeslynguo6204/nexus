@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   // -------------------------
   expandedContent: {
     paddingHorizontal: 18,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingBottom: 22,
     backgroundColor: COLORS.surface,
   },
