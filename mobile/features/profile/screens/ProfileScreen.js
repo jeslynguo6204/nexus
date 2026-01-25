@@ -50,7 +50,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm/ProfilePreferencesForm';
-import ProfileCardNew from '../../home/components/ProfileCardNew';
+import ProfileCard from '../../home/components/ProfileCard';
 import PreviewModal from '../components/PreviewModal';
 
 import { COLORS } from '../../../styles/ProfileFormStyles';
@@ -212,7 +212,7 @@ export default function ProfileScreen({ onSignOut }) {
   const photoAreaWidth = winW - safeH - scrollPaddingH;
   const photoSize = Math.floor((photoAreaWidth - 2 * PHOTO_GAP - 42) / 3);
 
-  // Shape own profile for ProfileCardNew (same format as discover feed cards)
+  // Shape own profile for ProfileCard (same format as discover feed cards)
   const previewProfile = useMemo(() => {
     if (!profile) return null;
     return {
@@ -615,7 +615,7 @@ export default function ProfileScreen({ onSignOut }) {
       >
         {previewProfile && (
           <View style={[styles.previewCardWrap, { width: PREVIEW_CARD_WIDTH, height: PREVIEW_CARD_HEIGHT }]}>
-            <ProfileCardNew
+            <ProfileCard
               profile={previewProfile}
               photos={photos}
               isOwnProfile

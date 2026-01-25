@@ -15,7 +15,7 @@ import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import { getMyProfile } from '../../../api/profileAPI';
 
 import styles from '../../../styles/ChatStyles';
-import homeStyles from '../../../styles/HomeStylesNew';
+import homeStyles from '../../../styles/HomeStyles';
 
 export default function LikesScreen() {
   const [loading, setLoading] = useState(true);

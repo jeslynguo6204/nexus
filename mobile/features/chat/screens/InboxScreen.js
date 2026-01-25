@@ -15,7 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import styles from '../../../styles/ChatStyles';
-import homeStyles from '../../../styles/HomeStylesNew';
+import homeStyles from '../../../styles/HomeStyles';
 import { getChats, getAllMatches } from '../../../api/matchesAPI';
 import { getMyProfile } from '../../../api/profileAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';

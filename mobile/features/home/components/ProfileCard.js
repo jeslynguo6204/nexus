@@ -1,4 +1,4 @@
-// mobile/components/ProfileCardNew.js
+// mobile/components/ProfileCard.js
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
@@ -15,7 +15,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../../styles/themeNEW';
-import styles from '../../../styles/ProfileCardStylesNew';
+import styles from '../../../styles/ProfileCardStyles';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
 import BlockReportSheet from './BlockReportSheet';
 import { trackPhotoView } from '../../../api/photosAPI';
@@ -125,7 +125,7 @@ const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeInd
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-export default function ProfileCardNew({ 
+export default function ProfileCard({ 
   profile, 
   photos, 
   onDetailsOpenChange,

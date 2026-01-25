@@ -1,4 +1,4 @@
-// mobile/screens/HomeScreenNew.js
+// mobile/screens/HomeScreen.js
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
@@ -11,16 +11,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import SwipeDeckNew from '../components/SwipeDeckNew';
+import SwipeDeck from '../components/SwipeDeck';
 import { getFeedProfiles } from '../../../api/feedAPI';
 import { getMyProfile } from '../../../api/profileAPI';
 import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/ChatStyles';
-import homeStyles from '../../../styles/HomeStylesNew';
+import homeStyles from '../../../styles/HomeStyles';
 
-export default function HomeScreenNew() {
+export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -233,7 +233,7 @@ export default function HomeScreenNew() {
         );
       }
       
-      // moveToNextCard is handled by onNext callback from SwipeDeckNew
+      // moveToNextCard is handled by onNext callback from SwipeDeck
     } catch (e) {
       console.warn(e);
       // Don't show alert for tracking failures
@@ -260,7 +260,7 @@ export default function HomeScreenNew() {
         await trackPhotoPass(token, profile.photos[photoIndex].id);
       }
       
-      // moveToNextCard is handled by onNext callback from SwipeDeckNew
+      // moveToNextCard is handled by onNext callback from SwipeDeck
     } catch (e) {
       console.warn(e);
       // Don't show alert for tracking failures
@@ -307,7 +307,7 @@ export default function HomeScreenNew() {
           <ActivityIndicator />
         </View>
       ) : current ? (
-        <SwipeDeckNew
+        <SwipeDeck
           profiles={profiles}
           currentIndex={currentIndex}
           onSwipeRight={handleSwipeRight}

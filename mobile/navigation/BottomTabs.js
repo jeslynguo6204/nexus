@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import HomeScreenNew from '../features/home/screens/HomeScreenNew';
+import HomeScreen from '../features/home/screens/HomeScreen';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
 import ChatScreen from '../features/chat/screens/ChatScreen';
@@ -74,7 +74,7 @@ export default function BottomTabs({ onSignOut }) {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreenNew} />
+      <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Likes" component={LikesScreen} />
       <Tab.Screen name="Chat" component={ChatStack} />
       <Tab.Screen
