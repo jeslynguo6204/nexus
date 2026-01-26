@@ -34,8 +34,4 @@ Notes
   - `screens/AuthScreen.js` - simple login/signup UI (stores token in AsyncStorage)
   - `screens/ProfileScreen.js` - fetches `/profiles/me` and allows editing via `PATCH /profiles/me`
   - `components/ProfileForm.js` - editable form
-
-Next steps I can do for you:
-- Wire the real login/signup flows to navigate automatically after auth
-- Add form validation and nicer UI
-- Implement image uploads for profile pictures
+  - 
