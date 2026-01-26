@@ -39,7 +39,6 @@ import {
   Modal,
   Image,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -57,6 +56,7 @@ import styles from '../../../styles/ProfileScreenStyles';
 import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../../../api/photosAPI';
 import { getMyProfile, updateMyProfile } from '../../../api/profileAPI';
 import { getMySchoolAffiliations } from '../../../api/affiliationsAPI';
+import { getIdToken } from '../../../auth/tokens';
 
 const MAX_INTERESTS = 6;
 
@@ -127,13 +127,13 @@ export default function ProfileScreen({ onSignOut }) {
   useEffect(() => {
     (async () => {
       try {
-        const token = await AsyncStorage.getItem('token');
+        const token = await getIdToken();
         if (!token) {
           throw new Error('Not signed in');
         }
 
         // ✅ use profile API helper
-        const myProfile = await getMyProfile(token);
+        const myProfile = await getMyProfile();
         console.log('ProfileScreen - myProfile data:', JSON.stringify(myProfile, null, 2));
         setProfile(myProfile);
 
@@ -157,10 +157,7 @@ export default function ProfileScreen({ onSignOut }) {
 
   async function handleSave(updatedFields) {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Not signed in');
-
-      const updatedProfile = await updateMyProfile(token, updatedFields);
+      const updatedProfile = await updateMyProfile(updatedFields);
       setProfile(updatedProfile);
 
       // keep quiet for interests-only updates
@@ -252,7 +249,7 @@ export default function ProfileScreen({ onSignOut }) {
         ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`
         : asset.uri;
 
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       if (photos.length >= 6) {
@@ -274,7 +271,7 @@ export default function ProfileScreen({ onSignOut }) {
     if (photoBusy) return;
     try {
       setPhotoBusy(true);
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       await deletePhoto(token, photoId);
@@ -303,7 +300,7 @@ export default function ProfileScreen({ onSignOut }) {
     setPhotos(next);
 
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       await reorderPhotos(
@@ -500,7 +497,6 @@ export default function ProfileScreen({ onSignOut }) {
             <Button
               title="Sign out"
               onPress={async () => {
-                await AsyncStorage.removeItem('token');
                 onSignOut();
               }}
             />

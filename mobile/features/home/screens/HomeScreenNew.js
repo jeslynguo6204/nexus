@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import SwipeDeckNew from '../components/SwipeDeckNew';
 import { getFeedProfiles } from '../../../api/feedAPI';
@@ -18,6 +17,7 @@ import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/ChatStyles';
+import { getIdToken } from '../../../auth/tokens';
 
 export default function HomeScreenNew() {
   const [loading, setLoading] = useState(true);
@@ -50,7 +50,7 @@ export default function HomeScreenNew() {
     setLoadingFeed(true);
     lastLoadedModeRef.current = mode;
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       // Fetch feed profiles with current mode (default scope: school)
@@ -87,11 +87,11 @@ export default function HomeScreenNew() {
 
   const loadProfile = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       // Fetch my profile
-      const profile = await getMyProfile(token);
+      const profile = await getMyProfile();
       if (isMountedRef.current) {
         const prevState = previousProfileStateRef.current;
         const newState = {
@@ -210,7 +210,7 @@ export default function HomeScreenNew() {
 
   async function handleSwipeRight(profile, photoIndex = 0) {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
       
       console.log(`✅ Profile ${myUserId} LIKED profile ${profile?.user_id} (mode: ${mode})`);
@@ -246,7 +246,7 @@ export default function HomeScreenNew() {
 
   async function handleSwipeLeft(profile, photoIndex = 0) {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
       
       console.log(`⏭️  Profile ${myUserId} PASSED ON profile ${profile?.user_id} (mode: ${mode})`);

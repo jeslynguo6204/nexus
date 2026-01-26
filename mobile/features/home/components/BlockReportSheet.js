@@ -14,9 +14,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../../styles/themeNEW';
 import { blockUser, reportUser } from '../../../api/blocksAPI';
+import { getIdToken } from '../../../auth/tokens';
 
 const REPORT_REASONS = [
   { value: 'spam', label: 'Spam' },
@@ -73,7 +73,7 @@ export default function BlockReportSheet({
           onPress: async () => {
             try {
               setLoading(true);
-              const token = await AsyncStorage.getItem('token');
+              const token = await getIdToken();
               if (!token) {
                 Alert.alert('Error', 'Please log in again');
                 return;
@@ -110,7 +110,7 @@ export default function BlockReportSheet({
 
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) {
         Alert.alert('Error', 'Please log in again');
         return;
@@ -443,4 +443,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

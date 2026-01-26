@@ -44,7 +44,7 @@ export async function findUserWithProfileById(userId: number) {
 export async function createUserWithDefaults(params: {
   schoolId: number | null;
   email: string;
-  passwordHash: string;
+  passwordHash: string | null;
   fullName: string;
   dateOfBirth?: string | null; // 'YYYY-MM-DD'
   gender?: string | null;

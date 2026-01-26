@@ -13,7 +13,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getIdToken } from '../../../auth/tokens';
 import styles from '../../../styles/ProfileCardStylesNew';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
 import BlockReportSheet from './BlockReportSheet';
@@ -219,7 +219,7 @@ export default function ProfileCardNew({
     const trackView = async () => {
       if (safePhotos[photoIndex]?.id) {
         try {
-          const token = await AsyncStorage.getItem('token');
+          const token = await getIdToken();
           if (token) {
             await trackPhotoView(token, safePhotos[photoIndex].id);
           }

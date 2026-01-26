@@ -4,21 +4,25 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Amplify } from 'aws-amplify';
+import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import BottomTabs from './navigation/BottomTabs';
 import AuthStack from './navigation/AuthStack';
+import amplifyConfig from './amplifyConfig';
+
+Amplify.configure(amplifyConfig);
 
 export default function App() {
   const [checking, setChecking] = useState(true);
-  const [token, setToken] = useState(null);
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const t = await AsyncStorage.getItem('token');
-        setToken(t);
-      } catch (e) {
-        console.warn('Failed reading token', e);
+        await getCurrentUser();
+        setIsSignedIn(true);
+      } catch (error) {
+        setIsSignedIn(false);
       } finally {
         setChecking(false);
       }
@@ -37,30 +41,17 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <NavigationContainer>
-          {token ? (
+          {isSignedIn ? (
             <BottomTabs
               onSignOut={async () => {
-                // App-level sign out: clear token in storage + state
-                await AsyncStorage.removeItem('token');
-                setToken(null);
+                await signOut();
+                setIsSignedIn(false);
               }}
             />
           ) : (
             <AuthStack
-              onSignedIn={async (authResponse) => {
-                console.log('🔑 onSignedIn called with:', authResponse);
-                // adapt this to whatever your backend returns
-                // earlier your backend was returning { userId, token }
-                const { token } = authResponse;
-                if (token) {
-                  console.log('💾 Saving token to AsyncStorage');
-                  await AsyncStorage.setItem('token', token);
-                  console.log('✅ Token saved, updating state');
-                  setToken(token);
-                  console.log('✅ Token state updated');
-                } else {
-                  console.warn('⚠️ No token in auth response', authResponse);
-                }
+              onSignedIn={() => {
+                setIsSignedIn(true);
               }}
             />
           )}

@@ -11,12 +11,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import styles from '../../../styles/ChatStyles';
 import { getChats, getAllMatches } from '../../../api/matchesAPI';
 import { getMyProfile } from '../../../api/profileAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
+import { getIdToken } from '../../../auth/tokens';
 
 // Helper to format time ago
 const formatTimeAgo = (dateString) => {
@@ -121,11 +121,11 @@ export default function InboxScreen({ navigation }) {
     }
     
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       // Fetch my profile (always fetch to ensure it's up to date)
-      const profile = await getMyProfile(token);
+      const profile = await getMyProfile();
       setMyProfile(profile);
 
       // Fetch all matches (for top row - includes no-chat-yet)

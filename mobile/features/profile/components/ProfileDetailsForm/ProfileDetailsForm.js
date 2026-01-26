@@ -3,12 +3,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, TouchableOpacity, Text, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { COLORS } from '@/styles/themeNEW';
 import SelectionSheet from '@/features/profile/components/SelectionSheet';
 
 import { getMySchoolDorms, getMySchoolAffiliations } from '@/api/affiliationsAPI';
+import { getIdToken } from '@/auth/tokens';
 
 import {
   profileToDraft,
@@ -65,7 +65,7 @@ export default function ProfileDetailsForm({ profile, onSave, onClose }) {
 
       setLoadingAffiliations(true);
       try {
-        const token = await AsyncStorage.getItem('token');
+        const token = await getIdToken();
         if (!token) {
           setLoadingAffiliations(false);
           return;

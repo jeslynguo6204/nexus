@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import { getMyProfile } from '../../../api/profileAPI';
@@ -24,14 +23,11 @@ export default function LikesScreen() {
 
   const loadProfile = useCallback(async (showLoading = false) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Not signed in');
-
       if (showLoading) {
         setLoading(true);
       }
 
-      const profile = await getMyProfile(token);
+      const profile = await getMyProfile();
       setMyProfile(profile);
     } catch (e) {
       console.warn('Error loading profile:', e);
