@@ -131,13 +131,14 @@ const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeInd
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-export default function ProfileCard({ 
-  profile, 
-  photos, 
+export default function ProfileCard({
+  profile,
+  photos,
   onDetailsOpenChange,
   photoIndex: controlledPhotoIndex,
   onPhotoIndexChange,
   isOwnProfile = false,
+  disableUpwardExpansion = false,
 }) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
@@ -275,7 +276,7 @@ export default function ProfileCard({
 
   const cardTranslateY = expansion.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, isOwnProfile ? 0 : EXPAND_UPWARD_OFFSET],
+    outputRange: [0, (isOwnProfile || disableUpwardExpansion) ? 0 : EXPAND_UPWARD_OFFSET],
   });
 
   const photoHeight = expansion.interpolate({

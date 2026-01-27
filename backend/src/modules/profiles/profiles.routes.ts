@@ -18,6 +18,9 @@ router.patch(
   ProfilesController.updateMe
 );
 
+// GET /profiles/:userId - Get another user's public profile
+router.get("/:userId", authMiddleware, ProfilesController.getUserProfile);
+
 // POST /profiles/admin/update-ages (optional admin endpoint)
 // Note: You may want to add admin authentication middleware here
 router.post("/admin/update-ages", ProfilesController.updateAges);

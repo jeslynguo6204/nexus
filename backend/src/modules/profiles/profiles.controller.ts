@@ -26,6 +26,32 @@ export async function getMe(
   }
 }
 
+export async function getUserProfile(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const otherUserId = Number(req.params.userId);
+    if (isNaN(otherUserId)) {
+      return res.status(400).json({ error: "Invalid userId" });
+    }
+
+    const profile = await ProfileService.getUserProfile(req.userId, otherUserId);
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    return res.json({ profile });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function updateMe(
   req: AuthedRequest,
   res: Response,

@@ -218,20 +218,89 @@ export async function updateProfileByUserId(
 }
 
 /**
+ * Get public profile info for another user (excludes private preferences)
+ */
+export async function getPublicProfileByUserId(
+  userId: number,
+  currentUserId: number
+): Promise<any | null> {
+  const rows = await dbQuery(
+    `
+    SELECT
+      p.user_id,
+      p.display_name,
+      p.bio,
+      p.major,
+      p.graduation_year,
+      p.academic_year,
+      p.interests,
+      p.likes,
+      p.dislikes,
+      p.photos,
+      p.affiliations,
+      p.gender,
+      p.sexuality,
+      p.pronouns,
+      p.religious_beliefs,
+      p.height,
+      p.political_affiliation,
+      p.languages,
+      p.hometown,
+      p.ethnicity,
+      p.age,
+      p.featured_affiliations,
+      u.school_id,
+      s.name AS school_name,
+      s.short_name AS school_short_name,
+      (
+        SELECT COUNT(*)
+        FROM friendships f
+        WHERE (f.user_id_1 = p.user_id OR f.user_id_2 = p.user_id)
+          AND f.status = 'accepted'
+      ) AS friend_count,
+      (
+        CASE
+          WHEN EXISTS (
+            SELECT 1 FROM friendships f
+            WHERE ((f.user_id_1 = $2 AND f.user_id_2 = p.user_id) OR (f.user_id_1 = p.user_id AND f.user_id_2 = $2))
+              AND f.status = 'accepted'
+          ) THEN 'friends'
+          WHEN EXISTS (
+            SELECT 1 FROM friend_requests fr
+            WHERE fr.requester_id = $2 AND fr.recipient_id = p.user_id
+          ) THEN 'pending_sent'
+          WHEN EXISTS (
+            SELECT 1 FROM friend_requests fr
+            WHERE fr.requester_id = p.user_id AND fr.recipient_id = $2
+          ) THEN 'pending_received'
+          ELSE 'none'
+        END
+      ) AS friendship_status
+    FROM profiles p
+    JOIN users u ON u.id = p.user_id
+    LEFT JOIN schools s ON s.id = u.school_id
+    WHERE p.user_id = $1
+    `,
+    [userId, currentUserId]
+  );
+  return rows[0] ?? null;
+}
+
+/**
  * Calculate age from date_of_birth
  */
 export function calculateAge(dateOfBirth: string | null): number | null {
   if (!dateOfBirth) return null;
-  
+
   const birthDate = new Date(dateOfBirth);
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
-  
+
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
-  
+
   return age;
 }
 

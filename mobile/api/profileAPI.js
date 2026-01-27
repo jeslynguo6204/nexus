@@ -44,3 +44,20 @@ export async function updateMyProfile(token, fields) {
 
   return json.profile;
 }
+
+export async function getUserProfile(token, userId) {
+  const API_BASE = getApiBase();
+  const res = await fetch(`${API_BASE}/profiles/${userId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json.error || "Failed to fetch user profile");
+  }
+
+  return json.profile;
+}
