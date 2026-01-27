@@ -52,6 +52,7 @@ import ProfileDetailsForm from '../components/ProfileDetailsForm/ProfileDetailsF
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm/ProfilePreferencesForm';
 import ProfileCard from '../../home/components/ProfileCard';
 import PreviewModal from '../components/PreviewModal';
+import FriendsListScreen from './FriendsListScreen';
 
 import { COLORS } from '../../../styles/ProfileFormStyles';
 import styles from '../../../styles/ProfileScreenStyles';
@@ -333,41 +334,18 @@ export default function ProfileScreen({ onSignOut }) {
     }
   }
 
-  function handleFriendMenu(friend) {
-    Alert.alert('Options', null, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Unfriend',
-        style: 'destructive',
-        onPress: () => {
-          const name = friend.display_name || 'this person';
-          Alert.alert(
-            'Unfriend?',
-            `Are you sure you want to unfriend ${name}?`,
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Unfriend',
-                style: 'destructive',
-                onPress: async () => {
-                  try {
-                    const token = await AsyncStorage.getItem('token');
-                    if (!token) throw new Error('Not signed in');
-                    await removeFriend(token, friend.friend_id);
-                    await loadFriends();
-                    if (profile?.friend_count != null) {
-                      setProfile((p) => (p ? { ...p, friend_count: Math.max(0, (p.friend_count ?? 0) - 1) } : p));
-                    }
-                  } catch (e) {
-                    Alert.alert('Error', e.message || 'Failed to unfriend.');
-                  }
-                },
-              },
-            ]
-          );
-        },
-      },
-    ]);
+  async function handleUnfriend(friend) {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not signed in');
+      await removeFriend(token, friend.friend_id);
+      await loadFriends();
+      if (profile?.friend_count != null) {
+        setProfile((p) => (p ? { ...p, friend_count: Math.max(0, (p.friend_count ?? 0) - 1) } : p));
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Failed to unfriend.');
+    }
   }
 
   async function handlePhotoReorder(data, from, to) {
@@ -704,90 +682,14 @@ export default function ProfileScreen({ onSignOut }) {
         )}
       </PreviewModal>
 
-      {/* Friends List Modal */}
-      <Modal visible={friendsListVisible} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View
-            style={{
-              backgroundColor: COLORS.surface || '#fff',
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              paddingTop: 20,
-              paddingBottom: insets.bottom + 20,
-              maxHeight: '80%',
-            }}
-          >
-            {/* Header */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 16 }}>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.textPrimary || '#000' }}>
-                Friends ({friends.length})
-              </Text>
-              <TouchableOpacity onPress={() => setFriendsListVisible(false)}>
-                <Text style={{ fontSize: 28, color: COLORS.textMuted || '#666' }}>×</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Friends list */}
-            {friendsLoading ? (
-              <View style={{ padding: 40, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-              </View>
-            ) : friends.length === 0 ? (
-              <View style={{ padding: 40, alignItems: 'center' }}>
-                <Text style={{ color: COLORS.textMuted || '#666' }}>No friends yet</Text>
-              </View>
-            ) : (
-              <ScrollView style={{ paddingHorizontal: 20 }}>
-                {friends.map((friend) => (
-                  <View
-                    key={friend.friend_id}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingVertical: 12,
-                      borderBottomWidth: 1,
-                      borderBottomColor: COLORS.border || '#e0e0e0',
-                    }}
-                  >
-                    {friend.avatar_url ? (
-                      <Image
-                        source={{ uri: friend.avatar_url }}
-                        style={{ width: 50, height: 50, borderRadius: 25, marginRight: 12 }}
-                      />
-                    ) : (
-                      <View
-                        style={{
-                          width: 50,
-                          height: 50,
-                          borderRadius: 25,
-                          backgroundColor: COLORS.surfaceElevated || '#f0f0f0',
-                          marginRight: 12,
-                        }}
-                      />
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textPrimary || '#000' }}>
-                        {friend.display_name}
-                      </Text>
-                      {friend.school_name && friend.graduation_year && (
-                        <Text style={{ fontSize: 14, color: COLORS.textMuted || '#666' }}>
-                          {friend.school_name} '{String(friend.graduation_year).slice(-2)}
-                        </Text>
-                      )}
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => handleFriendMenu(friend)}
-                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                      style={{ padding: 8 }}
-                    >
-                      <FontAwesome name="ellipsis-v" size={18} color={COLORS.textMuted || '#666'} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </View>
+      {/* Friends List (full-screen modal) */}
+      <Modal visible={friendsListVisible} animationType="slide">
+        <FriendsListScreen
+          friends={friends}
+          loading={friendsLoading}
+          onClose={() => setFriendsListVisible(false)}
+          onUnfriend={handleUnfriend}
+        />
       </Modal>
     </SafeAreaView>
   );

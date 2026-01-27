@@ -26,8 +26,10 @@ export type FriendWithDetails = {
   bio: string | null;
   age: number | null;
   school_name: string | null;
+  school_short_name: string | null;
   graduation_year: number | null;
   avatar_url: string | null;
+  featured_affiliation_short_names: string[];
 };
 
 export type FriendRequestWithDetails = {
@@ -220,8 +222,17 @@ export async function getFriendsWithDetails(
       p.bio,
       EXTRACT(YEAR FROM AGE(u.date_of_birth)) AS age,
       s.name AS school_name,
+      s.short_name AS school_short_name,
       p.graduation_year,
-      ph.url AS avatar_url
+      ph.url AS avatar_url,
+      (
+        SELECT COALESCE(
+          array_agg(COALESCE(a.short_name, a.name) ORDER BY ord) FILTER (WHERE a.id IS NOT NULL),
+          ARRAY[]::text[]
+        )
+        FROM unnest(COALESCE((p.featured_affiliations)[1:2], ARRAY[]::int[])) WITH ORDINALITY AS t(id, ord)
+        LEFT JOIN affiliations a ON a.id = t.id
+      ) AS featured_affiliation_short_names
      FROM friendships f
      JOIN users u ON u.id = CASE
        WHEN f.user_id_1 = $1 THEN f.user_id_2
@@ -265,6 +276,24 @@ export async function getPendingRequestsWithDetails(
     [userId]
   );
   return rows;
+}
+
+/**
+ * Get affiliation short_name by ids (for friends list featured affiliations).
+ */
+export async function getAffiliationShortNamesByIds(
+  ids: number[]
+): Promise<Map<number, string>> {
+  if (!ids.length) return new Map();
+  const rows = await dbQuery<{ id: number; short_name: string | null; name: string }>(
+    `SELECT id, short_name, name FROM affiliations WHERE id = ANY($1::int[])`,
+    [ids]
+  );
+  const map = new Map<number, string>();
+  for (const r of rows) {
+    map.set(r.id, r.short_name ?? r.name ?? String(r.id));
+  }
+  return map;
 }
 
 /**

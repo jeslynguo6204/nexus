@@ -19,10 +19,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendMessage as sendMessageAPI } from '../../../api/messagesAPI';
 import { unmatchUser as unmatchUserAPI } from '../../../api/matchesAPI';
 import { blockUser, reportUser } from '../../../api/blocksAPI';
-import { getUserProfile } from '../../../api/profileAPI';
 import BlockReportSheet from '../../home/components/BlockReportSheet';
-import PreviewModal from '../../profile/components/PreviewModal';
-import ProfileCard from '../../home/components/ProfileCard';
+import UserProfilePreviewModal from '../../profile/components/UserProfilePreviewModal';
 
 const DEFAULT_AVATAR = 'https://picsum.photos/200?88';
 
@@ -70,10 +68,7 @@ export default function ChatScreen({ navigation, route }) {
   const [blockReportSheetOpen, setBlockReportSheetOpen] = useState(false);
   const [blockReportMode, setBlockReportMode] = useState(null); // 'block' or 'report'
 
-  // Profile viewing state
   const [profileModalVisible, setProfileModalVisible] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
 
   // Hard-coded starter conversation
   // Note: Array gets reversed before passing to inverted FlatList, so first item appears at top
@@ -211,23 +206,8 @@ export default function ChatScreen({ navigation, route }) {
     setBlockReportMode(null);
   };
 
-  const handleViewProfile = async () => {
-    try {
-      setLoadingProfile(true);
-      setProfileModalVisible(true);
-
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Not signed in');
-
-      const profile = await getUserProfile(token, matchUserId);
-      setUserProfile(profile);
-    } catch (error) {
-      console.error('Error loading profile:', error);
-      Alert.alert('Error', 'Failed to load profile. Please try again.');
-      setProfileModalVisible(false);
-    } finally {
-      setLoadingProfile(false);
-    }
+  const handleViewProfile = () => {
+    setProfileModalVisible(true);
   };
 
   const dataForList = useMemo(() => {
@@ -395,33 +375,11 @@ export default function ChatScreen({ navigation, route }) {
           />
         )}
 
-        {/* Profile Preview Modal */}
-        <PreviewModal
+        <UserProfilePreviewModal
           visible={profileModalVisible}
-          onClose={() => {
-            setProfileModalVisible(false);
-            setUserProfile(null);
-          }}
-        >
-          {loadingProfile ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <ActivityIndicator size="large" color="#FFFFFF" />
-            </View>
-          ) : userProfile ? (
-            <View
-              style={{
-                width: Dimensions.get('window').width - 32,
-                height: Math.min((Dimensions.get('window').width - 32) * 1.6, Dimensions.get('window').height * 0.55),
-              }}
-            >
-              <ProfileCard
-                profile={userProfile}
-                photos={userProfile.photos}
-                disableUpwardExpansion
-              />
-            </View>
-          ) : null}
-        </PreviewModal>
+          userId={matchUserId}
+          onClose={() => setProfileModalVisible(false)}
+        />
 
         {/* Messages */}
         <FlatList

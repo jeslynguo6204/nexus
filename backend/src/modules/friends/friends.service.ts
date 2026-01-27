@@ -206,11 +206,29 @@ export async function getSentRequests(userId: number): Promise<FriendRequestRow[
   return await getSentRequestsForUser(userId);
 }
 
+function ensureStringArray(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.slice(0, 2).map((x) => String(x)).filter(Boolean);
+  }
+  if (typeof raw === "string") {
+    const stripped = raw.replace(/^\{|\}$/g, "");
+    if (!stripped.trim()) return [];
+    return stripped.split(",").map((s) => s.trim().replace(/^"|"$/g, "")).slice(0, 2).filter(Boolean);
+  }
+  return [];
+}
+
 /**
- * Get friend list with details
+ * Get friend list with details (school short name, featured affiliation short names).
+ * Affiliations are resolved in SQL; we only normalize array shape for the response.
  */
 export async function getFriendsList(userId: number): Promise<FriendWithDetails[]> {
-  return await getFriendsWithDetails(userId);
+  const friends = await getFriendsWithDetails(userId);
+  return friends.map((f) => ({
+    ...f,
+    featured_affiliation_short_names: ensureStringArray(f.featured_affiliation_short_names),
+  }));
 }
 
 /**
