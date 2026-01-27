@@ -1,10 +1,7 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { Text } from 'react-native';
 import { COLORS } from '@/styles/themeNEW';
-import {
-  EditProfileRow,
-} from '@/features/profile/components/form-editor-components';
-import editProfileStyles from '@/styles/EditProfileStyles';
+import { EditProfileRow } from '@/features/profile/components/form-editor-components';
 
 function isDormAffiliationId(id, dorms) {
   const n = Number(id);
@@ -103,12 +100,6 @@ export default function AffiliationsSection({
           />
         );
       })}
-      <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 }}>
-        <Text style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 18 }}>
-          Select as many as you like, then choose up to two to feature.
-        </Text>
-      </View>
-      <View style={editProfileStyles.rowDivider} />
     </>
   );
 }

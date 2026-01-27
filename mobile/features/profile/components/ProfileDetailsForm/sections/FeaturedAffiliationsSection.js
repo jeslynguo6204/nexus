@@ -55,7 +55,7 @@ export default function FeaturedAffiliationsSection({
 
   return (
     <>
-      <EditProfileSectionHeader title="Key affiliations" />
+      <EditProfileSectionHeader title="Key Affiliations" />
       <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 }}>
         <Text
           style={{
@@ -65,7 +65,7 @@ export default function FeaturedAffiliationsSection({
             marginBottom: 12,
           }}
         >
-          Select up to 2 to feature.
+          Remember, this isn't a resume. You can add as many affiliations as you like, but you can select up to 2 key affiliations to highlight on your profile.
         </Text>
         <View
           style={{
