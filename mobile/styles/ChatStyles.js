@@ -204,4 +204,16 @@ export default StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
+  completeProfileButton: {
+    marginTop: 16,
+    backgroundColor: '#1F6299',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+  },
+  completeProfileButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });

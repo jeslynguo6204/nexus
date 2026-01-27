@@ -19,13 +19,14 @@ import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/ChatStyles';
 import { getIdToken } from '../../../auth/tokens';
 
-export default function HomeScreenNew() {
+export default function HomeScreenNew({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [myUserId, setMyUserId] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
   const [loadingFeed, setLoadingFeed] = useState(false);
+  const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
 
   const [mode, setMode] = useState('romantic'); // romantic | platonic
   const [hasSetInitialMode, setHasSetInitialMode] = useState(false);
@@ -43,6 +44,9 @@ export default function HomeScreenNew() {
   const loadFeed = useCallback(async () => {
     // Prevent multiple simultaneous loads or loading the same mode twice
     if (isLoadingFeedRef.current || lastLoadedModeRef.current === mode) {
+      return;
+    }
+    if (needsProfileSetup) {
       return;
     }
     
@@ -83,7 +87,7 @@ export default function HomeScreenNew() {
       isLoadingFeedRef.current = false;
       setLoadingFeed(false);
     }
-  }, [mode]);
+  }, [mode, needsProfileSetup]);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -93,6 +97,7 @@ export default function HomeScreenNew() {
       // Fetch my profile
       const profile = await getMyProfile();
       if (isMountedRef.current) {
+        setNeedsProfileSetup(!profile?.gender);
         const prevState = previousProfileStateRef.current;
         const newState = {
           gender: profile?.gender,
@@ -202,7 +207,7 @@ export default function HomeScreenNew() {
       loadFeed();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, myProfile, mode, hasSetInitialMode]);
+  }, [loading, myProfile, mode, hasSetInitialMode, needsProfileSetup]);
 
   function moveToNextCard() {
     setCurrentIndex((prev) => prev + 1);
@@ -302,7 +307,22 @@ export default function HomeScreenNew() {
       </View>
 
       <View style={styles.centeredEmptyState}>
-        {loadingFeed ? (
+        {needsProfileSetup ? (
+          <View style={styles.centeredEmptyState}>
+            <Text style={styles.emptyStateText}>
+              Finish your profile to start swiping
+            </Text>
+            <Text style={styles.emptyStateSubtext}>
+              Add your gender so we can match you with the right people.
+            </Text>
+            <Pressable
+              style={styles.completeProfileButton}
+              onPress={() => navigation.navigate('Profile')}
+            >
+              <Text style={styles.completeProfileButtonText}>Complete profile</Text>
+            </Pressable>
+          </View>
+        ) : loadingFeed ? (
           <ActivityIndicator />
         ) : current ? (
           <SwipeDeckNew
