@@ -228,4 +228,66 @@ export default StyleSheet.create({
   bioHelperLink: {
     color: EDIT_PROFILE.linkColor,
   },
+
+  // Preferences: toggle row, log out
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: EDIT_PROFILE.rowPaddingVertical,
+    paddingHorizontal: EDIT_PROFILE.rowPaddingHorizontal,
+    minHeight: 52,
+  },
+  toggleRowLabelWrap: {
+    flex: 1,
+    marginRight: 12,
+  },
+  toggleRowLabel: {
+    fontSize: EDIT_PROFILE.labelFontSize,
+    fontWeight: EDIT_PROFILE.labelFontWeight,
+    color: EDIT_PROFILE.labelColor,
+  },
+  toggleRowSubtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: COLORS.textMuted,
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  logOutWrap: {
+    paddingTop: 24,
+    paddingBottom: 40,
+    paddingHorizontal: 16,
+  },
+  logOutRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+  },
+  logOutText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+  },
+
+  preferencesSliderBlock: {
+    paddingHorizontal: EDIT_PROFILE.rowPaddingHorizontal,
+    paddingTop: 4,
+    paddingBottom: 16,
+  },
+  preferencesSliderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  preferencesSliderLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+  },
+  preferencesSliderValue: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: COLORS.textPrimary,
+  },
 });

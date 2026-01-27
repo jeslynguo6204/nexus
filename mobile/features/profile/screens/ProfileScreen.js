@@ -568,6 +568,11 @@ export default function ProfileScreen({ onSignOut }) {
                 setPrefsVisible(false);
               }}
               onClose={() => setPrefsVisible(false)}
+              onLogOut={async () => {
+                setPrefsVisible(false);
+                await AsyncStorage.removeItem('token');
+                onSignOut();
+              }}
             />
           )}
       </Modal>

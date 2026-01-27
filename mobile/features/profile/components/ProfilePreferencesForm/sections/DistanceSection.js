@@ -1,28 +1,22 @@
-// mobile/features/profile/components/ProfilePreferencesForm/sections/DistanceSection.js
 import React from 'react';
-import { Text, View } from 'react-native';
-
+import { View, Text } from 'react-native';
+import {
+  EditProfileSectionHeader,
+  FormSlider,
+} from '@/features/profile/components/form-editor-components';
+import editProfileStyles from '@/styles/EditProfileStyles';
 import { COLORS } from '@/styles/themeNEW';
-import { FormSection, FormField, FormSlider } from '@/features/profile/components/form-editor-components';
 
 export default function DistanceSection({ draft, setField }) {
   const miles = draft.maxDistanceMiles ?? 5;
 
   return (
-    <FormSection title="Distance">
-      <FormField label="">
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 12,
-          }}
-        >
-          <Text style={{ fontSize: 13, fontWeight: '400', color: COLORS.textMuted }}>
-            Show people within
-          </Text>
-          <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textPrimary }}>
+    <>
+      <EditProfileSectionHeader title="Distance" />
+      <View style={editProfileStyles.preferencesSliderBlock}>
+        <View style={editProfileStyles.preferencesSliderRow}>
+          <Text style={editProfileStyles.preferencesSliderLabel}>Show people within</Text>
+          <Text style={editProfileStyles.preferencesSliderValue}>
             {miles} {miles === 1 ? 'mile' : 'miles'}
           </Text>
         </View>
@@ -37,7 +31,7 @@ export default function DistanceSection({ draft, setField }) {
           maximumTrackTintColor={COLORS.divider}
           thumbTintColor={COLORS.textPrimary}
         />
-      </FormField>
-    </FormSection>
+      </View>
+    </>
   );
 }

@@ -1,10 +1,16 @@
-// mobile/features/profile/components/ProfilePreferencesForm/ProfilePreferencesForm.js
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+  Alert,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 
 import { COLORS } from '@/styles/themeNEW';
+import editProfileStyles from '@/styles/EditProfileStyles';
 import SelectionSheet from '@/features/profile/components/SelectionSheet';
 
 import ModesSection from './sections/ModesSection';
@@ -15,83 +21,93 @@ import DistanceSection from './sections/DistanceSection';
 import { preferencesFromProfile } from './utils/preferencesDraft';
 import { buildPreferencesUpdatePayload } from './utils/preferencesPayload';
 
-export default function ProfilePreferencesForm({ profile, onSave, onClose }) {
+export default function ProfilePreferencesForm({
+  profile,
+  onSave,
+  onClose,
+  onLogOut,
+}) {
   const insets = useSafeAreaInsets();
-
   const [draft, setDraft] = useState(() => preferencesFromProfile(profile));
   const setField = (key, value) => setDraft((d) => ({ ...d, [key]: value }));
 
-  // Optional: keep draft in sync if profile changes while mounted
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [sheetConfig, setSheetConfig] = useState(null);
+
   useEffect(() => {
     setDraft(preferencesFromProfile(profile));
   }, [profile]);
 
-  // Selection sheet state (optional – only needed if you later switch some rows to use sheet)
-  const [sheetVisible, setSheetVisible] = useState(false);
-  const [sheetConfig, setSheetConfig] = useState(null);
-
-  const openSelectionSheet = (config) => {
+  function openSelectionSheet(config) {
     setSheetConfig(config);
     setSheetVisible(true);
-  };
+  }
 
-  const closeSelectionSheet = () => {
+  function closeSelectionSheet() {
     setSheetVisible(false);
     setSheetConfig(null);
-  };
-
-  const headerRightDisabled = useMemo(() => false, []);
+  }
 
   function submit() {
-    const payload = buildPreferencesUpdatePayload(profile, draft);
-    onSave(payload);
+    try {
+      const payload = buildPreferencesUpdatePayload(profile, draft);
+      onSave(payload);
+    } catch (e) {
+      Alert.alert('Error', 'Failed to save preferences. Please try again.');
+      if (__DEV__) console.warn('ProfilePreferencesForm submit error:', e);
+    }
+  }
+
+  function handleLogOut() {
+    if (typeof onLogOut === 'function') {
+      onLogOut();
+      return;
+    }
+    onClose();
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.surface, paddingTop: insets.top }}>
-      {/* Header (match ProfileDetailsForm) */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }}>
+    <View style={[editProfileStyles.container, { paddingTop: insets.top }]}>
+      <View style={editProfileStyles.header}>
         <TouchableOpacity
+          style={editProfileStyles.headerBack}
           onPress={onClose}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
         >
-          <FontAwesome name="times" size={18} color={COLORS.textPrimary} />
+          <FontAwesome name="chevron-left" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
-
-        <View style={{ flex: 1 }} />
-
+        <Text style={editProfileStyles.headerTitle}>Preferences</Text>
         <TouchableOpacity
+          style={editProfileStyles.headerSave}
           onPress={submit}
-          disabled={headerRightDisabled}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={{ paddingHorizontal: 4, paddingVertical: 4, opacity: headerRightDisabled ? 0.5 : 1 }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '400', color: COLORS.textPrimary }}>
-            Save
-          </Text>
+          <Text style={editProfileStyles.headerSaveText}>Save</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <ModesSection draft={draft} setField={setField} />
-
         <GenderPreferenceSection draft={draft} setField={setField} />
-
         <AgeRangeSection draft={draft} setField={setField} />
-
         <DistanceSection draft={draft} setField={setField} />
 
-        <View style={{ height: 40 }} />
+        <View style={editProfileStyles.logOutWrap}>
+          <TouchableOpacity
+            style={editProfileStyles.logOutRow}
+            onPress={handleLogOut}
+            activeOpacity={0.6}
+          >
+            <Text style={editProfileStyles.logOutText}>Log out</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
-      {/* Optional SelectionSheet (kept to mirror ProfileDetailsForm pattern) */}
       {sheetConfig && (
         <SelectionSheet
           visible={sheetVisible}
