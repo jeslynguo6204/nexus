@@ -61,6 +61,7 @@ import chatStyles from '../../../styles/ChatStyles';
 import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../../../api/photosAPI';
 import { getMyProfile, updateMyProfile } from '../../../api/profileAPI';
 import { getMySchoolAffiliations } from '../../../api/affiliationsAPI';
+import { getFriendsList } from '../../../api/friendsAPI';
 
 const MAX_INTERESTS = 6;
 
@@ -127,6 +128,9 @@ export default function ProfileScreen({ onSignOut }) {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [affiliations, setAffiliations] = useState([]);
+  const [friendsListVisible, setFriendsListVisible] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -313,6 +317,22 @@ export default function ProfileScreen({ onSignOut }) {
     }
   }
 
+  async function loadFriends() {
+    try {
+      setFriendsLoading(true);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not signed in');
+
+      const friendsList = await getFriendsList(token);
+      setFriends(friendsList);
+    } catch (err) {
+      console.error('Failed to load friends:', err);
+      Alert.alert('Error', 'Failed to load friends list.');
+    } finally {
+      setFriendsLoading(false);
+    }
+  }
+
   async function handlePhotoReorder(data, from, to) {
     const next = data.filter((item) => !item.isAdd);
 
@@ -453,6 +473,21 @@ export default function ProfileScreen({ onSignOut }) {
               <Text style={[styles.metaText, { marginTop: 8 }]}>
                 {profile.bio ? profile.bio : 'Add a short bio'}
               </Text>
+
+              {/* Friend count */}
+              {profile?.friend_count !== undefined && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setFriendsListVisible(true);
+                    loadFriends();
+                  }}
+                  style={{ marginTop: 12 }}
+                >
+                  <Text style={[styles.metaText, { color: COLORS.primary, fontWeight: '600' }]}>
+                    {profile.friend_count} {profile.friend_count === 1 ? 'friend' : 'friends'}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               <View style={styles.actionsRow}>
                 <TouchableOpacity
@@ -631,6 +666,85 @@ export default function ProfileScreen({ onSignOut }) {
           </View>
         )}
       </PreviewModal>
+
+      {/* Friends List Modal */}
+      <Modal visible={friendsListVisible} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View
+            style={{
+              backgroundColor: COLORS.surface || '#fff',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              paddingTop: 20,
+              paddingBottom: insets.bottom + 20,
+              maxHeight: '80%',
+            }}
+          >
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 16 }}>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.textPrimary || '#000' }}>
+                Friends ({friends.length})
+              </Text>
+              <TouchableOpacity onPress={() => setFriendsListVisible(false)}>
+                <Text style={{ fontSize: 28, color: COLORS.textMuted || '#666' }}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Friends list */}
+            {friendsLoading ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+              </View>
+            ) : friends.length === 0 ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Text style={{ color: COLORS.textMuted || '#666' }}>No friends yet</Text>
+              </View>
+            ) : (
+              <ScrollView style={{ paddingHorizontal: 20 }}>
+                {friends.map((friend) => (
+                  <View
+                    key={friend.friend_id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 12,
+                      borderBottomWidth: 1,
+                      borderBottomColor: COLORS.border || '#e0e0e0',
+                    }}
+                  >
+                    {friend.avatar_url ? (
+                      <Image
+                        source={{ uri: friend.avatar_url }}
+                        style={{ width: 50, height: 50, borderRadius: 25, marginRight: 12 }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: 50,
+                          height: 50,
+                          borderRadius: 25,
+                          backgroundColor: COLORS.surfaceElevated || '#f0f0f0',
+                          marginRight: 12,
+                        }}
+                      />
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textPrimary || '#000' }}>
+                        {friend.display_name}
+                      </Text>
+                      {friend.school_name && friend.graduation_year && (
+                        <Text style={{ fontSize: 14, color: COLORS.textMuted || '#666' }}>
+                          {friend.school_name} '{String(friend.graduation_year).slice(-2)}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

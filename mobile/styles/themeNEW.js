@@ -62,4 +62,10 @@ export const COLORS = {
    * ------------------------- */
   shadowLight: 'rgba(0, 0, 0, 0.04)',
   shadowMedium: 'rgba(0, 0, 0, 0.08)',
+
+  /* -------------------------
+   * Aliases (for compatibility)
+   * ------------------------- */
+  primary: '#2563EB',              // Alias for accent
+  surfaceElevated: '#F4F4F5',      // Alias for backgroundSubtle
 };

@@ -43,6 +43,7 @@ export interface ProfileRow {
   age: number | null;
   date_of_birth: string | null; // DATE comes back as string from pg
   featured_affiliations: number[] | null; // Array of affiliation IDs (up to 2) for preview
+  friend_count?: number;
   updated_at: string;
 }
 
@@ -89,7 +90,13 @@ export async function getProfileByUserId(
       p.updated_at,
       u.school_id,
       s.name AS school_name,
-      s.short_name AS school_short_name
+      s.short_name AS school_short_name,
+      (
+        SELECT COUNT(*)
+        FROM friendships f
+        WHERE (f.user_id_1 = p.user_id OR f.user_id_2 = p.user_id)
+          AND f.status = 'accepted'
+      ) AS friend_count
     FROM profiles p
     JOIN users u ON u.id = p.user_id
     LEFT JOIN schools s ON s.id = u.school_id

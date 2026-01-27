@@ -310,6 +310,37 @@ const styles = StyleSheet.create({
     shouldRasterizeIOS: true,
   },
 
+  // Friend button
+  friendButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  friendButtonActive: {
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  friendButtonPending: {
+    backgroundColor: COLORS.surfaceElevated,
+    borderWidth: 1,
+    borderColor: COLORS.textMuted,
+  },
+  friendButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.surface,
+  },
+
 });
 
 export default styles;

@@ -10,6 +10,7 @@ import swipesRoutes from "./modules/swipes/swipes.routes";
 import matchesRoutes from "./modules/matches/matches.routes";
 import messagesRoutes from "./modules/messages/messages.routes";
 import blocksRoutes from "./modules/blocks/blocks.routes";
+import friendsRoutes from "./modules/friends/friends.routes";
 import { errorHandler } from "./middleware/errorHandlerMiddleware";
 
 export const app = express();
@@ -69,6 +70,7 @@ app.use("/swipes", swipesRoutes);
 app.use("/matches", matchesRoutes);
 app.use("/messages", messagesRoutes);
 app.use("/blocks", blocksRoutes);
+app.use("/friends", friendsRoutes);
 console.log("✅ Protected routes registered:");
 console.log("   - /users/*");
 console.log("   - /profiles/*");
@@ -79,6 +81,7 @@ console.log("   - /swipes/*");
 console.log("   - /matches/*");
 console.log("   - /messages/*");
 console.log("   - /blocks/*");
+console.log("   - /friends/*");
 
 // Global error handler (last)
 app.use(errorHandler);
