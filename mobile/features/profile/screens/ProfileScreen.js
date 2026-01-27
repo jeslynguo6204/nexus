@@ -61,7 +61,7 @@ import chatStyles from '../../../styles/ChatStyles';
 import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../../../api/photosAPI';
 import { getMyProfile, updateMyProfile } from '../../../api/profileAPI';
 import { getMySchoolAffiliations } from '../../../api/affiliationsAPI';
-import { getFriendsList } from '../../../api/friendsAPI';
+import { getFriendsList, removeFriend } from '../../../api/friendsAPI';
 
 const MAX_INTERESTS = 6;
 
@@ -331,6 +331,43 @@ export default function ProfileScreen({ onSignOut }) {
     } finally {
       setFriendsLoading(false);
     }
+  }
+
+  function handleFriendMenu(friend) {
+    Alert.alert('Options', null, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Unfriend',
+        style: 'destructive',
+        onPress: () => {
+          const name = friend.display_name || 'this person';
+          Alert.alert(
+            'Unfriend?',
+            `Are you sure you want to unfriend ${name}?`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Unfriend',
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    const token = await AsyncStorage.getItem('token');
+                    if (!token) throw new Error('Not signed in');
+                    await removeFriend(token, friend.friend_id);
+                    await loadFriends();
+                    if (profile?.friend_count != null) {
+                      setProfile((p) => (p ? { ...p, friend_count: Math.max(0, (p.friend_count ?? 0) - 1) } : p));
+                    }
+                  } catch (e) {
+                    Alert.alert('Error', e.message || 'Failed to unfriend.');
+                  }
+                },
+              },
+            ]
+          );
+        },
+      },
+    ]);
   }
 
   async function handlePhotoReorder(data, from, to) {
@@ -738,6 +775,13 @@ export default function ProfileScreen({ onSignOut }) {
                         </Text>
                       )}
                     </View>
+                    <TouchableOpacity
+                      onPress={() => handleFriendMenu(friend)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      style={{ padding: 8 }}
+                    >
+                      <FontAwesome name="ellipsis-v" size={18} color={COLORS.textMuted || '#666'} />
+                    </TouchableOpacity>
                   </View>
                 ))}
               </ScrollView>

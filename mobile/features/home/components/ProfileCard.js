@@ -11,6 +11,7 @@ import {
   Dimensions,
   Easing,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -314,6 +315,42 @@ export default function ProfileCard({
   const handleFriendAction = useCallback(async () => {
     if (friendActionLoading || isOwnProfile) return;
 
+    const userId = profile?.user_id || profile?.id;
+    if (!userId) {
+      console.error('No user ID found');
+      return;
+    }
+
+    const name = getFirstName(profile?.display_name || profile?.name) || 'this person';
+
+    if (friendshipStatus === 'friends') {
+      Alert.alert(
+        'Unfriend?',
+        `Do you want to unfriend ${name}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Unfriend',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                setFriendActionLoading(true);
+                const token = await AsyncStorage.getItem('token');
+                if (!token) return;
+                await removeFriend(token, userId);
+                setFriendshipStatus('none');
+              } catch (error) {
+                console.error('Friend action error:', error);
+              } finally {
+                setFriendActionLoading(false);
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     try {
       setFriendActionLoading(true);
       const token = await AsyncStorage.getItem('token');
@@ -322,28 +359,15 @@ export default function ProfileCard({
         return;
       }
 
-      const userId = profile?.user_id || profile?.id;
-      if (!userId) {
-        console.error('No user ID found');
-        return;
-      }
-
       if (friendshipStatus === 'none') {
-        // Send friend request
         await sendFriendRequest(token, userId);
         setFriendshipStatus('pending_sent');
       } else if (friendshipStatus === 'pending_sent') {
-        // Cancel friend request
         await cancelFriendRequest(token, userId);
         setFriendshipStatus('none');
       } else if (friendshipStatus === 'pending_received') {
-        // Accept friend request
         await acceptFriendRequest(token, userId);
         setFriendshipStatus('friends');
-      } else if (friendshipStatus === 'friends') {
-        // Remove friend
-        await removeFriend(token, userId);
-        setFriendshipStatus('none');
       }
     } catch (error) {
       console.error('Friend action error:', error);
