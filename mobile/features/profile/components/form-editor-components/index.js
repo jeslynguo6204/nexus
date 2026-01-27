@@ -7,3 +7,6 @@ export { default as FormSelectRow } from './FormSelectRow';
 export { default as ChipRow } from './ChipRow';
 export { default as FormSlider } from './FormSlider';
 export { default as RangeSlider } from './RangeSlider';
+export { default as EditProfileRow } from './EditProfileRow';
+export { default as RowTextInput } from './RowTextInput';
+export { default as EditProfileSectionHeader } from './EditProfileSectionHeader';

@@ -2,6 +2,7 @@
 
 export { default as AboutSection } from './AboutSection';
 export { default as IdentitySection } from './IdentitySection';
+export { default as Section1About } from './Section1About';
 export { default as AcademicsSection } from './AcademicsSection';
 export { default as LocationSection } from './LocationSection';
 export { default as PersonalDetailsSection } from './PersonalDetailsSection';

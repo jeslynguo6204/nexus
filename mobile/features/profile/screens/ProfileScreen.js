@@ -547,6 +547,9 @@ export default function ProfileScreen({ onSignOut }) {
           {profile && (
             <ProfileDetailsForm
               profile={profile}
+              primaryPhotoUrl={photos[0]?.url}
+              onEditPhoto={pickPhoto}
+              photoBusy={photoBusy}
               onSave={async (payload) => {
                 await handleSave(payload);
                 setEditVisible(false);
