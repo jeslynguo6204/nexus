@@ -4,8 +4,15 @@ import {
   EditProfileRow,
   RowTextInput,
   ChipRow,
+  EditProfileSectionHeader,
 } from '@/features/profile/components/form-editor-components';
 import editProfileStyles from '@/styles/EditProfileStyles';
+import LikesDislikesRow from '../LikesDislikesRow';
+
+function pad3(arr) {
+  const a = Array.isArray(arr) ? arr.slice(0, 3) : [];
+  return [a[0] ?? '', a[1] ?? '', a[2] ?? ''];
+}
 
 const GENDER_OPTIONS = [
   { label: 'Male', value: 'male' },
@@ -17,9 +24,29 @@ const SEXUALITY_OPTIONS = [
   'Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Queer', 'Prefer not to say',
 ];
 
-export default function IdentitySection({ draft, setField, openSelectionSheet }) {
+function truncateBio(s, max = 40) {
+  const t = (s || '').trim();
+  if (!t) return '';
+  if (t.length <= max) return t;
+  return t.slice(0, max).trim() + '…';
+}
+
+export default function Section1About({
+  draft,
+  setField,
+  openSelectionSheet,
+  onOpenBio,
+  onOpenLikes,
+  onOpenDislikes,
+  first,
+}) {
+  const likes = pad3(draft.likes);
+  const dislikes = pad3(draft.dislikes);
+  const bioPreview = truncateBio(draft.bio);
+
   return (
     <>
+      <EditProfileSectionHeader title="About you" first={first} />
       <EditProfileRow label="Name">
         <RowTextInput
           value={draft.displayName}
@@ -61,6 +88,14 @@ export default function IdentitySection({ draft, setField, openSelectionSheet })
           })
         }
       />
+      <EditProfileRow
+        label="Bio"
+        value={bioPreview}
+        placeholder="Add a bio"
+        onPress={onOpenBio}
+      />
+      <LikesDislikesRow label="Likes" items={likes} onPress={onOpenLikes} />
+      <LikesDislikesRow label="Dislikes" items={dislikes} onPress={onOpenDislikes} />
     </>
   );
 }

@@ -547,6 +547,9 @@ export default function ProfileScreen({ onSignOut }) {
           {profile && (
             <ProfileDetailsForm
               profile={profile}
+              primaryPhotoUrl={photos[0]?.url}
+              onEditPhoto={pickPhoto}
+              photoBusy={photoBusy}
               onSave={async (payload) => {
                 await handleSave(payload);
                 setEditVisible(false);
@@ -565,6 +568,11 @@ export default function ProfileScreen({ onSignOut }) {
                 setPrefsVisible(false);
               }}
               onClose={() => setPrefsVisible(false)}
+              onLogOut={async () => {
+                setPrefsVisible(false);
+                await AsyncStorage.removeItem('token');
+                onSignOut();
+              }}
             />
           )}
       </Modal>
