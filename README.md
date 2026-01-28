@@ -143,13 +143,17 @@ Create a `.env` file in the `mobile/` directory:
 
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://YOUR_IP_ADDRESS:4000
+EXPO_PUBLIC_COGNITO_USER_POOL_ID=[your-user-pool-id]
+EXPO_PUBLIC_COGNITO_USER_POOL_CLIENT_ID=[your-app-client-id]
 ```
 
-**Replace `YOUR_IP_ADDRESS` with the IP address you got from step 3.**
+**Replace `YOUR_IP_ADDRESS` with the IP address you got from step 3 and the next two lines with the ids from above.**
 
 For example:
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://10.102.194.167:4000
+EXPO_PUBLIC_COGNITO_USER_POOL_ID=[your-user-pool-id]
+EXPO_PUBLIC_COGNITO_USER_POOL_CLIENT_ID=[your-app-client-id]
 ```
 
 **Note:** Make sure your computer and mobile device/emulator are on the **same Wi‑Fi network**.
