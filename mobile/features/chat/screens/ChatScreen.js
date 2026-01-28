@@ -15,12 +15,12 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendMessage as sendMessageAPI } from '../../../api/messagesAPI';
 import { unmatchUser as unmatchUserAPI } from '../../../api/matchesAPI';
-import { blockUser, reportUser } from '../../../api/blocksAPI';
+import { blockUser } from '../../../api/blocksAPI';
 import BlockReportSheet from '../../home/components/BlockReportSheet';
 import UserProfilePreviewModal from '../../profile/components/UserProfilePreviewModal';
+import { getIdToken } from '../../../auth/tokens';
 
 const DEFAULT_AVATAR = 'https://picsum.photos/200?88';
 
@@ -129,7 +129,7 @@ export default function ChatScreen({ navigation, route }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem('token');
+              const token = await getIdToken();
               if (!token) throw new Error('Not signed in');
 
               await unmatchUserAPI(token, matchId, mode);
@@ -162,7 +162,7 @@ export default function ChatScreen({ navigation, route }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem('token');
+              const token = await getIdToken();
               if (!token) throw new Error('Not signed in');
 
               // Block the user

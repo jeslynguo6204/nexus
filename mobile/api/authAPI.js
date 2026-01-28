@@ -63,12 +63,13 @@ export function login({ email, password }) {
   return request('/auth/login', { email, password });
 }
 
-export function signup({ fullName, email, password, dateOfBirth, gender }) {
+export function signup({ fullName, email, password, dateOfBirth, gender, phoneNumber }) {
   return request('/auth/signup', {
     fullName,
     email,
     password,
     dateOfBirth,
     gender,
+    phoneNumber,
   });
 }

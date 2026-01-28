@@ -9,13 +9,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { COLORS } from '@/styles/themeNEW';
 import editProfileStyles from '@/styles/EditProfileStyles';
 import SelectionSheet from '@/features/profile/components/SelectionSheet';
 
 import { getMySchoolDorms, getMySchoolAffiliations } from '@/api/affiliationsAPI';
+import { getIdToken } from '@/auth/tokens';
 
 import {
   profileToDraft,
@@ -82,7 +82,7 @@ export default function ProfileDetailsForm({
       }
       setLoadingAffiliations(true);
       try {
-        const token = await AsyncStorage.getItem('token');
+        const token = await getIdToken();
         if (!token) {
           setLoadingAffiliations(false);
           return;

@@ -41,7 +41,6 @@ import {
   Image,
   useWindowDimensions,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { FontAwesome } from '@expo/vector-icons';
@@ -64,6 +63,7 @@ import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../../../ap
 import { getMyProfile, updateMyProfile } from '../../../api/profileAPI';
 import { getMySchoolAffiliations } from '../../../api/affiliationsAPI';
 import { getFriendsList, removeFriend } from '../../../api/friendsAPI';
+import { getIdToken } from '../../../auth/tokens';
 
 const MAX_INTERESTS = 6;
 
@@ -139,13 +139,13 @@ export default function ProfileScreen({ onSignOut }) {
   useEffect(() => {
     (async () => {
       try {
-        const token = await AsyncStorage.getItem('token');
+        const token = await getIdToken();
         if (!token) {
           throw new Error('Not signed in');
         }
 
         // ✅ use profile API helper
-        const myProfile = await getMyProfile(token);
+        const myProfile = await getMyProfile();
         setProfile(myProfile);
 
         // ✅ Fetch affiliations to get names for IDs
@@ -169,9 +169,7 @@ export default function ProfileScreen({ onSignOut }) {
   const refreshProfileForFriendCount = useCallback(async () => {
     if (!hasInitiallyLoaded.current) return;
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-      const myProfile = await getMyProfile(token);
+      const myProfile = await getMyProfile();
       setProfile((p) => (p ? { ...p, ...myProfile } : myProfile));
     } catch (e) {
       console.warn('ProfileScreen refreshProfileForFriendCount:', e);
@@ -186,10 +184,7 @@ export default function ProfileScreen({ onSignOut }) {
 
   async function handleSave(updatedFields) {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Not signed in');
-
-      const updatedProfile = await updateMyProfile(token, updatedFields);
+      const updatedProfile = await updateMyProfile(updatedFields);
       setProfile(updatedProfile);
 
       // keep quiet for interests-only updates
@@ -303,7 +298,7 @@ export default function ProfileScreen({ onSignOut }) {
         ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`
         : asset.uri;
 
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       if (photos.length >= 6) {
@@ -325,7 +320,7 @@ export default function ProfileScreen({ onSignOut }) {
     if (photoBusy) return;
     try {
       setPhotoBusy(true);
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       await deletePhoto(token, photoId);
@@ -341,7 +336,7 @@ export default function ProfileScreen({ onSignOut }) {
   async function loadFriends() {
     try {
       setFriendsLoading(true);
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       const friendsList = await getFriendsList(token);
@@ -356,7 +351,7 @@ export default function ProfileScreen({ onSignOut }) {
 
   async function handleUnfriend(friend) {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
       await removeFriend(token, friend.friend_id);
       await loadFriends();
@@ -384,7 +379,7 @@ export default function ProfileScreen({ onSignOut }) {
     setPhotos(next);
 
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       await reorderPhotos(
@@ -605,7 +600,6 @@ export default function ProfileScreen({ onSignOut }) {
             <Button
               title="Sign out"
               onPress={async () => {
-                await AsyncStorage.removeItem('token');
                 onSignOut();
               }}
             />
@@ -640,7 +634,6 @@ export default function ProfileScreen({ onSignOut }) {
               onClose={() => setPrefsVisible(false)}
               onLogOut={async () => {
                 setPrefsVisible(false);
-                await AsyncStorage.removeItem('token');
                 onSignOut();
               }}
             />

@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import SwipeDeck from '../components/SwipeDeck';
 import { getFeedProfiles } from '../../../api/feedAPI';
@@ -18,15 +17,17 @@ import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/ChatStyles';
+import { getIdToken } from '../../../auth/tokens';
 import homeStyles from '../../../styles/HomeStyles';
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [myUserId, setMyUserId] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
   const [loadingFeed, setLoadingFeed] = useState(false);
+  const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
 
   const [mode, setMode] = useState('romantic'); // romantic | platonic
   const [hasSetInitialMode, setHasSetInitialMode] = useState(false);
@@ -46,12 +47,15 @@ export default function HomeScreen() {
     if (isLoadingFeedRef.current || lastLoadedModeRef.current === mode) {
       return;
     }
+    if (needsProfileSetup) {
+      return;
+    }
     
     isLoadingFeedRef.current = true;
     setLoadingFeed(true);
     lastLoadedModeRef.current = mode;
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       // Fetch feed profiles with current mode (default scope: school)
@@ -84,16 +88,17 @@ export default function HomeScreen() {
       isLoadingFeedRef.current = false;
       setLoadingFeed(false);
     }
-  }, [mode]);
+  }, [mode, needsProfileSetup]);
 
   const loadProfile = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       // Fetch my profile
-      const profile = await getMyProfile(token);
+      const profile = await getMyProfile();
       if (isMountedRef.current) {
+        setNeedsProfileSetup(!profile?.gender);
         const prevState = previousProfileStateRef.current;
         const newState = {
           gender: profile?.gender,
@@ -203,7 +208,7 @@ export default function HomeScreen() {
       loadFeed();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, myProfile, mode, hasSetInitialMode]);
+  }, [loading, myProfile, mode, hasSetInitialMode, needsProfileSetup]);
 
   function moveToNextCard() {
     setCurrentIndex((prev) => prev + 1);
@@ -211,7 +216,7 @@ export default function HomeScreen() {
 
   async function handleSwipeRight(profile, photoIndex = 0) {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
       
       console.log(`✅ Profile ${myUserId} LIKED profile ${profile?.user_id} (mode: ${mode})`);
@@ -247,7 +252,7 @@ export default function HomeScreen() {
 
   async function handleSwipeLeft(profile, photoIndex = 0) {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
       
       console.log(`⏭️  Profile ${myUserId} PASSED ON profile ${profile?.user_id} (mode: ${mode})`);
@@ -302,7 +307,24 @@ export default function HomeScreen() {
         />
       </View>
 
-      {loadingFeed ? (
+      {needsProfileSetup ? (
+        <View style={homeStyles.emptyWrap}>
+          <View style={homeStyles.emptyCard}>
+            <Text style={homeStyles.emptyTitle}>
+              Finish your profile to start swiping
+            </Text>
+            <Text style={homeStyles.emptySub}>
+              Add your gender so we can match you with the right people.
+            </Text>
+          </View>
+          <Pressable
+            style={styles.emptyStateButton}
+            onPress={() => navigation?.navigate?.('Profile')}
+          >
+            <Text style={styles.emptyStateButtonText}>Complete profile</Text>
+          </Pressable>
+        </View>
+      ) : loadingFeed ? (
         <View style={styles.centeredEmptyState}>
           <ActivityIndicator />
         </View>

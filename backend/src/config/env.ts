@@ -12,4 +12,6 @@ export const config = {
   port: Number(process.env.PORT || 4000),
   databaseUrl: requireEnv("DATABASE_URL"),
   jwtSecret: requireEnv("JWT_SECRET"),
+  cognitoUserPoolId: requireEnv("COGNITO_USER_POOL_ID"),
+  cognitoAppClientId: requireEnv("COGNITO_APP_CLIENT_ID"),
 };

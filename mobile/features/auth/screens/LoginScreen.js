@@ -13,13 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/AuthStyles';
-
-// ✅ use shared auth API
-import { login } from '../../../api/authAPI';
+import { login } from '../../../auth/cognito';
 
 export default function LoginScreen({ navigation, onSignedIn }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -36,29 +35,16 @@ export default function LoginScreen({ navigation, onSignedIn }) {
 
   async function handleLogin() {
     try {
+      setError('');
       setLoading(true);
-      console.log('🔐 Attempting login with email:', email);
-
-      const json = await login({ email, password });
-      console.log('✅ Login successful, response:', json);
-
-      if (!json || !json.token) {
-        console.error('❌ No token in login response:', json);
-        Alert.alert('Error', 'Login failed: No token received');
-        return;
-      }
-
-      console.log('📞 Calling onSignedIn with:', json);
+      await login(email, password);
       if (onSignedIn) {
-        await onSignedIn(json);
-        console.log('✅ onSignedIn completed');
-      } else {
-        console.error('❌ onSignedIn callback is not defined!');
-        Alert.alert('Error', 'Login callback not available');
+        onSignedIn();
       }
     } catch (e) {
-      console.error('❌ Login error:', e);
-      Alert.alert('Error', String(e.message || e));
+      const message = String(e.message || e);
+      setError(message);
+      Alert.alert('Error', message);
     } finally {
       setLoading(false);
     }
@@ -139,6 +125,10 @@ export default function LoginScreen({ navigation, onSignedIn }) {
                 {loading ? 'Please wait…' : 'Log in'}
               </Text>
             </TouchableOpacity>
+
+            {error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : null}
 
             {/* Footer link */}
             <TouchableOpacity

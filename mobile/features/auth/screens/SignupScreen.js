@@ -1,111 +1,40 @@
-// mobile/screens/SignupScreen.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
+  Alert,
+  Animated,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-  Modal,
-  Animated,
+  View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/AuthStyles';
+import { startEmailSignup } from '../../../auth/cognito';
+import ChipRow from '../../profile/components/form-editor-components/ChipRow';
 
-// ✅ use the shared auth API instead of defining API_BASE here
-import { signup } from '../../../api/authAPI';
-
-/**
- * Reusable select field:
- * - Looks like a normal text input
- * - Opens a modal with a Picker when tapped
- */
-function SelectField({ label, value, placeholder, options, onChange }) {
-  const [visible, setVisible] = useState(false);
-  const [tempValue, setTempValue] = useState(value || '');
-
-  useEffect(() => {
-    if (visible) {
-      setTempValue(value || '');
-    }
-  }, [visible, value]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-  const displayText = selectedOption ? selectedOption.label : placeholder;
-
-  return (
-    <>
-      <Text style={styles.loginLabel}>{label}</Text>
-      <TouchableOpacity
-        style={styles.loginInput}
-        onPress={() => setVisible(true)}
-        activeOpacity={0.8}
-      >
-        <Text style={{ color: selectedOption ? '#FFFFFF' : '#D0E2FF' }}>
-          {displayText}
-        </Text>
-      </TouchableOpacity>
-
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setVisible(false)}
-      >
-        <View style={styles.dateModalOverlay}>
-          <View style={styles.dateModalContent}>
-            <View style={styles.dateModalHeader}>
-              <TouchableOpacity onPress={() => setVisible(false)}>
-                <Text style={styles.dateModalCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  onChange(tempValue);
-                  setVisible(false);
-                }}
-              >
-                <Text style={styles.dateModalDone}>Done</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Picker
-              selectedValue={tempValue}
-              onValueChange={(val) => setTempValue(val)}
-            >
-              <Picker.Item label={placeholder} value="" />
-              {options.map((opt) => (
-                <Picker.Item
-                  key={opt.value}
-                  label={opt.label}
-                  value={opt.value}
-                />
-              ))}
-            </Picker>
-          </View>
-        </View>
-      </Modal>
-    </>
-  );
-}
-
-export default function SignupScreen({ navigation, onSignedIn }) {
+export default function SignupScreen({ navigation }) {
+  const genderOptions = [
+    { label: 'Male', value: 'male' },
+    { label: 'Female', value: 'female' },
+    { label: 'Other', value: 'other' },
+  ];
   const [fullName, setFullName] = useState('');
-  const [gender, setGender] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [dobDate, setDobDate] = useState(new Date(2004, 0, 1));
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [gender, setGender] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState(null);
+  const [pendingDate, setPendingDate] = useState(new Date(2000, 0, 1));
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
   const insets = useSafeAreaInsets();
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -116,78 +45,93 @@ export default function SignupScreen({ navigation, onSignedIn }) {
     }).start();
   }, []);
 
-  function formatDate(d) {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  }
+  const formatDateOfBirth = (date) => {
+    if (!date) return '';
+    return date.toISOString().slice(0, 10);
+  };
+
+  const displayDateOfBirth = (date) => {
+    if (!date) return 'Tap to choose your date of birth';
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const normalizePhone = (value) => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return '';
+    const hasPlus = trimmed.startsWith('+');
+    const digits = trimmed.replace(/\D/g, '');
+    if (!digits) return '';
+    return hasPlus ? `+${digits}` : digits;
+  };
+
+  const isValidPhone = (value) => /^\+?\d{10,15}$/.test(value);
+
+  const openDatePicker = () => {
+    const baseDate = dateOfBirth || pendingDate;
+    setPendingDate(baseDate);
+    setShowDatePicker(true);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') {
+      if (event.type === 'set' && selectedDate) {
+        setDateOfBirth(selectedDate);
+      }
+      setShowDatePicker(false);
+    } else if (selectedDate) {
+      setPendingDate(selectedDate);
+    }
+  };
+
+  const handleDateCancel = () => {
+    setShowDatePicker(false);
+  };
+
+  const handleDateDone = () => {
+    setDateOfBirth(pendingDate);
+    setShowDatePicker(false);
+  };
 
   async function handleSignup() {
     try {
       setError('');
-
-      // ✅ validate *before* setting loading
-      if (!fullName?.trim()) {
-        setError('Please enter your full name');
-        return;
+      if (!fullName.trim()) {
+        throw new Error('Please enter your full name');
       }
-      if (!email?.trim()) {
-        setError('Please enter your email');
-        return;
-      }
-      if (!password) {
-        setError('Please enter a password');
-        return;
+      const normalizedPhone = normalizePhone(phoneNumber);
+      if (!normalizedPhone || !isValidPhone(normalizedPhone)) {
+        throw new Error('Please enter a valid phone number');
       }
       if (!gender) {
-        setError('Please select your gender');
-        return;
+        throw new Error('Please select a gender');
       }
       if (!dateOfBirth) {
-        setError('Please select your date of birth');
-        return;
+        throw new Error('Please choose your date of birth');
       }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) {
-        setError('Date of birth must be in YYYY-MM-DD format');
-        return;
-      }
-
-      const dobObj = new Date(dateOfBirth);
-      if (isNaN(dobObj.getTime())) {
-        setError('Date of birth is invalid');
-        return;
-      }
-      if (dobObj > new Date()) {
-        setError('Date of birth cannot be in the future');
-        return;
-      }
-
-      const payload = { email, password, fullName, dateOfBirth, gender };
-
       setLoading(true);
-
-      // ✅ use shared API helper
-      const json = await signup(payload);
-
-      onSignedIn(json);
+      const normalizedEmail = await startEmailSignup(email, password);
+      navigation.navigate('ConfirmOtp', {
+        email: normalizedEmail,
+        password,
+        fullName: fullName.trim(),
+        gender,
+        dateOfBirth: formatDateOfBirth(dateOfBirth),
+        phoneNumber: normalizedPhone,
+      });
     } catch (e) {
+      setError(String(e.message || e));
       Alert.alert('Error', String(e.message || e));
     } finally {
       setLoading(false);
     }
   }
 
-  const genderOptions = [
-    { label: 'Female', value: 'female' },
-    { label: 'Male', value: 'male' },
-    { label: 'Non-binary', value: 'non-binary' },
-    { label: 'Other', value: 'other' },
-  ];
-
   return (
     <SafeAreaView style={styles.loginContainer}>
-      {/* Back button, same as Login */}
       <TouchableOpacity
         onPress={() => navigation.navigate('Entry')}
         style={[styles.loginBackButton, { top: insets.top + 4 }]}
@@ -203,10 +147,7 @@ export default function SignupScreen({ navigation, onSignedIn }) {
           contentContainerStyle={styles.loginContent}
           keyboardShouldPersistTaps="handled"
         >
-          {/* White 6° logo centered */}
           <Text style={styles.loginLogo}>6°</Text>
-
-          {/* Centered heading */}
           <Text style={styles.loginTitle}>Create your account</Text>
 
           <Animated.View
@@ -216,9 +157,6 @@ export default function SignupScreen({ navigation, onSignedIn }) {
               opacity: fadeAnim,
             }}
           >
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            {/* Full name */}
             <Text style={styles.loginLabel}>Full name</Text>
             <TextInput
               style={styles.loginInput}
@@ -226,11 +164,19 @@ export default function SignupScreen({ navigation, onSignedIn }) {
               onChangeText={setFullName}
               placeholder="Jane Doe"
               placeholderTextColor="#D0E2FF"
-              autoCapitalize="words"
             />
 
-            {/* Email */}
-            <Text style={styles.loginLabel}>Email</Text>
+            <Text style={styles.loginLabel}>Phone number</Text>
+            <TextInput
+              style={styles.loginInput}
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              placeholder="(555) 123-4567"
+              placeholderTextColor="#D0E2FF"
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.loginLabel}>School email</Text>
             <TextInput
               style={styles.loginInput}
               value={email}
@@ -241,92 +187,44 @@ export default function SignupScreen({ navigation, onSignedIn }) {
               keyboardType="email-address"
             />
 
-            {/* Password */}
             <Text style={styles.loginLabel}>Password</Text>
             <TextInput
               style={styles.loginInput}
               value={password}
               onChangeText={setPassword}
-              placeholder="••••••••"
+              placeholder="Create a password"
               placeholderTextColor="#D0E2FF"
               secureTextEntry
             />
 
-            {/* Gender */}
-            <SelectField
-              label="Gender"
-              value={gender}
-              placeholder="Select gender…"
+            <Text style={styles.loginLabel}>Gender</Text>
+            <ChipRow
               options={genderOptions}
-              onChange={setGender}
+              selected={gender}
+              onSelect={setGender}
             />
 
-            {/* Date of birth */}
             <Text style={styles.loginLabel}>Date of birth</Text>
-            <TouchableOpacity
-              style={styles.loginInput}
-              onPress={() => setShowDatePicker(true)}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={styles.loginInput} onPress={openDatePicker}>
               <Text style={{ color: dateOfBirth ? '#FFFFFF' : '#D0E2FF' }}>
-                {dateOfBirth || 'Tap to choose your date of birth'}
+                {displayDateOfBirth(dateOfBirth)}
               </Text>
             </TouchableOpacity>
 
-            {/* Modal date picker */}
-            <Modal
-              visible={showDatePicker}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setShowDatePicker(false)}
-            >
-              <View style={styles.dateModalOverlay}>
-                <View style={styles.dateModalContent}>
-                  <View style={styles.dateModalHeader}>
-                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                      <Text style={styles.dateModalCancel}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setDateOfBirth(formatDate(dobDate));
-                        setShowDatePicker(false);
-                      }}
-                    >
-                      <Text style={styles.dateModalDone}>Done</Text>
-                    </TouchableOpacity>
-                  </View>
+            {error ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : null}
 
-                  <DateTimePicker
-                    value={dobDate}
-                    mode="date"
-                    maximumDate={new Date()}
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(_, selected) => {
-                      const current = selected || dobDate;
-                      setDobDate(current);
-
-                      if (Platform.OS === 'android') {
-                        setDateOfBirth(formatDate(current));
-                        setShowDatePicker(false);
-                      }
-                    }}
-                  />
-                </View>
-              </View>
-            </Modal>
-
-            {/* Create account button */}
             <TouchableOpacity
               style={[styles.loginButton, loading && { opacity: 0.6 }]}
               onPress={handleSignup}
               disabled={loading}
             >
               <Text style={styles.loginButtonText}>
-                {loading ? 'Please wait…' : 'Create account'}
+                {loading ? 'Sending code…' : 'Send code'}
               </Text>
             </TouchableOpacity>
 
-            {/* Footer link to Login */}
             <TouchableOpacity
               style={{ marginTop: 20, alignSelf: 'center' }}
               onPress={() => navigation.navigate('Login')}
@@ -339,6 +237,40 @@ export default function SignupScreen({ navigation, onSignedIn }) {
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {showDatePicker && Platform.OS === 'ios' ? (
+        <Modal transparent animationType="fade" visible={showDatePicker}>
+          <View style={styles.dateModalOverlay}>
+            <View style={styles.dateModalContent}>
+              <View style={styles.dateModalHeader}>
+                <Text style={styles.dateModalCancel} onPress={handleDateCancel}>
+                  Cancel
+                </Text>
+                <Text style={styles.dateModalDone} onPress={handleDateDone}>
+                  Done
+                </Text>
+              </View>
+              <DateTimePicker
+                value={pendingDate}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+
+      {showDatePicker && Platform.OS !== 'ios' ? (
+        <DateTimePicker
+          value={pendingDate}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+          maximumDate={new Date()}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

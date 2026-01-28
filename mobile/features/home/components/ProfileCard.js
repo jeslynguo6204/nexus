@@ -14,7 +14,6 @@ import {
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../../styles/themeNEW';
 import styles from '../../../styles/ProfileCardStyles';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
@@ -26,6 +25,7 @@ import {
   cancelFriendRequest,
   removeFriend,
 } from '../../../api/friendsAPI';
+import { getIdToken } from '../../../auth/tokens';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -232,7 +232,7 @@ export default function ProfileCard({
     const trackView = async () => {
       if (safePhotos[photoIndex]?.id) {
         try {
-          const token = await AsyncStorage.getItem('token');
+          const token = await getIdToken();
           if (token) {
             await trackPhotoView(token, safePhotos[photoIndex].id);
           }
@@ -335,7 +335,7 @@ export default function ProfileCard({
             onPress: async () => {
               try {
                 setFriendActionLoading(true);
-                const token = await AsyncStorage.getItem('token');
+                const token = await getIdToken();
                 if (!token) return;
                 await removeFriend(token, userId);
                 setFriendshipStatus('none');
@@ -353,7 +353,7 @@ export default function ProfileCard({
 
     try {
       setFriendActionLoading(true);
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) {
         console.error('No auth token found');
         return;

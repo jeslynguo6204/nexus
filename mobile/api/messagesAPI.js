@@ -1,6 +1,6 @@
 // mobile/api/messagesAPI.js
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { authHeaders } from '../auth/tokens';
 
 const getApiBase = () => {
   return Constants?.expoConfig?.extra?.apiBaseUrl || 'http://localhost:4000';
@@ -9,15 +9,14 @@ const getApiBase = () => {
 export async function sendMessage(matchId, messageBody, mode = 'romantic') {
   try {
     const API_BASE = getApiBase();
-    const token = await AsyncStorage.getItem('token');
-    if (!token) throw new Error('Not authenticated');
+    const headers = await authHeaders();
 
     const url = `${API_BASE}/messages/${matchId}/send?mode=${mode}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        ...headers,
       },
       body: JSON.stringify({ body: messageBody }),
     });
@@ -37,14 +36,13 @@ export async function sendMessage(matchId, messageBody, mode = 'romantic') {
 export async function getMessages(chatId, mode = 'romantic') {
   try {
     const API_BASE = getApiBase();
-    const token = await AsyncStorage.getItem('token');
-    if (!token) throw new Error('Not authenticated');
+    const headers = await authHeaders();
 
     const url = `${API_BASE}/messages/chat/${chatId}?mode=${mode}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        ...headers,
       },
     });
 
