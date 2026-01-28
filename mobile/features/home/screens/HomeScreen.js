@@ -13,7 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import SwipeDeck from '../components/SwipeDeck';
 import { getFeedProfiles } from '../../../api/feedAPI';
 import { getMyProfile } from '../../../api/profileAPI';
-import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
+import { trackPhotoLike, trackPhotoPass, fetchMyPhotos } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/ChatStyles';
@@ -26,6 +26,7 @@ export default function HomeScreen({ navigation }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [myUserId, setMyUserId] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
+  const [myPhotos, setMyPhotos] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
 
@@ -95,10 +96,21 @@ export default function HomeScreen({ navigation }) {
       const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
-      // Fetch my profile
+      // Fetch my profile and photos
       const profile = await getMyProfile();
+      const photos = await fetchMyPhotos(token);
+      
       if (isMountedRef.current) {
-        setNeedsProfileSetup(!profile?.gender);
+        // Check if profile needs setup:
+        // - Must have gender
+        // - Must have at least one photo
+        // - Must have at least one mode enabled
+        const hasNoPhotos = !photos || photos.length === 0;
+        const hasNoModes = !profile?.is_dating_enabled && !profile?.is_friends_enabled;
+        const hasNoGender = !profile?.gender;
+        
+        setNeedsProfileSetup(hasNoGender || hasNoPhotos || hasNoModes);
+        setMyPhotos(photos || []);
         const prevState = previousProfileStateRef.current;
         const newState = {
           gender: profile?.gender,
@@ -311,17 +323,17 @@ export default function HomeScreen({ navigation }) {
         <View style={homeStyles.emptyWrap}>
           <View style={homeStyles.emptyCard}>
             <Text style={homeStyles.emptyTitle}>
-              Finish your profile to start swiping
+              Finish building your profile to start swiping!
             </Text>
             <Text style={homeStyles.emptySub}>
-              Add your gender so we can match you with the right people.
+              Make sure your profile has at least one photo and that you have enabled at least one swiping mode.
             </Text>
           </View>
           <Pressable
             style={styles.emptyStateButton}
-            onPress={() => navigation?.navigate?.('Profile')}
+            onPress={() => navigation?.navigate?.('Profile', { openPreferences: true })}
           >
-            <Text style={styles.emptyStateButtonText}>Complete profile</Text>
+            <Text style={styles.emptyStateButtonText}>Complete my profile</Text>
           </Pressable>
         </View>
       ) : loadingFeed ? (

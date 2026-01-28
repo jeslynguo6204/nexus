@@ -38,6 +38,14 @@ export async function getFeedForUser(
     return [];
   }
 
+  // If viewer doesn't have the mode enabled, return empty feed
+  if (mode === "romantic" && !userProfile.is_dating_enabled) {
+    return [];
+  }
+  if (mode === "platonic" && !userProfile.is_friends_enabled) {
+    return [];
+  }
+
   // 2️⃣ DAO returns ONLY eligible profiles
   // (gender bidirectional logic now lives here)
   const eligibleProfiles = await FeedDao.getEligibleFeedProfiles(userId, {

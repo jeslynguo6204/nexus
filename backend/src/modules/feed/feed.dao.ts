@@ -72,14 +72,18 @@ type Scope = "school" | "league" | "area";
  *
  * Eligibility criteria (SQL):
  * 1. Viewer has gender
- * 2. Profile has gender (not null)
- * 3. Viewer's preference includes profile's gender (or viewer pref is 'everyone')
- * 4. Profile's preference includes viewer's gender (or profile pref is 'everyone')
- * 5. Profile has mode enabled (is_dating_enabled or is_friends_enabled)
- * 6. Profile is in discovery (show_me_in_discovery = true)
- * 7. Same scope (school/league/area)
- * 8. No active block between viewer and profile
- * 9. No active match between viewer and profile
+ * 2. Viewer has at least one photo
+ * 3. Viewer has at least one mode enabled (dating OR friends)
+ * 4. Viewer has the current mode enabled (romantic or platonic)
+ * 5. Profile has gender (not null)
+ * 6. Profile has at least one photo
+ * 7. Viewer's preference includes profile's gender (or viewer pref is 'everyone')
+ * 8. Profile's preference includes viewer's gender (or profile pref is 'everyone')
+ * 9. Profile has mode enabled (is_dating_enabled or is_friends_enabled)
+ * 10. Profile is in discovery (show_me_in_discovery = true)
+ * 11. Same scope (school/league/area)
+ * 12. No active block between viewer and profile
+ * 13. No active match between viewer and profile
  *
  * @param userId Viewer user ID
  * @param options Mode, scope, testing flag, limit
@@ -105,12 +109,18 @@ export async function getEligibleFeedProfiles(
     gender: string | null;
     dating_gender_preference: string | null;
     friends_gender_preference: string | null;
+    is_dating_enabled: boolean;
+    is_friends_enabled: boolean;
+    photo_count: number;
   }>(
     `
     SELECT u.school_id,
            p.gender,
            p.dating_gender_preference,
-           p.friends_gender_preference
+           p.friends_gender_preference,
+           p.is_dating_enabled,
+           p.is_friends_enabled,
+           (SELECT COUNT(*) FROM photos ph WHERE ph.user_id = u.id) AS photo_count
     FROM users u
     JOIN profiles p ON p.user_id = u.id
     WHERE u.id = $1
@@ -122,6 +132,24 @@ export async function getEligibleFeedProfiles(
 
   // If viewer has no profile or no gender, strict = empty feed
   if (!viewer || !viewer.gender) {
+    return [];
+  }
+
+  // If viewer has no photos, return empty feed
+  if (viewer.photo_count === 0) {
+    return [];
+  }
+
+  // If viewer doesn't have at least one mode enabled, return empty feed
+  if (!viewer.is_dating_enabled && !viewer.is_friends_enabled) {
+    return [];
+  }
+
+  // If viewer doesn't have the current mode enabled, return empty feed
+  if (mode === "romantic" && !viewer.is_dating_enabled) {
+    return [];
+  }
+  if (mode === "platonic" && !viewer.is_friends_enabled) {
     return [];
   }
 
@@ -155,6 +183,14 @@ export async function getEligibleFeedProfiles(
   } else {
     conditions.push(`p.is_friends_enabled = TRUE`);
   }
+
+  // Require at least one photo
+  conditions.push(`
+    EXISTS (
+      SELECT 1 FROM photos ph
+      WHERE ph.user_id = p.user_id
+    )
+  `);
 
   // Scope filtering
   if (scope === "school" && viewerSchoolId) {

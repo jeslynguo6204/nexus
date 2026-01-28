@@ -88,8 +88,19 @@ export async function createUserWithDefaults(params: {
 
     await client.query(
       `
-      INSERT INTO profiles (user_id, display_name, show_me_in_discovery, date_of_birth, gender, age)
-      VALUES ($1, $2, TRUE, $3, $4, $5)
+      INSERT INTO profiles (
+        user_id, 
+        display_name, 
+        show_me_in_discovery, 
+        date_of_birth, 
+        gender, 
+        age,
+        is_dating_enabled,
+        is_friends_enabled,
+        dating_gender_preference,
+        friends_gender_preference
+      )
+      VALUES ($1, $2, TRUE, $3, $4, $5, FALSE, FALSE, 'everyone', 'everyone')
       `,
       [userId, params.fullName, params.dateOfBirth ?? null, params.gender ?? null, age]
     );

@@ -79,8 +79,9 @@ export default function BottomTabs({ onSignOut }) {
       <Tab.Screen name="Chat" component={ChatStack} />
       <Tab.Screen
         name="Profile"
-        children={() => <ProfileScreen onSignOut={onSignOut} />}
-      />
+      >
+        {(props) => <ProfileScreen {...props} onSignOut={onSignOut} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }

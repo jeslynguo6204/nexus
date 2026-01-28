@@ -22,7 +22,7 @@ export default function GenderPreferenceSection({ draft, setField }) {
         <View style={[editProfileStyles.chipsWrap, !draft.isDatingEnabled && { opacity: 0.5 }]}>
           <ChipRow
             options={GENDER_OPTIONS}
-            selected={draft.datingGenderPreference || 'everyone'}
+            selected={draft.datingGenderPreference}
             onSelect={(v) => draft.isDatingEnabled && setField('datingGenderPreference', v)}
             disabled={!draft.isDatingEnabled}
           />
@@ -32,7 +32,7 @@ export default function GenderPreferenceSection({ draft, setField }) {
         <View style={[editProfileStyles.chipsWrap, !draft.isFriendsEnabled && { opacity: 0.5 }]}>
           <ChipRow
             options={GENDER_OPTIONS}
-            selected={draft.friendsGenderPreference || 'everyone'}
+            selected={draft.friendsGenderPreference}
             onSelect={(v) => draft.isFriendsEnabled && setField('friendsGenderPreference', v)}
             disabled={!draft.isFriendsEnabled}
           />
