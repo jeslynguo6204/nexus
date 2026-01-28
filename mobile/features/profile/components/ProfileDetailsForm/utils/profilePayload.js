@@ -34,6 +34,33 @@ function uniqueInts(arr) {
   return out;
 }
 
+function cleanTags(arr) {
+  const list = Array.isArray(arr) ? arr : [];
+  const cleaned = list
+    .map((s) => String(s || '').trim())
+    .filter((s) => s.length > 0);
+  // de-duplicate preserving order
+  const out = [];
+  const seen = new Set();
+  for (const s of cleaned) {
+    if (!seen.has(s)) {
+      seen.add(s);
+      out.push(s);
+    }
+  }
+  return out.slice(0, 3);
+}
+
+function arraysEqual(a, b) {
+  const aa = Array.isArray(a) ? a : [];
+  const bb = Array.isArray(b) ? b : [];
+  if (aa.length !== bb.length) return false;
+  for (let i = 0; i < aa.length; i++) {
+    if (String(aa[i]) !== String(bb[i])) return false;
+  }
+  return true;
+}
+
 export function buildProfileUpdatePayload(profile, draft) {
   const payload = {};
 
@@ -105,6 +132,17 @@ export function buildProfileUpdatePayload(profile, draft) {
   const originalFeatured = normalizeIdArray(profile?.featured_affiliations);
   if (JSON.stringify(originalFeatured) !== JSON.stringify(cleanedFeatured)) {
     payload.featuredAffiliations = cleanedFeatured.length > 0 ? cleanedFeatured : null;
+  }
+
+  // likes / dislikes (up to 3, trimmed, non-empty)
+  const nextLikes = cleanTags(draft.likes);
+  if (!arraysEqual(profile?.likes, nextLikes)) {
+    payload.likes = nextLikes.length > 0 ? nextLikes : null;
+  }
+
+  const nextDislikes = cleanTags(draft.dislikes);
+  if (!arraysEqual(profile?.dislikes, nextDislikes)) {
+    payload.dislikes = nextDislikes.length > 0 ? nextDislikes : null;
   }
 
   return payload;

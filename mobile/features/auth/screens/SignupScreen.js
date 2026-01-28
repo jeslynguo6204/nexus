@@ -3,19 +3,28 @@ import {
   Alert,
   Animated,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
+  View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/AuthStyles';
 import { startEmailSignup } from '../../../auth/cognito';
 
 export default function SignupScreen({ navigation }) {
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [gender, setGender] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState(null);
+  const [pendingDate, setPendingDate] = useState(new Date(2000, 0, 1));
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
@@ -30,14 +39,66 @@ export default function SignupScreen({ navigation }) {
     }).start();
   }, []);
 
+  const formatDateOfBirth = (date) => {
+    if (!date) return '';
+    return date.toISOString().slice(0, 10);
+  };
+
+  const displayDateOfBirth = (date) => {
+    if (!date) return 'Tap to choose your date of birth';
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const openDatePicker = () => {
+    const baseDate = dateOfBirth || pendingDate;
+    setPendingDate(baseDate);
+    setShowDatePicker(true);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') {
+      if (event.type === 'set' && selectedDate) {
+        setDateOfBirth(selectedDate);
+      }
+      setShowDatePicker(false);
+    } else if (selectedDate) {
+      setPendingDate(selectedDate);
+    }
+  };
+
+  const handleDateCancel = () => {
+    setShowDatePicker(false);
+  };
+
+  const handleDateDone = () => {
+    setDateOfBirth(pendingDate);
+    setShowDatePicker(false);
+  };
+
   async function handleSignup() {
     try {
       setError('');
+      if (!fullName.trim()) {
+        throw new Error('Please enter your full name');
+      }
+      if (!gender) {
+        throw new Error('Please select a gender');
+      }
+      if (!dateOfBirth) {
+        throw new Error('Please choose your date of birth');
+      }
       setLoading(true);
       const normalizedEmail = await startEmailSignup(email, password);
       navigation.navigate('ConfirmOtp', {
         email: normalizedEmail,
         password,
+        fullName: fullName.trim(),
+        gender,
+        dateOfBirth: formatDateOfBirth(dateOfBirth),
       });
     } catch (e) {
       setError(String(e.message || e));
@@ -74,6 +135,15 @@ export default function SignupScreen({ navigation }) {
               opacity: fadeAnim,
             }}
           >
+            <Text style={styles.loginLabel}>Full name</Text>
+            <TextInput
+              style={styles.loginInput}
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder="Jane Doe"
+              placeholderTextColor="#D0E2FF"
+            />
+
             <Text style={styles.loginLabel}>School email</Text>
             <TextInput
               style={styles.loginInput}
@@ -94,6 +164,30 @@ export default function SignupScreen({ navigation }) {
               placeholderTextColor="#D0E2FF"
               secureTextEntry
             />
+
+            <Text style={styles.loginLabel}>Gender</Text>
+            <View style={styles.pickerWrap}>
+              <Picker
+                selectedValue={gender}
+                onValueChange={setGender}
+                style={styles.picker}
+                itemStyle={{ color: '#FFFFFF' }}
+                dropdownIconColor="#FFFFFF"
+              >
+                <Picker.Item label="Select gender..." value="" />
+                <Picker.Item label="Female" value="female" />
+                <Picker.Item label="Male" value="male" />
+                <Picker.Item label="Non-binary" value="non-binary" />
+                <Picker.Item label="Other" value="other" />
+              </Picker>
+            </View>
+
+            <Text style={styles.loginLabel}>Date of birth</Text>
+            <TouchableOpacity style={styles.loginInput} onPress={openDatePicker}>
+              <Text style={{ color: dateOfBirth ? '#FFFFFF' : '#D0E2FF' }}>
+                {displayDateOfBirth(dateOfBirth)}
+              </Text>
+            </TouchableOpacity>
 
             {error ? (
               <Text style={styles.errorText}>{error}</Text>
@@ -121,6 +215,40 @@ export default function SignupScreen({ navigation }) {
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {showDatePicker && Platform.OS === 'ios' ? (
+        <Modal transparent animationType="fade" visible={showDatePicker}>
+          <View style={styles.dateModalOverlay}>
+            <View style={styles.dateModalContent}>
+              <View style={styles.dateModalHeader}>
+                <Text style={styles.dateModalCancel} onPress={handleDateCancel}>
+                  Cancel
+                </Text>
+                <Text style={styles.dateModalDone} onPress={handleDateDone}>
+                  Done
+                </Text>
+              </View>
+              <DateTimePicker
+                value={pendingDate}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+
+      {showDatePicker && Platform.OS !== 'ios' ? (
+        <DateTimePicker
+          value={pendingDate}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+          maximumDate={new Date()}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

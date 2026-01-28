@@ -55,6 +55,8 @@ export async function updateMyProfile(
     updates.location_description = input.locationDescription;
 
   if (input.interests !== undefined) updates.interests = input.interests;
+  if (input.likes !== undefined) updates.likes = input.likes;
+  if (input.dislikes !== undefined) updates.dislikes = input.dislikes;
   if (input.photos !== undefined) updates.photos = input.photos;
   if (input.affiliations !== undefined) updates.affiliations = input.affiliations;
 

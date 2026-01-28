@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   Pressable,
+  TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -13,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 
 import styles from '../../../styles/ChatStyles';
+import homeStyles from '../../../styles/HomeStyles';
 import { getChats, getAllMatches } from '../../../api/matchesAPI';
 import { getMyProfile } from '../../../api/profileAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
@@ -317,7 +319,7 @@ export default function InboxScreen({ navigation }) {
   // If no matches, show centered empty state
   if (matches.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {/* Top bar */}
         <View style={styles.topBar}>
           <Pressable style={styles.brandMark} hitSlop={10}>
@@ -338,9 +340,17 @@ export default function InboxScreen({ navigation }) {
         </View>
 
         {/* Centered empty state for no matches */}
-        <View style={styles.centeredEmptyState}>
-          <Text style={styles.emptyStateText}>No matches yet</Text>
-          <Text style={styles.emptyStateSubtext}>Start swiping to find matches!</Text>
+        <View style={homeStyles.emptyWrap}>
+          <View style={homeStyles.emptyCard}>
+            <Text style={homeStyles.emptyTitle}>No matches yet</Text>
+            <Text style={homeStyles.emptySub}>Start swiping to find matches!</Text>
+            <TouchableOpacity
+              style={styles.emptyStateButton}
+              onPress={() => navigation.navigate('Home')}
+            >
+              <Text style={styles.emptyStateButtonText}>Start swiping!</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );

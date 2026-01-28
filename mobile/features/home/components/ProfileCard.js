@@ -1,4 +1,4 @@
-// mobile/components/ProfileCardNew.js
+// mobile/components/ProfileCard.js
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
@@ -13,11 +13,12 @@ import {
   StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getIdToken } from '../../../auth/tokens';
-import styles from '../../../styles/ProfileCardStylesNew';
+import { COLORS } from '../../../styles/themeNEW';
+import styles from '../../../styles/ProfileCardStyles';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
 import BlockReportSheet from './BlockReportSheet';
 import { trackPhotoView } from '../../../api/photosAPI';
+import { getIdToken } from '../../../auth/tokens';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -124,12 +125,13 @@ const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeInd
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-export default function ProfileCardNew({ 
+export default function ProfileCard({ 
   profile, 
   photos, 
   onDetailsOpenChange,
   photoIndex: controlledPhotoIndex,
-  onPhotoIndexChange
+  onPhotoIndexChange,
+  isOwnProfile = false,
 }) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
@@ -214,8 +216,9 @@ export default function ProfileCardNew({
     expansion.setValue(0);
   }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Track photo views
+  // Track photo views (skip when previewing own profile)
   useEffect(() => {
+    if (isOwnProfile) return;
     const trackView = async () => {
       if (safePhotos[photoIndex]?.id) {
         try {
@@ -231,7 +234,7 @@ export default function ProfileCardNew({
     };
     
     trackView();
-  }, [photoIndex, safePhotos]);
+  }, [isOwnProfile, photoIndex, safePhotos]);
 
   const currentUri = hasPhotos ? safePhotos[photoIndex]?.uri : null;
 
@@ -264,7 +267,7 @@ export default function ProfileCardNew({
 
   const cardTranslateY = expansion.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, EXPAND_UPWARD_OFFSET],
+    outputRange: [0, isOwnProfile ? 0 : EXPAND_UPWARD_OFFSET],
   });
 
   const photoHeight = expansion.interpolate({
@@ -363,6 +366,8 @@ export default function ProfileCardNew({
     profile?.school_affiliations || profile?.residential_house || profile?.college_affiliation
   );
   const interests = normalizeList(profile?.interests).slice(0, 8);
+  const likes = normalizeList(profile?.likes).slice(0, 3);
+  const dislikes = normalizeList(profile?.dislikes).slice(0, 3);
 
   // Filter out dorms
   const allNonDormAffiliations = affiliationsInfo.filter((aff) => !aff.is_dorm);
@@ -475,7 +480,12 @@ export default function ProfileCardNew({
         <AnimatedScrollView
           ref={scrollRef}
           style={{ flex: 1 }}
-          contentContainerStyle={[styles.expandedScrollContent, !moreOpen && { paddingBottom: 0 }]}
+          contentContainerStyle={[
+            styles.expandedScrollContent,
+            !moreOpen && { paddingBottom: 0 },
+            moreOpen && !isOwnProfile && { paddingBottom: 36 },
+            isOwnProfile && moreOpen && { paddingBottom: 8, flexGrow: 0 },
+          ]}
           scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator={false}
           bounces={moreOpen}
@@ -561,8 +571,8 @@ export default function ProfileCardNew({
             </View>
           </Animated.View>
 
-          <View style={styles.expandedContent}>
-            {/* ABOUT */}
+          <View style={[styles.expandedContent, isOwnProfile && { paddingBottom: 8 }]}>
+            {/* ABOUT section (with heading) */}
             {(academicYear || major || dormName || hometown) && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>ABOUT</Text>
@@ -573,9 +583,54 @@ export default function ProfileCardNew({
                   </Text>
                 )}
 
-                {dormName && <Text style={styles.aboutLineSecondary}>Lives in {dormName}</Text>}
+                {dormName && (
+                  <Text style={styles.aboutLineSecondary}>Lives in {dormName}</Text>
+                )}
 
-                {hometown && <Text style={styles.aboutLineSecondary}>From {hometown}</Text>}
+                {hometown && (
+                  <Text style={styles.aboutLineSecondary}>From {hometown}</Text>
+                )}
+              </View>
+            )}
+
+            {(academicYear || major || dormName || hometown) && (
+              <View style={styles.divider} />
+            )}
+
+            {/* Likes & Dislikes */}
+            {(likes.length > 0 || dislikes.length > 0) && (
+              <View style={styles.section}>
+                {likes.length > 0 && (
+                  <>
+                    <Text style={styles.sectionLabel}>LIKES</Text>
+                    <View style={styles.inlineLine} pointerEvents="none">
+                      {likes.map((like, idx) => (
+                        <React.Fragment key={`like-${idx}`}>
+                          {idx > 0 ? <View style={styles.inlineDot} /> : null}
+                          <Text style={styles.inlineItem} numberOfLines={1}>
+                            {like}
+                          </Text>
+                        </React.Fragment>
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                {dislikes.length > 0 && (
+                  <View style={{ marginTop: 14 }}>
+                    <Text style={styles.sectionLabel}>DISLIKES</Text>
+                    <View style={styles.inlineLine} pointerEvents="none">
+                      {dislikes.map((dislike, idx) => (
+                        <React.Fragment key={`dislike-${idx}`}>
+                          {idx > 0 ? <View style={styles.inlineDot} /> : null}
+                          <Text style={styles.inlineItem} numberOfLines={1}>
+                            {dislike}
+                          </Text>
+                        </React.Fragment>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
             )}
 
@@ -610,13 +665,20 @@ export default function ProfileCardNew({
             {interests.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>INTERESTS</Text>
-                <Text style={styles.inlineText} numberOfLines={2}>
-                  {interests.slice(0, 8).join(' · ')}
-                </Text>
+                <View style={styles.inlineLine} pointerEvents="none">
+                  {interests.slice(0, 8).map((interest, idx) => (
+                    <React.Fragment key={`interest-${idx}`}>
+                      {idx > 0 ? <View style={styles.inlineDot} /> : null}
+                      <Text style={styles.inlineItem} numberOfLines={1}>
+                        {interest}
+                      </Text>
+                    </React.Fragment>
+                  ))}
+                </View>
               </View>
             )}
 
-            <View style={{ height: 26 }} />
+            <View style={{ height: isOwnProfile ? 0 : 14 }} />
           </View>
         </AnimatedScrollView>
       </Animated.View>
@@ -633,17 +695,18 @@ export default function ProfileCardNew({
         sexuality={coalesce(profile?.sexuality)}
       />
 
-      {/* Block/Report Sheet */}
-      <BlockReportSheet
-        visible={blockReportSheetOpen}
-        onClose={() => setBlockReportSheetOpen(false)}
-        userId={profile?.user_id || profile?.id}
-        userName={firstName}
-        onBlocked={() => {
-          // Callback when user is blocked - could trigger a refresh or navigation
-          setBlockReportSheetOpen(false);
-        }}
-      />
+      {/* Block/Report Sheet (hidden when previewing own profile) */}
+      {!isOwnProfile && (
+        <BlockReportSheet
+          visible={blockReportSheetOpen}
+          onClose={() => setBlockReportSheetOpen(false)}
+          userId={profile?.user_id || profile?.id}
+          userName={firstName}
+          onBlocked={() => {
+            setBlockReportSheetOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }

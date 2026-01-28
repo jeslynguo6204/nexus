@@ -1,7 +1,7 @@
-// mobile/components/SwipeDeckNew.js
+// mobile/components/SwipeDeck.js
 import React, { useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { View, Animated, PanResponder, Dimensions, StyleSheet } from 'react-native';
-import ProfileCardNew from './ProfileCardNew';
+import ProfileCard from './ProfileCard';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -12,7 +12,7 @@ const CARD_HEIGHT = Math.min(IDEAL_HEIGHT, SCREEN_HEIGHT * 0.78);
 
 const SWIPE_THRESHOLD = 0.25 * SCREEN_WIDTH;
 
-export default function SwipeDeckNew({
+export default function SwipeDeck({
   profiles = [],
   currentIndex = 0,
   onSwipeRight,
@@ -172,7 +172,7 @@ export default function SwipeDeckNew({
                 ]}
                 pointerEvents="none"
               >
-                <ProfileCardNew profile={p} photos={p?.photos || []} />
+                <ProfileCard profile={p} photos={p?.photos || []} />
               </View>
             );
           }
@@ -191,7 +191,7 @@ export default function SwipeDeckNew({
                 },
               ]}
             >
-              <ProfileCardNew
+              <ProfileCard
                 profile={p}
                 photos={p?.photos || []}
                 onDetailsOpenChange={setDetailsOpen}

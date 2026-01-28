@@ -58,6 +58,8 @@ export function profileToDraft(profile) {
   return {
     // About
     bio: profile?.bio ?? '',
+    likes: splitCsvToArray(profile?.likes),
+    dislikes: splitCsvToArray(profile?.dislikes),
     prompts: '',
 
     // Identity

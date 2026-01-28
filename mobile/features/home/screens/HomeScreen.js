@@ -1,4 +1,4 @@
-// mobile/screens/HomeScreenNew.js
+// mobile/screens/HomeScreen.js
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 
-import SwipeDeckNew from '../components/SwipeDeckNew';
+import SwipeDeck from '../components/SwipeDeck';
 import { getFeedProfiles } from '../../../api/feedAPI';
 import { getMyProfile } from '../../../api/profileAPI';
 import { trackPhotoLike, trackPhotoPass } from '../../../api/photosAPI';
@@ -18,8 +18,9 @@ import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/ChatStyles';
 import { getIdToken } from '../../../auth/tokens';
+import homeStyles from '../../../styles/HomeStyles';
 
-export default function HomeScreenNew({ navigation }) {
+export default function HomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -237,7 +238,7 @@ export default function HomeScreenNew({ navigation }) {
         );
       }
       
-      // moveToNextCard is handled by onNext callback from SwipeDeckNew
+      // moveToNextCard is handled by onNext callback from SwipeDeck
     } catch (e) {
       console.warn(e);
       // Don't show alert for tracking failures
@@ -264,7 +265,7 @@ export default function HomeScreenNew({ navigation }) {
         await trackPhotoPass(token, profile.photos[photoIndex].id);
       }
       
-      // moveToNextCard is handled by onNext callback from SwipeDeckNew
+      // moveToNextCard is handled by onNext callback from SwipeDeck
     } catch (e) {
       console.warn(e);
       // Don't show alert for tracking failures
@@ -306,41 +307,45 @@ export default function HomeScreenNew({ navigation }) {
         />
       </View>
 
-      <View style={styles.centeredEmptyState}>
-        {needsProfileSetup ? (
-          <View style={styles.centeredEmptyState}>
-            <Text style={styles.emptyStateText}>
+      {needsProfileSetup ? (
+        <View style={homeStyles.emptyWrap}>
+          <View style={homeStyles.emptyCard}>
+            <Text style={homeStyles.emptyTitle}>
               Finish your profile to start swiping
             </Text>
-            <Text style={styles.emptyStateSubtext}>
+            <Text style={homeStyles.emptySub}>
               Add your gender so we can match you with the right people.
             </Text>
-            <Pressable
-              style={styles.completeProfileButton}
-              onPress={() => navigation.navigate('Profile')}
-            >
-              <Text style={styles.completeProfileButtonText}>Complete profile</Text>
-            </Pressable>
           </View>
-        ) : loadingFeed ? (
+          <Pressable
+            style={styles.emptyStateButton}
+            onPress={() => navigation?.navigate?.('Profile')}
+          >
+            <Text style={styles.emptyStateButtonText}>Complete profile</Text>
+          </Pressable>
+        </View>
+      ) : loadingFeed ? (
+        <View style={styles.centeredEmptyState}>
           <ActivityIndicator />
-        ) : current ? (
-          <SwipeDeckNew
-            profiles={profiles}
-            currentIndex={currentIndex}
-            onSwipeRight={handleSwipeRight}
-            onSwipeLeft={handleSwipeLeft}
-            onNext={moveToNextCard}
-          />
-        ) : (
-          <View style={styles.centeredEmptyState}>
-            <Text style={styles.emptyStateText}>
+        </View>
+      ) : current ? (
+        <SwipeDeck
+          profiles={profiles}
+          currentIndex={currentIndex}
+          onSwipeRight={handleSwipeRight}
+          onSwipeLeft={handleSwipeLeft}
+          onNext={moveToNextCard}
+        />
+      ) : (
+        <View style={homeStyles.emptyWrap}>
+          <View style={homeStyles.emptyCard}>
+            <Text style={homeStyles.emptyTitle}>
               That's all for now!
             </Text>
-            <Text style={styles.emptyStateSubtext}>Check back later for new profiles.</Text>
+            <Text style={homeStyles.emptySub}>Check back later for new profiles.</Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

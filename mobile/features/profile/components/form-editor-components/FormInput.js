@@ -6,6 +6,7 @@ import { COLORS } from '@/styles/themeNEW';
 export default function FormInput({
   value,
   onChangeText,
+  onBlur,
   placeholder,
   multiline = false,
   style,
@@ -14,6 +15,7 @@ export default function FormInput({
     <TextInput
       value={value}
       onChangeText={onChangeText}
+      onBlur={onBlur}
       placeholder={placeholder}
       placeholderTextColor={COLORS.textMuted}
       multiline={multiline}

@@ -36,9 +36,12 @@ import {
   Alert,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Modal,
   Image,
+  useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -46,11 +49,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm/ProfilePreferencesForm';
-import ProfileCardNew from '../../home/components/ProfileCardNew';
+import ProfileCard from '../../home/components/ProfileCard';
 import PreviewModal from '../components/PreviewModal';
 
 import { COLORS } from '../../../styles/ProfileFormStyles';
 import styles from '../../../styles/ProfileScreenStyles';
+import chatStyles from '../../../styles/ChatStyles';
 
 // ✅ API helpers
 import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../../../api/photosAPI';
@@ -196,6 +200,28 @@ export default function ProfileScreen({ onSignOut }) {
       .filter(Boolean);
   }, [profile?.affiliations_info, profile?.affiliations, affiliations]);
 
+  const { width: winW, height: winH } = useWindowDimensions();
+  const PREVIEW_CARD_WIDTH = winW - 32;
+  const PREVIEW_CARD_HEIGHT = Math.min(PREVIEW_CARD_WIDTH * 1.6, winH * 0.55);
+  const PHOTO_GAP = 8;
+  const scrollPaddingH = 20;
+  const safeH = (insets?.left ?? 0) + (insets?.right ?? 0);
+  const photoAreaWidth = winW - safeH - scrollPaddingH;
+  const photoSize = Math.floor((photoAreaWidth - 2 * PHOTO_GAP - 42) / 3);
+
+  // Shape own profile for ProfileCard (same format as discover feed cards)
+  const previewProfile = useMemo(() => {
+    if (!profile) return null;
+    return {
+      ...profile,
+      id: profile.user_id,
+      affiliations_info: enrichedAffiliationsInfo,
+      // school already from API; ensure school_short_name for card subtitle
+      school_short_name: profile.school?.short_name ?? profile.school_short_name,
+      school_name: profile.school?.name ?? profile.school_name,
+    };
+  }, [profile, enrichedAffiliationsInfo]);
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
   const availableInterests = INTEREST_OPTIONS.filter(
@@ -321,10 +347,11 @@ export default function ProfileScreen({ onSignOut }) {
     photos.length < 6 ? [...photos, { id: 'add-tile', isAdd: true }] : photos;
 
   const renderPhotoItem = ({ item, drag, isActive }) => {
+    const slotStyle = [styles.photoSlot, { width: photoSize, height: photoSize }];
     if (item.isAdd) {
       return (
         <TouchableOpacity
-          style={[styles.photoSlot, styles.addPhotoSlot]}
+          style={[...slotStyle, styles.addPhotoSlot]}
           onPress={pickPhoto}
           disabled={photoBusy}
         >
@@ -335,7 +362,7 @@ export default function ProfileScreen({ onSignOut }) {
 
     return (
       <TouchableOpacity
-        style={[styles.photoSlot, isActive && styles.photoSlotActive]}
+        style={[...slotStyle, isActive && styles.photoSlotActive]}
         onLongPress={drag}
         delayLongPress={120}
         onPress={() => removePhoto(item.id)}
@@ -347,94 +374,102 @@ export default function ProfileScreen({ onSignOut }) {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.headerRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>My Profile</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setPrefsVisible(true)}
-              style={styles.iconButton}
-            >
-              <FontAwesome name="cog" size={18} color={COLORS.text} />
-            </TouchableOpacity>
-          </View>
+    <SafeAreaView style={chatStyles.container} edges={['top', 'left', 'right']}>
+      {/* Top bar matching Matches/Chat exactly */}
+      <View style={chatStyles.topBar}>
+        <Pressable style={chatStyles.brandMark} hitSlop={10}>
+          <Text style={chatStyles.brandMarkText}>6°</Text>
+        </Pressable>
 
-          <View style={styles.card}>
-            {profile ? (
-              <>
-                <View style={styles.profileRow}>
-                  {primaryPhotoUrl ? (
-                    <Image source={{ uri: primaryPhotoUrl }} style={styles.avatarImage} />
-                  ) : (
-                    <View style={styles.avatar} />
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.nameText}>
-                      {profile.display_name || 'Add your name'}
-                    </Text>
-                    <Text style={styles.metaText}>
-                      {(() => {
-                        const schoolShortName = profile?.school?.short_name || profile?.school?.name || '';
-                        const gradYearShort = profile.graduation_year ? `'${String(profile.graduation_year).slice(-2)}` : '';
-                        const schoolAndYear = schoolShortName && gradYearShort 
-                          ? `${schoolShortName} ${gradYearShort}` 
-                          : schoolShortName || gradYearShort;
-                        
-                        // Get featured affiliations (up to 2)
-                        // Only show featured affiliations if they are explicitly selected
-                        // If empty or not set, don't show any (no fallback to regular affiliations)
-                        const featuredAffiliationIds = profile?.featured_affiliations || [];
-                        let featuredAffiliationNames = [];
-                        
-                        if (Array.isArray(featuredAffiliationIds) && featuredAffiliationIds.length > 0 && affiliations.length > 0) {
-                          featuredAffiliationNames = featuredAffiliationIds
-                            .slice(0, 2)
-                            .map((featuredId) => {
-                              const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
-                              const found = affiliations.find((aff) => {
-                                const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
-                                return affId === normalizedFeatured;
-                              });
-                              return found ? (found.short_name || found.name) : null;
-                            })
-                            .filter(Boolean);
-                        }
-                        
-                        const parts = [schoolAndYear, ...featuredAffiliationNames].filter(Boolean);
-                        return parts.join(' · ');
-                      })()}
-                    </Text>
-                  </View>
+        <View style={chatStyles.centerSlot}>
+          <Text style={chatStyles.title}>Profile</Text>
+        </View>
+
+        <View style={chatStyles.rightSlot}>
+          <TouchableOpacity
+            onPress={() => setPrefsVisible(true)}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <FontAwesome name="cog" size={22} color="#111111" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.card}>
+          {profile ? (
+            <>
+              <View style={styles.profileRow}>
+                {primaryPhotoUrl ? (
+                  <Image source={{ uri: primaryPhotoUrl }} style={styles.avatarImage} />
+                ) : (
+                  <View style={styles.avatar} />
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.nameText}>
+                    {profile.display_name || 'Add your name'}
+                  </Text>
+                  <Text style={styles.metaText}>
+                    {(() => {
+                      const schoolShortName = profile?.school?.short_name || profile?.school?.name || '';
+                      const gradYearShort = profile.graduation_year ? `'${String(profile.graduation_year).slice(-2)}` : '';
+                      const schoolAndYear = schoolShortName && gradYearShort 
+                        ? `${schoolShortName} ${gradYearShort}` 
+                        : schoolShortName || gradYearShort;
+                      
+                      // Get featured affiliations (up to 2)
+                      // Only show featured affiliations if they are explicitly selected
+                      // If empty or not set, don't show any (no fallback to regular affiliations)
+                      const featuredAffiliationIds = profile?.featured_affiliations || [];
+                      let featuredAffiliationNames = [];
+                      
+                      if (Array.isArray(featuredAffiliationIds) && featuredAffiliationIds.length > 0 && affiliations.length > 0) {
+                        featuredAffiliationNames = featuredAffiliationIds
+                          .slice(0, 2)
+                          .map((featuredId) => {
+                            const normalizedFeatured = typeof featuredId === 'string' ? parseInt(featuredId, 10) : featuredId;
+                            const found = affiliations.find((aff) => {
+                              const affId = typeof aff.id === 'string' ? parseInt(aff.id, 10) : aff.id;
+                              return affId === normalizedFeatured;
+                            });
+                            return found ? (found.short_name || found.name) : null;
+                          })
+                          .filter(Boolean);
+                      }
+                      
+                      const parts = [schoolAndYear, ...featuredAffiliationNames].filter(Boolean);
+                      return parts.join(' · ');
+                    })()}
+                  </Text>
                 </View>
+              </View>
 
-                <Text style={[styles.metaText, { marginTop: 8 }]}>
-                  {profile.bio ? profile.bio : 'Add a short bio'}
-                </Text>
+              <Text style={[styles.metaText, { marginTop: 8 }]}>
+                {profile.bio ? profile.bio : 'Add a short bio'}
+              </Text>
 
-                <View style={styles.actionsRow}>
-                  <TouchableOpacity
-                    style={[styles.primaryButton, { flex: 1, marginRight: 8 }]}
-                    onPress={() => setEditVisible(true)}
-                  >
-                    <Text style={styles.primaryButtonText}>Edit Profile</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.secondaryButton, { flex: 1, marginLeft: 8 }]}
-                    onPress={() => setPreviewVisible(true)}
-                  >
-                    <Text style={styles.secondaryButtonText}>Preview Profile</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            ) : (
-              <Text style={styles.metaText}>No profile found.</Text>
-            )}
-          </View>
+              <View style={styles.actionsRow}>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { flex: 1, marginRight: 8 }]}
+                  onPress={() => setEditVisible(true)}
+                >
+                  <Text style={styles.primaryButtonText}>Edit Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { flex: 1, marginLeft: 8 }]}
+                  onPress={() => setPreviewVisible(true)}
+                >
+                  <Text style={styles.secondaryButtonText}>Preview Profile</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.metaText}>No profile found.</Text>
+          )}
+        </View>
 
           {/* Interests */}
           <View style={{ marginTop: 20 }}>
@@ -483,7 +518,7 @@ export default function ProfileScreen({ onSignOut }) {
               scrollEnabled={false}
               activationDistance={12}
               contentContainerStyle={styles.photoGrid}
-              columnWrapperStyle={styles.photoRow}
+              columnWrapperStyle={[styles.photoRow, { gap: PHOTO_GAP }]}
               onDragBegin={() => setPhotoBusy(true)}
               onDragEnd={({ data, from, to }) => handlePhotoReorder(data, from, to)}
             />
@@ -572,18 +607,18 @@ export default function ProfileScreen({ onSignOut }) {
 
       <PreviewModal
         visible={previewVisible}
-        title="Profile preview"
         onClose={() => setPreviewVisible(false)}
       >
-        <ProfileCardNew 
-          profile={{
-            ...profile,
-            affiliations_info: enrichedAffiliationsInfo
-          }} 
-          photos={photos} 
-        />
+        {previewProfile && (
+          <View style={[styles.previewCardWrap, { width: PREVIEW_CARD_WIDTH, height: PREVIEW_CARD_HEIGHT }]}>
+            <ProfileCard
+              profile={previewProfile}
+              photos={photos}
+              isOwnProfile
+            />
+          </View>
+        )}
       </PreviewModal>
-
-    </View>
+    </SafeAreaView>
   );
 }

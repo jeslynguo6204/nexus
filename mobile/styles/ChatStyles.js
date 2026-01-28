@@ -14,6 +14,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: 0,
+    marginTop: -6,
   },
 
   brandMark: {
@@ -204,16 +205,23 @@ export default StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  completeProfileButton: {
+  emptyStateButton: {
     marginTop: 16,
-    backgroundColor: '#1F6299',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 999,
+    backgroundColor: '#111111',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
-  completeProfileButtonText: {
+  emptyStateButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
+    textAlign: 'center',
+  },
   },
 });

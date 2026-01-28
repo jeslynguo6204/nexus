@@ -13,6 +13,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/AuthStyles';
 import { confirmEmailOtp, login, resendOtp } from '../../../auth/cognito';
+import { signup as signupToBackend } from '../../../api/authAPI';
 
 export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   const [code, setCode] = useState('');
@@ -24,6 +25,9 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
 
   const email = route?.params?.email || '';
   const password = route?.params?.password || '';
+  const fullName = route?.params?.fullName || '';
+  const gender = route?.params?.gender || '';
+  const dateOfBirth = route?.params?.dateOfBirth || '';
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -38,6 +42,13 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
       setError('');
       setLoading(true);
       await confirmEmailOtp(email, code);
+      await signupToBackend({
+        fullName,
+        email,
+        password,
+        dateOfBirth,
+        gender,
+      });
       await login(email, password);
       if (onSignedIn) {
         onSignedIn();
