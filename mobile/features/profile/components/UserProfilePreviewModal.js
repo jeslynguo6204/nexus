@@ -5,7 +5,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getIdToken } from '../../../auth/tokens';
 import { getUserProfile } from '../../../api/profileAPI';
 import PreviewModal from './PreviewModal';
 import ProfileCard from '../../home/components/ProfileCard';
@@ -38,7 +38,7 @@ export default function UserProfilePreviewModal({
 
     (async () => {
       try {
-        const token = await AsyncStorage.getItem('token');
+        const token = await getIdToken();
         if (!token || cancelled) return;
         const data = await getUserProfile(token, userId);
         if (!cancelled) setProfile(data);

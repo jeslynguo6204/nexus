@@ -20,6 +20,7 @@ import {
   acceptFriendRequest,
   declineFriendRequest,
 } from '../../../api/friendsAPI';
+import { getIdToken } from '../../../auth/tokens';
 
 import styles from '../../../styles/ChatStyles';
 import homeStyles from '../../../styles/HomeStyles';
@@ -73,7 +74,7 @@ export default function LikesScreen() {
   const loadFriendRequests = useCallback(async () => {
     try {
       setRequestsLoading(true);
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       const requests = await getPendingFriendRequestsDetailed(token);
@@ -95,7 +96,7 @@ export default function LikesScreen() {
   const handleAcceptRequest = useCallback(async (requesterId) => {
     try {
       setProcessingRequest(requesterId);
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       await acceptFriendRequest(token, requesterId);
@@ -115,7 +116,7 @@ export default function LikesScreen() {
   const handleDeclineRequest = useCallback(async (requesterId) => {
     try {
       setProcessingRequest(requesterId);
-      const token = await AsyncStorage.getItem('token');
+      const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
       await declineFriendRequest(token, requesterId);
