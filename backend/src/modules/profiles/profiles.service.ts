@@ -1,15 +1,93 @@
 // src/modules/profiles/profiles.service.ts
 import {
   getProfileByUserId,
+  getPublicProfileByUserId,
   updateProfileByUserId,
   ProfileRow,
   ProfileUpdateInput as ProfileUpdateDbInput,
 } from "./profiles.dao";
 import { ProfileUpdateBody } from "./profiles.validation";
+import { getPhotosForUser } from "../photos/photos.dao";
+import { dbQuery } from "../../db/pool";
 
 export async function getMyProfile(userId: number): Promise<ProfileRow | null> {
   const row = await getProfileByUserId(userId);
   return row ? mapProfileRow(row) : null;
+}
+
+export async function getUserProfile(
+  currentUserId: number,
+  otherUserId: number
+): Promise<any | null> {
+  const row = await getPublicProfileByUserId(otherUserId, currentUserId);
+  if (!row) return null;
+
+  // Fetch photos for the user
+  const photos = await getPhotosForUser(otherUserId);
+
+  // Fetch affiliations info
+  let affiliationsInfo: any[] = [];
+  let dorm: any = null;
+
+  if (Array.isArray(row.affiliations) && row.affiliations.length > 0) {
+    const affiliationRows = await dbQuery<{
+      id: number;
+      name: string;
+      short_name: string | null;
+      category_id: number;
+      category_name: string;
+    }>(
+      `
+      SELECT
+        a.id,
+        a.name,
+        a.short_name,
+        a.category_id,
+        ac.name AS category_name
+      FROM affiliations a
+      JOIN affiliation_categories ac ON ac.id = a.category_id
+      WHERE a.id = ANY($1::int[])
+      `,
+      [row.affiliations]
+    );
+
+    const dormCategory = await dbQuery<{ id: number }>(
+      `SELECT id
+       FROM affiliation_categories
+       WHERE (LOWER(name) = 'dorm' OR LOWER(name) = 'dorms' OR LOWER(name) LIKE '%dorm%')
+         AND LOWER(name) NOT LIKE '%house%'
+       LIMIT 1`
+    );
+    const dormCategoryId = dormCategory[0]?.id;
+
+    affiliationsInfo = affiliationRows.map((affRow) => {
+      const isDorm =
+        affRow.category_id === dormCategoryId &&
+        !affRow.category_name.toLowerCase().includes("house");
+
+      return {
+        id: affRow.id,
+        name: affRow.name,
+        short_name: affRow.short_name,
+        category_id: affRow.category_id,
+        category_name: affRow.category_name,
+        is_dorm: isDorm,
+      };
+    });
+
+    const dormAffil = affiliationsInfo.find((a) => a.is_dorm);
+    if (dormAffil) {
+      dorm = dormAffil;
+      affiliationsInfo = affiliationsInfo.filter((a) => !a.is_dorm);
+    }
+  }
+
+  return mapPublicProfileRow({
+    ...row,
+    photos,
+    affiliations_info: affiliationsInfo.length ? affiliationsInfo : null,
+    dorm,
+  });
 }
 
 export async function updateMyProfile(
@@ -99,4 +177,16 @@ function mapProfileRow(row: ProfileRow): ProfileRow {
       short_name: (row as any).school_short_name ?? null,
     },
   } as ProfileRow;
+}
+
+// shape public profile row for API consumers
+function mapPublicProfileRow(row: any): any {
+  return {
+    ...row,
+    school: {
+      id: row.school_id ?? null,
+      name: row.school_name ?? null,
+      short_name: row.school_short_name ?? null,
+    },
+  };
 }

@@ -11,6 +11,7 @@ import {
   Dimensions,
   Easing,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,6 +20,12 @@ import styles from '../../../styles/ProfileCardStyles';
 import MoreAboutMeSheet from './MoreAboutMeSheet';
 import BlockReportSheet from './BlockReportSheet';
 import { trackPhotoView } from '../../../api/photosAPI';
+import {
+  sendFriendRequest,
+  acceptFriendRequest,
+  cancelFriendRequest,
+  removeFriend,
+} from '../../../api/friendsAPI';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -125,13 +132,14 @@ const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeInd
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-export default function ProfileCard({ 
-  profile, 
-  photos, 
+export default function ProfileCard({
+  profile,
+  photos,
   onDetailsOpenChange,
   photoIndex: controlledPhotoIndex,
   onPhotoIndexChange,
   isOwnProfile = false,
+  disableUpwardExpansion = false,
 }) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
@@ -145,6 +153,8 @@ export default function ProfileCard({
   const [scrollEnabled, setScrollEnabled] = useState(false);
   const [moreAboutMeOpen, setMoreAboutMeOpen] = useState(false);
   const [blockReportSheetOpen, setBlockReportSheetOpen] = useState(false);
+  const [friendshipStatus, setFriendshipStatus] = useState(profile?.friendship_status || 'none');
+  const [friendActionLoading, setFriendActionLoading] = useState(false);
 
   const scrollRef = useRef(null);
   const isClosingRef = useRef(false);
@@ -267,7 +277,7 @@ export default function ProfileCard({
 
   const cardTranslateY = expansion.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, isOwnProfile ? 0 : EXPAND_UPWARD_OFFSET],
+    outputRange: [0, (isOwnProfile || disableUpwardExpansion) ? 0 : EXPAND_UPWARD_OFFSET],
   });
 
   const photoHeight = expansion.interpolate({
@@ -293,7 +303,94 @@ export default function ProfileCard({
     if (moreOpen) closeMore();
     else setMoreOpen(true);
   }, [moreOpen, closeMore]);
-  
+
+  // Update friendship status when profile changes
+  useEffect(() => {
+    if (profile?.friendship_status) {
+      setFriendshipStatus(profile.friendship_status);
+    }
+  }, [profile?.friendship_status]);
+
+  // Friend button handlers
+  const handleFriendAction = useCallback(async () => {
+    if (friendActionLoading || isOwnProfile) return;
+
+    const userId = profile?.user_id || profile?.id;
+    if (!userId) {
+      console.error('No user ID found');
+      return;
+    }
+
+    const name = getFirstName(profile?.display_name || profile?.name) || 'this person';
+
+    if (friendshipStatus === 'friends') {
+      Alert.alert(
+        'Unfriend?',
+        `Do you want to unfriend ${name}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Unfriend',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                setFriendActionLoading(true);
+                const token = await AsyncStorage.getItem('token');
+                if (!token) return;
+                await removeFriend(token, userId);
+                setFriendshipStatus('none');
+              } catch (error) {
+                console.error('Friend action error:', error);
+              } finally {
+                setFriendActionLoading(false);
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    try {
+      setFriendActionLoading(true);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      if (friendshipStatus === 'none') {
+        await sendFriendRequest(token, userId);
+        setFriendshipStatus('pending_sent');
+      } else if (friendshipStatus === 'pending_sent') {
+        await cancelFriendRequest(token, userId);
+        setFriendshipStatus('none');
+      } else if (friendshipStatus === 'pending_received') {
+        await acceptFriendRequest(token, userId);
+        setFriendshipStatus('friends');
+      }
+    } catch (error) {
+      console.error('Friend action error:', error);
+    } finally {
+      setFriendActionLoading(false);
+    }
+  }, [friendshipStatus, friendActionLoading, profile, isOwnProfile]);
+
+  const getFriendButtonText = useCallback(() => {
+    switch (friendshipStatus) {
+      case 'none':
+        return 'Add Friend';
+      case 'pending_sent':
+        return 'Request Sent';
+      case 'pending_received':
+        return 'Accept Request';
+      case 'friends':
+        return 'Friends';
+      default:
+        return 'Add Friend';
+    }
+  }, [friendshipStatus]);
+
   // Profile data
   const academicYear = coalesce(profile?.academic_year);
   const locationDescription = coalesce(profile?.location_description);
@@ -568,6 +665,31 @@ export default function ProfileCard({
                   ⌃
                 </Animated.Text>
               </Pressable>
+
+              {/* Friend button */}
+              {!isOwnProfile && (
+                <TouchableOpacity
+                  onPress={handleFriendAction}
+                  disabled={friendActionLoading}
+                  style={[
+                    styles.friendButton,
+                    friendshipStatus === 'friends' && styles.friendButtonActive,
+                    friendshipStatus === 'pending_sent' && styles.friendButtonPending,
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.friendButtonText,
+                      (friendshipStatus === 'friends' || friendshipStatus === 'pending_sent') && {
+                        color: COLORS.primary,
+                      },
+                    ]}
+                  >
+                    {getFriendButtonText()}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </Animated.View>
 

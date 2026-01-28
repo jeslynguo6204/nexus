@@ -20,6 +20,7 @@ import { sendMessage as sendMessageAPI } from '../../../api/messagesAPI';
 import { unmatchUser as unmatchUserAPI } from '../../../api/matchesAPI';
 import { blockUser, reportUser } from '../../../api/blocksAPI';
 import BlockReportSheet from '../../home/components/BlockReportSheet';
+import UserProfilePreviewModal from '../../profile/components/UserProfilePreviewModal';
 
 const DEFAULT_AVATAR = 'https://picsum.photos/200?88';
 
@@ -66,6 +67,8 @@ export default function ChatScreen({ navigation, route }) {
   // Block/Report sheet state
   const [blockReportSheetOpen, setBlockReportSheetOpen] = useState(false);
   const [blockReportMode, setBlockReportMode] = useState(null); // 'block' or 'report'
+
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
 
   // Hard-coded starter conversation
   // Note: Array gets reversed before passing to inverted FlatList, so first item appears at top
@@ -203,6 +206,10 @@ export default function ChatScreen({ navigation, route }) {
     setBlockReportMode(null);
   };
 
+  const handleViewProfile = () => {
+    setProfileModalVisible(true);
+  };
+
   const dataForList = useMemo(() => {
     // FlatList inverted wants newest first (index 0)
     // We'll invert ourselves so it still renders naturally.
@@ -289,12 +296,12 @@ export default function ChatScreen({ navigation, route }) {
             <Text style={styles.backGlyph}>‹</Text>
           </Pressable>
 
-          <View style={styles.headerCenter}>
+          <Pressable style={styles.headerCenter} onPress={handleViewProfile}>
             <Image source={{ uri: avatarUrl }} style={styles.headerAvatar} />
             <Text style={styles.headerName} numberOfLines={1}>
               {displayName}
             </Text>
-          </View>
+          </Pressable>
 
           <Pressable 
             ref={moreBtnRef}
@@ -367,6 +374,12 @@ export default function ChatScreen({ navigation, route }) {
             initialMode="report"
           />
         )}
+
+        <UserProfilePreviewModal
+          visible={profileModalVisible}
+          userId={matchUserId}
+          onClose={() => setProfileModalVisible(false)}
+        />
 
         {/* Messages */}
         <FlatList

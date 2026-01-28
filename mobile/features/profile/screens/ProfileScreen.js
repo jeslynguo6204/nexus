@@ -27,7 +27,7 @@
  * photo data.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -47,11 +47,13 @@ import DraggableFlatList from 'react-native-draggable-flatlist';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm/ProfilePreferencesForm';
 import ProfileCard from '../../home/components/ProfileCard';
 import PreviewModal from '../components/PreviewModal';
+import FriendsListScreen from './FriendsListScreen';
 
 import { COLORS } from '../../../styles/ProfileFormStyles';
 import styles from '../../../styles/ProfileScreenStyles';
@@ -61,6 +63,7 @@ import chatStyles from '../../../styles/ChatStyles';
 import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../../../api/photosAPI';
 import { getMyProfile, updateMyProfile } from '../../../api/profileAPI';
 import { getMySchoolAffiliations } from '../../../api/affiliationsAPI';
+import { getFriendsList, removeFriend } from '../../../api/friendsAPI';
 
 const MAX_INTERESTS = 6;
 
@@ -127,6 +130,11 @@ export default function ProfileScreen({ onSignOut }) {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [affiliations, setAffiliations] = useState([]);
+  const [friendsListVisible, setFriendsListVisible] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+
+  const hasInitiallyLoaded = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -138,12 +146,10 @@ export default function ProfileScreen({ onSignOut }) {
 
         // ✅ use profile API helper
         const myProfile = await getMyProfile(token);
-        console.log('ProfileScreen - myProfile data:', JSON.stringify(myProfile, null, 2));
         setProfile(myProfile);
 
         // ✅ Fetch affiliations to get names for IDs
         const affiliationsData = await getMySchoolAffiliations(token);
-        // Flatten all affiliations from all categories
         const allAffiliations = Object.values(affiliationsData).flat();
         setAffiliations(allAffiliations);
 
@@ -155,9 +161,28 @@ export default function ProfileScreen({ onSignOut }) {
         Alert.alert('Error', String(e.message || e));
       } finally {
         setLoading(false);
+        hasInitiallyLoaded.current = true;
       }
     })();
   }, []);
+
+  const refreshProfileForFriendCount = useCallback(async () => {
+    if (!hasInitiallyLoaded.current) return;
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+      const myProfile = await getMyProfile(token);
+      setProfile((p) => (p ? { ...p, ...myProfile } : myProfile));
+    } catch (e) {
+      console.warn('ProfileScreen refreshProfileForFriendCount:', e);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfileForFriendCount();
+    }, [refreshProfileForFriendCount])
+  );
 
   async function handleSave(updatedFields) {
     try {
@@ -313,6 +338,36 @@ export default function ProfileScreen({ onSignOut }) {
     }
   }
 
+  async function loadFriends() {
+    try {
+      setFriendsLoading(true);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not signed in');
+
+      const friendsList = await getFriendsList(token);
+      setFriends(friendsList);
+    } catch (err) {
+      console.error('Failed to load friends:', err);
+      Alert.alert('Error', 'Failed to load friends list.');
+    } finally {
+      setFriendsLoading(false);
+    }
+  }
+
+  async function handleUnfriend(friend) {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not signed in');
+      await removeFriend(token, friend.friend_id);
+      await loadFriends();
+      if (profile?.friend_count != null) {
+        setProfile((p) => (p ? { ...p, friend_count: Math.max(0, (p.friend_count ?? 0) - 1) } : p));
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Failed to unfriend.');
+    }
+  }
+
   async function handlePhotoReorder(data, from, to) {
     const next = data.filter((item) => !item.isAdd);
 
@@ -453,6 +508,21 @@ export default function ProfileScreen({ onSignOut }) {
               <Text style={[styles.metaText, { marginTop: 8 }]}>
                 {profile.bio ? profile.bio : 'Add a short bio'}
               </Text>
+
+              {/* Friend count */}
+              {profile?.friend_count !== undefined && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setFriendsListVisible(true);
+                    loadFriends();
+                  }}
+                  style={{ marginTop: 12 }}
+                >
+                  <Text style={[styles.metaText, { color: COLORS.primary, fontWeight: '600' }]}>
+                    {profile.friend_count} {profile.friend_count === 1 ? 'friend' : 'friends'}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               <View style={styles.actionsRow}>
                 <TouchableOpacity
@@ -631,6 +701,16 @@ export default function ProfileScreen({ onSignOut }) {
           </View>
         )}
       </PreviewModal>
+
+      {/* Friends List (full-screen modal) */}
+      <Modal visible={friendsListVisible} animationType="slide">
+        <FriendsListScreen
+          friends={friends}
+          loading={friendsLoading}
+          onClose={() => setFriendsListVisible(false)}
+          onUnfriend={handleUnfriend}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
