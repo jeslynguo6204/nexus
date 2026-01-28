@@ -166,13 +166,21 @@ npx expo prebuild
 
 ### 6. Run the App
 
+**Run Simulator:**
+
+```bash
+npx expo run:ios
+```
+
+
+**Run on a Physical Device:**
+
+- Connect the device to computer with a cable
+- On iOS devices, go into Settings->General->VPN&Device Management, and under "Developer App" approve your new app.
+
 ```bash
 npx expo run:ios --device
 ```
-
-**For Physical Device:**
-- Connect the device to computer with a cable
-- On iOS devices, go into Settings->General->VPN&Device Management, and under "Developer App" approve your new app.
 
 ---
 
