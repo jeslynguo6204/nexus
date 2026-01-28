@@ -11,51 +11,45 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import styles from '../../../styles/AuthStyles';
+import { LinearGradient } from 'expo-linear-gradient';
+import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
 import { checkEmail } from '../../../api/authAPI';
 
-export default function SignupStep1Screen({ navigation, route }) {
+export default function SignupStep1Screen({ navigation }) {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  // Field-specific error states
+
   const [fullNameError, setFullNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  
+
   const [loading, setLoading] = useState(false);
+  const [focused, setFocused] = useState(null);
+
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 400,
+      duration: 350,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   const formatPhoneNumber = (value) => {
-    const digits = value.replace(/\D/g, '');
-    const limitedDigits = digits.slice(0, 10);
-    
-    if (limitedDigits.length === 0) {
-      return '';
-    } else if (limitedDigits.length <= 3) {
-      return `(${limitedDigits}`;
-    } else if (limitedDigits.length <= 6) {
-      return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
-    } else {
-      return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`;
-    }
+    const digits = value.replace(/\D/g, '').slice(0, 10);
+    if (!digits) return '';
+    if (digits.length <= 3) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
   };
 
   const handlePhoneChange = (value) => {
-    const formatted = formatPhoneNumber(value);
-    setPhoneNumber(formatted);
+    setPhoneNumber(formatPhoneNumber(value));
     if (phoneError) setPhoneError('');
   };
 
@@ -63,52 +57,33 @@ export default function SignupStep1Screen({ navigation, route }) {
     const trimmed = (value || '').trim();
     if (!trimmed) return '';
     const digits = trimmed.replace(/\D/g, '');
-    if (!digits) return '';
-    return digits;
+    return digits || '';
   };
 
-  const isValidPhone = (value) => {
-    const digits = normalizePhone(value);
-    return digits.length === 10;
-  };
+  const isValidPhone = (value) => normalizePhone(value).length === 10;
 
   const isValidEmail = (value) => {
     const trimmed = (value || '').trim();
     if (!trimmed) return false;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(trimmed);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
   };
 
-  const isValidPassword = (value) => {
-    if (!value || value.length < 8) {
-      return false;
-    }
-    return true;
-  };
+  const isValidPassword = (value) => !!value && value.length >= 8;
 
   const showExistingAccountAlert = () => {
     Alert.alert(
       'Account Already Exists',
       'An account belonging to that email address already exists.',
       [
-        {
-          text: 'Try another email address',
-          style: 'cancel',
-        },
+        { text: 'Try another email address', style: 'cancel' },
         {
           text: 'Reset my password',
-          onPress: () => {
-            Alert.alert(
-              'Coming soon!',
-              'Password reset functionality is not implemented yet.'
-            );
-          },
+          onPress: () =>
+            Alert.alert('Coming soon!', 'Password reset functionality is not implemented yet.'),
         },
         {
           text: 'Sign-in',
-          onPress: () => {
-            navigation.navigate('Login');
-          },
+          onPress: () => navigation.navigate('Login'),
           style: 'default',
         },
       ],
@@ -117,59 +92,53 @@ export default function SignupStep1Screen({ navigation, route }) {
   };
 
   async function handleContinue() {
-    // Clear all previous errors
     setFullNameError('');
     setEmailError('');
     setPhoneError('');
     setPasswordError('');
-    
+
     let hasErrors = false;
-    
-    // Validate all fields
+
     if (!fullName.trim()) {
-      setFullNameError('Please enter your full name');
+      setFullNameError('Required');
       hasErrors = true;
     }
-    
+
     if (!email.trim()) {
-      setEmailError('Please enter your school email');
+      setEmailError('Required');
       hasErrors = true;
     } else if (!isValidEmail(email)) {
-      setEmailError('Please enter a valid email address');
+      setEmailError('Invalid');
       hasErrors = true;
     }
-    
+
     const normalizedPhone = normalizePhone(phoneNumber);
     if (!normalizedPhone || !isValidPhone(phoneNumber)) {
-      setPhoneError('Please enter a valid 10-digit phone number');
+      setPhoneError('Invalid');
       hasErrors = true;
     }
-    
+
     if (!password) {
-      setPasswordError('Please enter a password');
+      setPasswordError('Required');
       hasErrors = true;
     } else if (!isValidPassword(password)) {
-      setPasswordError('Password must be at least 8 characters long');
+      setPasswordError('Min 8 chars');
       hasErrors = true;
     }
-    
-    if (hasErrors) {
-      return;
-    }
-    
+
+    if (hasErrors) return;
+
     try {
       setLoading(true);
-      // Check if email exists in backend users table
       const normalizedEmail = (email || '').trim().toLowerCase();
       const result = await checkEmail(normalizedEmail);
-      
+
       if (result.exists) {
         showExistingAccountAlert();
-        setEmailError('An account with this email already exists');
+        setEmailError('Exists');
         return;
       }
-      
-      // Email doesn't exist, proceed to next step
+
       navigation.navigate('SignupStep2', {
         fullName: fullName.trim(),
         email: normalizedEmail,
@@ -184,115 +153,136 @@ export default function SignupStep1Screen({ navigation, route }) {
     }
   }
 
+  const inputStyle = (key, hasError) => ([
+    styles.input,
+    focused === key && styles.inputFocused,
+    hasError && styles.inputError,
+  ]);
+
   return (
-    <SafeAreaView style={styles.loginContainer} edges={['top', 'left', 'right']}>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Entry')}
-        style={[styles.loginBackButton, { top: insets.top + 4 }]}
-      >
-        <Text style={styles.loginBackText}>← Back</Text>
-      </TouchableOpacity>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={styles.loginContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+    <LinearGradient
+      colors={AUTH_GRADIENT_CONFIG.colors}
+      start={AUTH_GRADIENT_CONFIG.start}
+      end={AUTH_GRADIENT_CONFIG.end}
+      style={styles.gradientFill}
+    >
+      <SafeAreaView style={styles.authContainer} edges={['top', 'left', 'right']}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Entry')}
+          style={[styles.backButton, { top: insets.top + 4 }]}
         >
-          <Text style={styles.loginLogo}>6°</Text>
-          <Text style={styles.loginTitle}>Create your account</Text>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
 
-          <Animated.View
-            style={{
-              width: '100%',
-              marginTop: 10,
-              opacity: fadeAnim,
-            }}
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={styles.authContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
-              <Text style={styles.loginLabel}>Full name</Text>
-              {fullNameError ? (
-                <Text style={styles.errorText}>{fullNameError}</Text>
-              ) : null}
-            </View>
-            <TextInput
-              style={styles.loginInput}
-              value={fullName}
-              onChangeText={(value) => {
-                setFullName(value);
-                if (fullNameError) setFullNameError('');
-              }}
-              placeholder="Jane Doe"
-              placeholderTextColor="#D0E2FF"
-            />
+            {/* White centered logo (no circle) */}
+            <Text style={styles.logo}>6°</Text>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
-              <Text style={styles.loginLabel}>School email</Text>
-              {emailError ? (
-                <Text style={styles.errorText}>{emailError}</Text>
-              ) : null}
-            </View>
-            <TextInput
-              style={styles.loginInput}
-              value={email}
-              onChangeText={(value) => {
-                setEmail(value);
-                if (emailError) setEmailError('');
-              }}
-              placeholder="you@school.edu"
-              placeholderTextColor="#D0E2FF"
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
+            <Text style={styles.title}>Create your account</Text>
+            <Text style={styles.subtitle}>A couple details and you’ll be in.</Text>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
-              <Text style={styles.loginLabel}>Phone number</Text>
-              {phoneError ? (
-                <Text style={styles.errorText}>{phoneError}</Text>
-              ) : null}
-            </View>
-            <TextInput
-              style={styles.loginInput}
-              value={phoneNumber}
-              onChangeText={handlePhoneChange}
-              placeholder="(XXX) XXX-XXXX"
-              placeholderTextColor="#D0E2FF"
-              keyboardType="phone-pad"
-            />
+            <Animated.View style={[styles.formWrap, { opacity: fadeAnim }]}>
+              <View style={styles.fieldBlock}>
+                <View style={styles.fieldHeaderRow}>
+                  <Text style={styles.label}>Full name</Text>
+                  {!!fullNameError && <Text style={styles.inlineError}>{fullNameError}</Text>}
+                </View>
+                <TextInput
+                  style={inputStyle('fullName', !!fullNameError)}
+                  value={fullName}
+                  onChangeText={(v) => {
+                    setFullName(v);
+                    if (fullNameError) setFullNameError('');
+                  }}
+                  onFocus={() => setFocused('fullName')}
+                  onBlur={() => setFocused(null)}
+                  placeholder="Jane Doe"
+                  placeholderTextColor={styles.tokens.placeholder}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                />
+              </View>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
-              <Text style={styles.loginLabel}>Password</Text>
-              {passwordError ? (
-                <Text style={styles.errorText}>{passwordError}</Text>
-              ) : null}
-            </View>
-            <TextInput
-              style={styles.loginInput}
-              value={password}
-              onChangeText={(value) => {
-                setPassword(value);
-                if (passwordError) setPasswordError('');
-              }}
-              placeholder="Create a password"
-              placeholderTextColor="#D0E2FF"
-              secureTextEntry
-            />
+              <View style={styles.fieldBlock}>
+                <View style={styles.fieldHeaderRow}>
+                  <Text style={styles.label}>School email</Text>
+                  {!!emailError && <Text style={styles.inlineError}>{emailError}</Text>}
+                </View>
+                <TextInput
+                  style={inputStyle('email', !!emailError)}
+                  value={email}
+                  onChangeText={(v) => {
+                    setEmail(v);
+                    if (emailError) setEmailError('');
+                  }}
+                  onFocus={() => setFocused('email')}
+                  onBlur={() => setFocused(null)}
+                  placeholder="you@school.edu"
+                  placeholderTextColor={styles.tokens.placeholder}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  returnKeyType="next"
+                />
+              </View>
 
-            <TouchableOpacity
-              style={[styles.loginButton, loading && { opacity: 0.6 }]}
-              onPress={handleContinue}
-              disabled={loading}
-            >
-              <Text style={styles.loginButtonText}>
-                {loading ? 'Please wait…' : 'Continue'}
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <View style={styles.fieldBlock}>
+                <View style={styles.fieldHeaderRow}>
+                  <Text style={styles.label}>Phone number</Text>
+                  {!!phoneError && <Text style={styles.inlineError}>{phoneError}</Text>}
+                </View>
+                <TextInput
+                  style={inputStyle('phone', !!phoneError)}
+                  value={phoneNumber}
+                  onChangeText={handlePhoneChange}
+                  onFocus={() => setFocused('phone')}
+                  onBlur={() => setFocused(null)}
+                  placeholder="(XXX) XXX-XXXX"
+                  placeholderTextColor={styles.tokens.placeholder}
+                  keyboardType="phone-pad"
+                  returnKeyType="next"
+                />
+              </View>
+
+              <View style={styles.fieldBlock}>
+                <View style={styles.fieldHeaderRow}>
+                  <Text style={styles.label}>Password</Text>
+                  {!!passwordError && <Text style={styles.inlineError}>{passwordError}</Text>}
+                </View>
+                <TextInput
+                  style={inputStyle('password', !!passwordError)}
+                  value={password}
+                  onChangeText={(v) => {
+                    setPassword(v);
+                    if (passwordError) setPasswordError('');
+                  }}
+                  onFocus={() => setFocused('password')}
+                  onBlur={() => setFocused(null)}
+                  placeholder="At least 8 characters"
+                  placeholderTextColor={styles.tokens.placeholder}
+                  secureTextEntry
+                  returnKeyType="done"
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.primaryButton, loading && { opacity: 0.75 }]}
+                onPress={handleContinue}
+                disabled={loading}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {loading ? 'Please wait…' : 'Continue'}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }

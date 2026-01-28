@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   KeyboardAvoidingView,
   Modal,
@@ -11,31 +10,31 @@ import {
   View,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import styles from '../../../styles/AuthStyles';
+import { LinearGradient } from 'expo-linear-gradient';
+import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
 import ChipRow from '../../profile/components/form-editor-components/ChipRow';
 
-const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
+const GRAD_YEARS = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
 
 export default function SignupStep2Screen({ navigation, route }) {
   const genderOptions = [
     { label: 'Male', value: 'male' },
     { label: 'Female', value: 'female' },
-    { label: 'Other', value: 'other' },
+    { label: 'Non-Binary', value: 'non-binary' },
   ];
-  
+
   const [gender, setGender] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState(null);
   const [pendingDate, setPendingDate] = useState(new Date(2000, 0, 1));
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [graduationYear, setGraduationYear] = useState('');
-  
-  // Field-specific error states
+
+  const [graduationYear, setGraduationYear] = useState(null);
+
   const [genderError, setGenderError] = useState('');
   const [dateOfBirthError, setDateOfBirthError] = useState('');
   const [graduationYearError, setGraduationYearError] = useState('');
-  
+
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -44,13 +43,13 @@ export default function SignupStep2Screen({ navigation, route }) {
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 400,
+      duration: 350,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   const displayDateOfBirth = (date) => {
-    if (!date) return 'Tap to choose your date of birth';
+    if (!date) return 'Choose a date';
     return date.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -59,14 +58,13 @@ export default function SignupStep2Screen({ navigation, route }) {
   };
 
   const openDatePicker = () => {
-    const baseDate = dateOfBirth || pendingDate;
-    setPendingDate(baseDate);
+    setPendingDate(dateOfBirth || pendingDate);
     setShowDatePicker(true);
   };
 
   const handleDateChange = (event, selectedDate) => {
     if (Platform.OS === 'android') {
-      if (event.type === 'set' && selectedDate) {
+      if (event?.type === 'set' && selectedDate) {
         setDateOfBirth(selectedDate);
         if (dateOfBirthError) setDateOfBirthError('');
       }
@@ -76,9 +74,7 @@ export default function SignupStep2Screen({ navigation, route }) {
     }
   };
 
-  const handleDateCancel = () => {
-    setShowDatePicker(false);
-  };
+  const handleDateCancel = () => setShowDatePicker(false);
 
   const handleDateDone = () => {
     setDateOfBirth(pendingDate);
@@ -86,38 +82,30 @@ export default function SignupStep2Screen({ navigation, route }) {
     if (dateOfBirthError) setDateOfBirthError('');
   };
 
+  const formatDateOfBirth = (date) => (date ? date.toISOString().slice(0, 10) : '');
+
   function handleContinue() {
-    // Clear all previous errors
     setGenderError('');
     setDateOfBirthError('');
     setGraduationYearError('');
-    
+
     let hasErrors = false;
-    
+
     if (!gender) {
-      setGenderError('Please select a gender');
+      setGenderError('Required');
       hasErrors = true;
     }
-    
     if (!dateOfBirth) {
-      setDateOfBirthError('Please choose your date of birth');
+      setDateOfBirthError('Required');
       hasErrors = true;
     }
-    
     if (!graduationYear) {
-      setGraduationYearError('Please select your graduation year');
+      setGraduationYearError('Required');
       hasErrors = true;
     }
-    
-    if (hasErrors) {
-      return;
-    }
-    
-    const formatDateOfBirth = (date) => {
-      if (!date) return '';
-      return date.toISOString().slice(0, 10);
-    };
-    
+
+    if (hasErrors) return;
+
     navigation.navigate('SignupStep3', {
       fullName,
       email,
@@ -130,125 +118,132 @@ export default function SignupStep2Screen({ navigation, route }) {
   }
 
   return (
-    <SafeAreaView style={styles.loginContainer} edges={['top', 'left', 'right']}>
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={[styles.loginBackButton, { top: insets.top + 4 }]}
-      >
-        <Text style={styles.loginBackText}>← Back</Text>
-      </TouchableOpacity>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={styles.loginContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+    <LinearGradient
+      colors={AUTH_GRADIENT_CONFIG.colors}
+      start={AUTH_GRADIENT_CONFIG.start}
+      end={AUTH_GRADIENT_CONFIG.end}
+      style={styles.gradientFill}
+    >
+      <SafeAreaView style={styles.authContainer} edges={['top', 'left', 'right']}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[styles.backButton, { top: insets.top + 4 }]}
         >
-          <Text style={styles.loginLogo}>6°</Text>
-          <Text style={styles.loginTitle}>About you</Text>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
 
-          <Animated.View
-            style={{
-              width: '100%',
-              marginTop: 10,
-              opacity: fadeAnim,
-            }}
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={styles.authContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
-              <Text style={styles.loginLabel}>Gender</Text>
-              {genderError ? (
-                <Text style={styles.errorText}>{genderError}</Text>
-              ) : null}
-            </View>
-            <ChipRow
-              options={genderOptions}
-              selected={gender}
-              onSelect={(value) => {
-                setGender(value);
-                if (genderError) setGenderError('');
-              }}
-            />
+            <Text style={styles.logo}>6°</Text>
+            <Text style={styles.title}>About you</Text>
+            <Text style={styles.subtitle}>A few basics to get started.</Text>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
-              <Text style={styles.loginLabel}>Date of birth</Text>
-              {dateOfBirthError ? (
-                <Text style={styles.errorText}>{dateOfBirthError}</Text>
-              ) : null}
-            </View>
-            <TouchableOpacity style={styles.loginInput} onPress={openDatePicker}>
-              <Text style={{ color: dateOfBirth ? '#FFFFFF' : '#D0E2FF' }}>
-                {displayDateOfBirth(dateOfBirth)}
-              </Text>
-            </TouchableOpacity>
+            <Animated.View style={[styles.formWrap, { opacity: fadeAnim }]}>
+              {/* Gender */}
+              <View style={styles.fieldBlock}>
+                <View style={styles.fieldHeaderRow}>
+                  <Text style={styles.label}>Gender</Text>
+                  {!!genderError && <Text style={styles.inlineError}>{genderError}</Text>}
+                </View>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
-              <Text style={styles.loginLabel}>Graduation year</Text>
-              {graduationYearError ? (
-                <Text style={styles.errorText}>{graduationYearError}</Text>
-              ) : null}
-            </View>
-            <View style={[styles.loginInput, { paddingHorizontal: 0, paddingVertical: 0 }]}>
-              <Picker
-                selectedValue={graduationYear}
-                onValueChange={(value) => {
-                  setGraduationYear(value);
-                  if (graduationYearError) setGraduationYearError('');
-                }}
-                style={{ color: '#FFFFFF' }}
-              >
-                <Picker.Item label="Select graduation year" value="" color="#D0E2FF" />
-                {GRAD_YEARS.map((year) => (
-                  <Picker.Item key={year} label={String(year)} value={String(year)} color="#FFFFFF" />
-                ))}
-              </Picker>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.loginButton]}
-              onPress={handleContinue}
-            >
-              <Text style={styles.loginButtonText}>Continue</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      {showDatePicker && Platform.OS === 'ios' ? (
-        <Modal transparent animationType="fade" visible={showDatePicker}>
-          <View style={styles.dateModalOverlay}>
-            <View style={styles.dateModalContent}>
-              <View style={styles.dateModalHeader}>
-                <Text style={styles.dateModalCancel} onPress={handleDateCancel}>
-                  Cancel
-                </Text>
-                <Text style={styles.dateModalDone} onPress={handleDateDone}>
-                  Done
-                </Text>
+                <ChipRow
+                  options={genderOptions}
+                  selected={gender}
+                  onSelect={(value) => {
+                    setGender(value);
+                    if (genderError) setGenderError('');
+                  }}
+                  wrap
+                  stylesOverride={styles}
+                />
               </View>
-              <DateTimePicker
-                value={pendingDate}
-                mode="date"
-                display="spinner"
-                onChange={handleDateChange}
-                maximumDate={new Date()}
-              />
-            </View>
-          </View>
-        </Modal>
-      ) : null}
 
-      {showDatePicker && Platform.OS !== 'ios' ? (
-        <DateTimePicker
-          value={pendingDate}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-          maximumDate={new Date()}
-        />
-      ) : null}
-    </SafeAreaView>
+              {/* DOB */}
+              <View style={styles.fieldBlock}>
+                <View style={styles.fieldHeaderRow}>
+                  <Text style={styles.label}>Date of birth</Text>
+                  {!!dateOfBirthError && <Text style={styles.inlineError}>{dateOfBirthError}</Text>}
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.selectField, !!dateOfBirthError && styles.selectFieldError]}
+                  onPress={openDatePicker}
+                  activeOpacity={0.9}
+                >
+                  <Text style={dateOfBirth ? styles.selectValueText : styles.selectPlaceholderText}>
+                    {displayDateOfBirth(dateOfBirth)}
+                  </Text>
+                  <Text style={styles.selectChevron}>›</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Graduation Year (chips) */}
+              <View style={styles.fieldBlock}>
+                <View style={styles.fieldHeaderRow}>
+                  <Text style={styles.label}>Graduation year</Text>
+                  {!!graduationYearError && <Text style={styles.inlineError}>{graduationYearError}</Text>}
+                </View>
+
+                <ChipRow
+                  options={GRAD_YEARS.map((y) => ({ label: String(y), value: y }))}
+                  selected={graduationYear}
+                  onSelect={(value) => {
+                    setGraduationYear(value);
+                    if (graduationYearError) setGraduationYearError('');
+                  }}
+                  wrap
+                  stylesOverride={styles}
+                />
+              </View>
+
+              <TouchableOpacity style={styles.primaryButton} onPress={handleContinue} activeOpacity={0.9}>
+                <Text style={styles.primaryButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+
+        {/* iOS DOB modal */}
+        {showDatePicker && Platform.OS === 'ios' ? (
+          <Modal transparent animationType="fade" visible={showDatePicker}>
+            <View style={styles.dateModalOverlay}>
+              <View style={styles.dateModalContent}>
+                <View style={styles.dateModalHeader}>
+                  <Text style={styles.dateModalCancel} onPress={handleDateCancel}>
+                    Cancel
+                  </Text>
+                  <Text style={styles.dateModalDone} onPress={handleDateDone}>
+                    Done
+                  </Text>
+                </View>
+
+                <DateTimePicker
+                  value={pendingDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                />
+              </View>
+            </View>
+          </Modal>
+        ) : null}
+
+        {/* Android DOB picker */}
+        {showDatePicker && Platform.OS === 'android' ? (
+          <DateTimePicker
+            value={pendingDate}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+            maximumDate={new Date()}
+          />
+        ) : null}
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
