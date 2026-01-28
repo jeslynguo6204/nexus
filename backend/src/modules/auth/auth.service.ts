@@ -13,8 +13,9 @@ export async function signup(input: {
   fullName: string;
   dateOfBirth?: string | null;
   gender?: string;
+  phoneNumber?: string | null;
 }) {
-  const { email, password, fullName, dateOfBirth, gender } = input;
+  const { email, password, fullName, dateOfBirth, gender, phoneNumber } = input;
 
   // (Basic required checks can also live in the controller; this is just extra safety)
   if (!email || !password || !fullName) {
@@ -43,6 +44,7 @@ export async function signup(input: {
     fullName,
     dateOfBirth: dateOfBirth ?? null,
     gender,
+    phoneNumber: phoneNumber ?? null,
   });
 
   const token = jwt.sign({ userId }, config.jwtSecret, { expiresIn: "7d" });

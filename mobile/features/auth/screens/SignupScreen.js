@@ -12,13 +12,19 @@ import {
   View,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/AuthStyles';
 import { startEmailSignup } from '../../../auth/cognito';
+import ChipRow from '../../profile/components/form-editor-components/ChipRow';
 
 export default function SignupScreen({ navigation }) {
+  const genderOptions = [
+    { label: 'Male', value: 'male' },
+    { label: 'Female', value: 'female' },
+    { label: 'Other', value: 'other' },
+  ];
   const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [gender, setGender] = useState('');
@@ -53,6 +59,17 @@ export default function SignupScreen({ navigation }) {
     });
   };
 
+  const normalizePhone = (value) => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return '';
+    const hasPlus = trimmed.startsWith('+');
+    const digits = trimmed.replace(/\D/g, '');
+    if (!digits) return '';
+    return hasPlus ? `+${digits}` : digits;
+  };
+
+  const isValidPhone = (value) => /^\+?\d{10,15}$/.test(value);
+
   const openDatePicker = () => {
     const baseDate = dateOfBirth || pendingDate;
     setPendingDate(baseDate);
@@ -85,6 +102,10 @@ export default function SignupScreen({ navigation }) {
       if (!fullName.trim()) {
         throw new Error('Please enter your full name');
       }
+      const normalizedPhone = normalizePhone(phoneNumber);
+      if (!normalizedPhone || !isValidPhone(normalizedPhone)) {
+        throw new Error('Please enter a valid phone number');
+      }
       if (!gender) {
         throw new Error('Please select a gender');
       }
@@ -99,6 +120,7 @@ export default function SignupScreen({ navigation }) {
         fullName: fullName.trim(),
         gender,
         dateOfBirth: formatDateOfBirth(dateOfBirth),
+        phoneNumber: normalizedPhone,
       });
     } catch (e) {
       setError(String(e.message || e));
@@ -144,6 +166,16 @@ export default function SignupScreen({ navigation }) {
               placeholderTextColor="#D0E2FF"
             />
 
+            <Text style={styles.loginLabel}>Phone number</Text>
+            <TextInput
+              style={styles.loginInput}
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              placeholder="(555) 123-4567"
+              placeholderTextColor="#D0E2FF"
+              keyboardType="phone-pad"
+            />
+
             <Text style={styles.loginLabel}>School email</Text>
             <TextInput
               style={styles.loginInput}
@@ -166,21 +198,11 @@ export default function SignupScreen({ navigation }) {
             />
 
             <Text style={styles.loginLabel}>Gender</Text>
-            <View style={styles.pickerWrap}>
-              <Picker
-                selectedValue={gender}
-                onValueChange={setGender}
-                style={styles.picker}
-                itemStyle={{ color: '#FFFFFF' }}
-                dropdownIconColor="#FFFFFF"
-              >
-                <Picker.Item label="Select gender..." value="" />
-                <Picker.Item label="Female" value="female" />
-                <Picker.Item label="Male" value="male" />
-                <Picker.Item label="Non-binary" value="non-binary" />
-                <Picker.Item label="Other" value="other" />
-              </Picker>
-            </View>
+            <ChipRow
+              options={genderOptions}
+              selected={gender}
+              onSelect={setGender}
+            />
 
             <Text style={styles.loginLabel}>Date of birth</Text>
             <TouchableOpacity style={styles.loginInput} onPress={openDatePicker}>

@@ -223,5 +223,4 @@ export default StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
   },
-  },
 });

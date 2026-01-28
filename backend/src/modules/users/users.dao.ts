@@ -6,6 +6,7 @@ export interface UserRow {
   password_hash: string | null;
   full_name: string | null;
   school_id: number | null;
+  phone_number?: string | null;
 }
 
 export async function findUserByEmail(email: string): Promise<UserRow | null> {
@@ -48,6 +49,7 @@ export async function createUserWithDefaults(params: {
   fullName: string;
   dateOfBirth?: string | null; // 'YYYY-MM-DD'
   gender?: string | null;
+  phoneNumber?: string | null;
 }): Promise<number> {
   const client = await pool.connect();
   try {
@@ -55,8 +57,8 @@ export async function createUserWithDefaults(params: {
 
     const userRes = await client.query<{ id: number }>(
       `
-      INSERT INTO users (school_id, email, password_hash, full_name, date_of_birth, gender)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO users (school_id, email, password_hash, full_name, date_of_birth, gender, phone_number)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id
       `,
       [
@@ -66,6 +68,7 @@ export async function createUserWithDefaults(params: {
         params.fullName,
         params.dateOfBirth ?? null,
         params.gender ?? null,
+        params.phoneNumber ?? null,
       ]
     );
 

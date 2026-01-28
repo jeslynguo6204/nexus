@@ -28,6 +28,7 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   const fullName = route?.params?.fullName || '';
   const gender = route?.params?.gender || '';
   const dateOfBirth = route?.params?.dateOfBirth || '';
+  const phoneNumber = route?.params?.phoneNumber || '';
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -48,6 +49,7 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
         password,
         dateOfBirth,
         gender,
+        phoneNumber,
       });
       await login(email, password);
       if (onSignedIn) {

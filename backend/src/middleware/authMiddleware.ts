@@ -57,6 +57,7 @@ export async function authMiddleware(
         fullName,
         dateOfBirth: null,
         gender: null,
+        phoneNumber: null,
       });
       user = {
         id: userId,
