@@ -27,7 +27,7 @@
  * photo data.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -47,6 +47,7 @@ import DraggableFlatList from 'react-native-draggable-flatlist';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 import ProfileDetailsForm from '../components/ProfileDetailsForm/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm/ProfilePreferencesForm';
@@ -133,6 +134,8 @@ export default function ProfileScreen({ onSignOut }) {
   const [friends, setFriends] = useState([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
 
+  const hasInitiallyLoaded = useRef(false);
+
   useEffect(() => {
     (async () => {
       try {
@@ -143,12 +146,10 @@ export default function ProfileScreen({ onSignOut }) {
 
         // ✅ use profile API helper
         const myProfile = await getMyProfile(token);
-        console.log('ProfileScreen - myProfile data:', JSON.stringify(myProfile, null, 2));
         setProfile(myProfile);
 
         // ✅ Fetch affiliations to get names for IDs
         const affiliationsData = await getMySchoolAffiliations(token);
-        // Flatten all affiliations from all categories
         const allAffiliations = Object.values(affiliationsData).flat();
         setAffiliations(allAffiliations);
 
@@ -160,9 +161,28 @@ export default function ProfileScreen({ onSignOut }) {
         Alert.alert('Error', String(e.message || e));
       } finally {
         setLoading(false);
+        hasInitiallyLoaded.current = true;
       }
     })();
   }, []);
+
+  const refreshProfileForFriendCount = useCallback(async () => {
+    if (!hasInitiallyLoaded.current) return;
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+      const myProfile = await getMyProfile(token);
+      setProfile((p) => (p ? { ...p, ...myProfile } : myProfile));
+    } catch (e) {
+      console.warn('ProfileScreen refreshProfileForFriendCount:', e);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfileForFriendCount();
+    }, [refreshProfileForFriendCount])
+  );
 
   async function handleSave(updatedFields) {
     try {

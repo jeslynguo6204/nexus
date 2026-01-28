@@ -39,9 +39,11 @@ export type FriendRequestWithDetails = {
   bio: string | null;
   age: number | null;
   school_name: string | null;
+  school_short_name: string | null;
   graduation_year: number | null;
   avatar_url: string | null;
   created_at: Date;
+  featured_affiliation_short_names: string[];
 };
 
 /**
@@ -263,9 +265,18 @@ export async function getPendingRequestsWithDetails(
       p.bio,
       EXTRACT(YEAR FROM AGE(u.date_of_birth)) AS age,
       s.name AS school_name,
+      s.short_name AS school_short_name,
       p.graduation_year,
       ph.url AS avatar_url,
-      fr.created_at
+      fr.created_at,
+      (
+        SELECT COALESCE(
+          array_agg(COALESCE(a.short_name, a.name) ORDER BY ord) FILTER (WHERE a.id IS NOT NULL),
+          ARRAY[]::text[]
+        )
+        FROM unnest(COALESCE((p.featured_affiliations)[1:2], ARRAY[]::int[])) WITH ORDINALITY AS t(id, ord)
+        LEFT JOIN affiliations a ON a.id = t.id
+      ) AS featured_affiliation_short_names
      FROM friend_requests fr
      JOIN users u ON u.id = fr.requester_id
      LEFT JOIN profiles p ON p.user_id = u.id

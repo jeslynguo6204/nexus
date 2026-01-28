@@ -26,6 +26,17 @@ import styles from '../../../styles/ChatStyles';
 import homeStyles from '../../../styles/HomeStyles';
 import { COLORS } from '../../../styles/themeNEW';
 
+function contextLine(request) {
+  const school = request.school_short_name || request.school_name || '';
+  const yr = request.graduation_year != null ? `'${String(request.graduation_year).slice(-2)}` : null;
+  const schoolAndYear = [school, yr].filter(Boolean).join(' ');
+  const affs = Array.isArray(request.featured_affiliation_short_names)
+    ? request.featured_affiliation_short_names.slice(0, 2).filter(Boolean)
+    : [];
+  const parts = [schoolAndYear, ...affs].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+}
+
 export default function LikesScreen() {
   const [loading, setLoading] = useState(true);
   const [myProfile, setMyProfile] = useState(null);
@@ -214,7 +225,9 @@ export default function LikesScreen() {
               Friend Requests ({friendRequests.length})
             </Text>
 
-            {friendRequests.map((request) => (
+            {friendRequests.map((request) => {
+              const subtitle = contextLine(request);
+              return (
               <View
                 key={request.request_id}
                 style={{
@@ -260,11 +273,11 @@ export default function LikesScreen() {
                   <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textPrimary || '#000' }}>
                     {request.display_name}
                   </Text>
-                  {request.school_name && request.graduation_year && (
+                  {subtitle ? (
                     <Text style={{ fontSize: 14, color: COLORS.textMuted || '#666', marginTop: 2 }}>
-                      {request.school_name} '{String(request.graduation_year).slice(-2)}
+                      {subtitle}
                     </Text>
-                  )}
+                  ) : null}
                 </View>
 
                 {/* Action buttons */}
@@ -307,7 +320,8 @@ export default function LikesScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
+            );
+            })}
           </ScrollView>
         )}
       </View>

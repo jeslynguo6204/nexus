@@ -191,12 +191,17 @@ export async function getPendingRequests(
 }
 
 /**
- * Get list of pending friend requests with user details (for UI display)
+ * Get list of pending friend requests with user details (for UI display).
+ * Includes school_short_name and featured_affiliation_short_names (same as friends list).
  */
 export async function getPendingRequestsDetailed(
   userId: number
 ): Promise<FriendRequestWithDetails[]> {
-  return await getPendingRequestsWithDetails(userId);
+  const rows = await getPendingRequestsWithDetails(userId);
+  return rows.map((r) => ({
+    ...r,
+    featured_affiliation_short_names: ensureStringArray(r.featured_affiliation_short_names),
+  }));
 }
 
 /**
