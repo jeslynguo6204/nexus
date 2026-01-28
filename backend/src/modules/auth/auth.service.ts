@@ -73,3 +73,8 @@ export async function login(input: { email: string; password: string }) {
 
   return { userId: user.id, token };
 }
+
+export async function checkEmailExists(email: string): Promise<boolean> {
+  const user = await findUserByEmail(email);
+  return user !== null;
+}

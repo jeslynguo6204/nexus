@@ -48,3 +48,17 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     next(err);
   }
 }
+
+export async function checkEmail(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    const exists = await AuthService.checkEmailExists(email);
+    return res.json({ exists });
+  } catch (err) {
+    console.error("❌ Check email error:", err);
+    next(err);
+  }
+}

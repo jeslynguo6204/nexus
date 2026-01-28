@@ -3,7 +3,6 @@ import {
   Alert,
   Animated,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   Text,
@@ -11,45 +10,24 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/AuthStyles';
-import { startEmailSignup } from '../../../auth/cognito';
-import ChipRow from '../../profile/components/form-editor-components/ChipRow';
+import { checkEmail } from '../../../api/authAPI';
 
-export default function SignupScreen({ navigation }) {
-  // Redirect to the new multi-step signup flow
-  React.useEffect(() => {
-    navigation.replace('SignupStep1');
-  }, [navigation]);
-
-  return null;
-  const genderOptions = [
-    { label: 'Male', value: 'male' },
-    { label: 'Female', value: 'female' },
-    { label: 'Other', value: 'other' },
-  ];
+export default function SignupStep1Screen({ navigation, route }) {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [gender, setGender] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState(null);
-  const [pendingDate, setPendingDate] = useState(new Date(2000, 0, 1));
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   
   // Field-specific error states
   const [fullNameError, setFullNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [genderError, setGenderError] = useState('');
-  const [dateOfBirthError, setDateOfBirthError] = useState('');
   
+  const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
-
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -60,28 +38,10 @@ export default function SignupScreen({ navigation }) {
     }).start();
   }, []);
 
-  const formatDateOfBirth = (date) => {
-    if (!date) return '';
-    return date.toISOString().slice(0, 10);
-  };
-
-  const displayDateOfBirth = (date) => {
-    if (!date) return 'Tap to choose your birthday';
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   const formatPhoneNumber = (value) => {
-    // Remove all non-digit characters
     const digits = value.replace(/\D/g, '');
-    
-    // Limit to 10 digits for US format
     const limitedDigits = digits.slice(0, 10);
     
-    // Format as (XXX) XXX-XXXX
     if (limitedDigits.length === 0) {
       return '';
     } else if (limitedDigits.length <= 3) {
@@ -96,7 +56,6 @@ export default function SignupScreen({ navigation }) {
   const handlePhoneChange = (value) => {
     const formatted = formatPhoneNumber(value);
     setPhoneNumber(formatted);
-    // Clear error when user starts typing
     if (phoneError) setPhoneError('');
   };
 
@@ -116,7 +75,6 @@ export default function SignupScreen({ navigation }) {
   const isValidEmail = (value) => {
     const trimmed = (value || '').trim();
     if (!trimmed) return false;
-    // Basic email validation - must contain @ and a domain
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(trimmed);
   };
@@ -126,48 +84,6 @@ export default function SignupScreen({ navigation }) {
       return false;
     }
     return true;
-  };
-
-  const openDatePicker = () => {
-    const baseDate = dateOfBirth || pendingDate;
-    setPendingDate(baseDate);
-    setShowDatePicker(true);
-  };
-
-  const handleDateChange = (event, selectedDate) => {
-    if (Platform.OS === 'android') {
-      if (event.type === 'set' && selectedDate) {
-        setDateOfBirth(selectedDate);
-      }
-      setShowDatePicker(false);
-    } else if (selectedDate) {
-      setPendingDate(selectedDate);
-    }
-  };
-
-  const handleDateCancel = () => {
-    setShowDatePicker(false);
-  };
-
-  const handleDateDone = () => {
-    setDateOfBirth(pendingDate);
-    setShowDatePicker(false);
-    // Clear error when date is selected
-    if (dateOfBirthError) setDateOfBirthError('');
-  };
-
-  const isExistingAccountError = (error) => {
-    const errorMessage = String(error?.message || error || '').toLowerCase();
-    const errorName = String(error?.name || '').toLowerCase();
-    
-    return (
-      errorName.includes('usernameexists') ||
-      errorName.includes('aliasexists') ||
-      errorMessage.includes('already exists') ||
-      errorMessage.includes('username exists') ||
-      errorMessage.includes('account with the given email') ||
-      errorMessage.includes('user already exists')
-    );
   };
 
   const showExistingAccountAlert = () => {
@@ -200,19 +116,16 @@ export default function SignupScreen({ navigation }) {
     );
   };
 
-  async function handleSignup() {
+  async function handleContinue() {
     // Clear all previous errors
-    setError('');
     setFullNameError('');
     setEmailError('');
     setPhoneError('');
     setPasswordError('');
-    setGenderError('');
-    setDateOfBirthError('');
     
     let hasErrors = false;
     
-    // Validate all fields and set field-specific errors
+    // Validate all fields
     if (!fullName.trim()) {
       setFullNameError('Please enter your full name');
       hasErrors = true;
@@ -228,7 +141,7 @@ export default function SignupScreen({ navigation }) {
     
     const normalizedPhone = normalizePhone(phoneNumber);
     if (!normalizedPhone || !isValidPhone(phoneNumber)) {
-      setPhoneError('Please enter a valid phone number');
+      setPhoneError('Please enter a valid 10-digit phone number');
       hasErrors = true;
     }
     
@@ -240,42 +153,32 @@ export default function SignupScreen({ navigation }) {
       hasErrors = true;
     }
     
-    if (!gender) {
-      setGenderError('Please select a gender');
-      hasErrors = true;
-    }
-    
-    if (!dateOfBirth) {
-      setDateOfBirthError('Please choose your date of birth');
-      hasErrors = true;
-    }
-    
-    // If there are validation errors, stop here
     if (hasErrors) {
       return;
     }
     
     try {
       setLoading(true);
-      const normalizedEmail = await startEmailSignup(email, password);
-      navigation.navigate('ConfirmOtp', {
-        email: normalizedEmail,
-        password,
-        fullName: fullName.trim(),
-        gender,
-        dateOfBirth: formatDateOfBirth(dateOfBirth),
-        phoneNumber: normalizedPhone,
-      });
-    } catch (e) {
-      // Check if this is an existing account error
-      if (isExistingAccountError(e)) {
+      // Check if email exists in backend users table
+      const normalizedEmail = (email || '').trim().toLowerCase();
+      const result = await checkEmail(normalizedEmail);
+      
+      if (result.exists) {
         showExistingAccountAlert();
         setEmailError('An account with this email already exists');
-      } else {
-        // For other errors (like network issues), show as general error
-        const errorMessage = String(e.message || e);
-        setError(errorMessage);
+        return;
       }
+      
+      // Email doesn't exist, proceed to next step
+      navigation.navigate('SignupStep2', {
+        fullName: fullName.trim(),
+        email: normalizedEmail,
+        phoneNumber: normalizedPhone,
+        password,
+      });
+    } catch (e) {
+      const errorMessage = String(e.message || e);
+      setEmailError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -373,98 +276,23 @@ export default function SignupScreen({ navigation }) {
                 setPassword(value);
                 if (passwordError) setPasswordError('');
               }}
-              placeholder="************"
+              placeholder="Create a password"
               placeholderTextColor="#D0E2FF"
               secureTextEntry
             />
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
-              <Text style={styles.loginLabel}>Gender</Text>
-              {genderError ? (
-                <Text style={styles.errorText}>{genderError}</Text>
-              ) : null}
-            </View>
-            <ChipRow
-              options={genderOptions}
-              selected={gender}
-              onSelect={(value) => {
-                setGender(value);
-                if (genderError) setGenderError('');
-              }}
-            />
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
-              <Text style={styles.loginLabel}>Date of birth</Text>
-              {dateOfBirthError ? (
-                <Text style={styles.errorText}>{dateOfBirthError}</Text>
-              ) : null}
-            </View>
-            <TouchableOpacity style={styles.loginInput} onPress={openDatePicker}>
-              <Text style={{ color: dateOfBirth ? '#FFFFFF' : '#D0E2FF' }}>
-                {displayDateOfBirth(dateOfBirth)}
-              </Text>
-            </TouchableOpacity>
-
-            {error ? (
-              <Text style={styles.errorText}>{error}</Text>
-            ) : null}
-
             <TouchableOpacity
               style={[styles.loginButton, loading && { opacity: 0.6 }]}
-              onPress={handleSignup}
+              onPress={handleContinue}
               disabled={loading}
             >
               <Text style={styles.loginButtonText}>
-                {loading ? 'Sending code…' : 'Get verification code'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={{ marginTop: 20, alignSelf: 'center' }}
-              onPress={() => navigation.navigate('Login')}
-            >
-              <Text style={styles.loginFooterText}>
-                Already have an account?{' '}
-                <Text style={styles.loginFooterLink}>Log in</Text>
+                {loading ? 'Please wait…' : 'Continue'}
               </Text>
             </TouchableOpacity>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {showDatePicker && Platform.OS === 'ios' ? (
-        <Modal transparent animationType="fade" visible={showDatePicker}>
-          <View style={styles.dateModalOverlay}>
-            <View style={styles.dateModalContent}>
-              <View style={styles.dateModalHeader}>
-                <Text style={styles.dateModalCancel} onPress={handleDateCancel}>
-                  Cancel
-                </Text>
-                <Text style={styles.dateModalDone} onPress={handleDateDone}>
-                  Done
-                </Text>
-              </View>
-              <DateTimePicker
-                value={pendingDate}
-                mode="date"
-                display="spinner"
-                onChange={handleDateChange}
-                maximumDate={new Date()}
-              />
-            </View>
-          </View>
-        </Modal>
-      ) : null}
-
-      {showDatePicker && Platform.OS !== 'ios' ? (
-        <DateTimePicker
-          value={pendingDate}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-          maximumDate={new Date()}
-        />
-      ) : null}
     </SafeAreaView>
   );
 }

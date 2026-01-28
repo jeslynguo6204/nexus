@@ -20,6 +20,7 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resendTimer, setResendTimer] = useState(30);
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -29,6 +30,9 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   const gender = route?.params?.gender || '';
   const dateOfBirth = route?.params?.dateOfBirth || '';
   const phoneNumber = route?.params?.phoneNumber || '';
+  const graduationYear = route?.params?.graduationYear || null;
+  const datingPreferences = route?.params?.datingPreferences || null;
+  const friendsPreferences = route?.params?.friendsPreferences || null;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -37,6 +41,16 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  useEffect(() => {
+    // Start countdown timer for resend button
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => {
+        setResendTimer(resendTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   async function handleVerify() {
     try {
@@ -50,6 +64,9 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
         dateOfBirth,
         gender,
         phoneNumber,
+        graduationYear,
+        datingPreferences,
+        friendsPreferences,
       });
       await login(email, password);
       if (onSignedIn) {
@@ -65,10 +82,15 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   }
 
   async function handleResend() {
+    if (resendTimer > 0) {
+      return; // Don't allow resend if timer is still counting
+    }
+    
     try {
       setError('');
       setResending(true);
       await resendOtp(email);
+      setResendTimer(30); // Reset timer to 30 seconds
       Alert.alert('Sent', 'We just sent you a new code.');
     } catch (e) {
       const message = String(e.message || e);
@@ -98,11 +120,17 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
         >
           <Text style={styles.loginLogo}>6°</Text>
           <Text style={styles.loginTitle}>Verify your email</Text>
+          
+          {email ? (
+            <Text style={[styles.loginFooterText, { marginTop: 8, textAlign: 'center' }]}>
+              We sent a code to <Text style={{ fontWeight: '700', color: '#FFFFFF' }}>{email}</Text>
+            </Text>
+          ) : null}
 
           <Animated.View
             style={{
               width: '100%',
-              marginTop: 40,
+              marginTop: 20,
               opacity: fadeAnim,
             }}
           >
@@ -132,12 +160,16 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
 
             <View style={{ marginTop: 16, alignItems: 'center' }}>
               <TouchableOpacity
-                style={resending && { opacity: 0.6 }}
+                style={resending || resendTimer > 0 ? { opacity: 0.6 } : {}}
                 onPress={handleResend}
-                disabled={resending}
+                disabled={resending || resendTimer > 0}
               >
                 <Text style={styles.loginFooterText}>
-                  {resending ? 'Sending…' : 'Resend code'}
+                  {resending 
+                    ? 'Sending…' 
+                    : resendTimer > 0 
+                    ? `Resend code (${resendTimer}s)` 
+                    : 'Resend code'}
                 </Text>
               </TouchableOpacity>
             </View>

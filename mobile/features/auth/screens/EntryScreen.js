@@ -33,7 +33,7 @@ export default function EntryScreen({ navigation }) {
             <Text style={styles.entryPrimaryButtonText}>Log in</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+          <TouchableOpacity onPress={() => navigation.navigate('SignupStep1')}>
             <Text style={styles.entrySecondaryText}>
               Don&apos;t have an account yet?{' '}
               <Text style={styles.entrySecondaryLink}>Sign up here!</Text>

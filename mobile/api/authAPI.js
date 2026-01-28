@@ -73,3 +73,7 @@ export function signup({ fullName, email, password, dateOfBirth, gender, phoneNu
     phoneNumber,
   });
 }
+
+export function checkEmail(email) {
+  return request('/auth/check-email', { email });
+}

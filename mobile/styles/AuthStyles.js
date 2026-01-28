@@ -224,8 +224,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   loginContent: {
-    flexGrow: 1,
-    paddingTop: 40,
+    paddingTop: 10,
+    paddingBottom: 10,
     alignItems: 'center',
   },
 
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginBottom: 12,
-    marginTop: 30,
+    marginTop: 0,
   },
 
   // centered "Welcome back!"
@@ -262,8 +262,8 @@ const styles = StyleSheet.create({
   loginLabel: {
     color: '#E5F2FF',
     fontSize: 14,
+    fontWeight: '700',
     marginBottom: 6,
-    marginTop: 16,
   },
   loginInput: {
     width: '100%',
