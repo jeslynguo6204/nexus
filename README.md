@@ -158,50 +158,21 @@ EXPO_PUBLIC_COGNITO_USER_POOL_CLIENT_ID=[your-app-client-id]
 
 **Note:** Make sure your computer and mobile device/emulator are on the **same Wi‑Fi network**.
 
-### 5. Start the Expo Development Server
+### 5. Generate Native Project and Start the Expo Development Server
 
 ```bash
-npx expo start -c
+npx expo prebuild
 ```
-
-The `-c` flag clears the cache, which is helpful when environment variables change.
-
-You should see the Expo DevTools open in your browser and a QR code in the terminal.
 
 ### 6. Run the App
 
-**For iOS Simulator (Mac only):**
-- Press `i` in the terminal, or
-- Click "Run on iOS simulator" in the Expo DevTools
-
-**For Android Emulator:**
-- Press `a` in the terminal, or
-- Click "Run on Android device/emulator" in the Expo DevTools
+```bash
+npx expo run:ios --device
+```
 
 **For Physical Device:**
-- Install the "Expo Go" app from the App Store (iOS) or Play Store (Android)
-- Scan the QR code with your phone's camera (iOS) or the Expo Go app (Android)
-- Make sure your phone is on the same Wi‑Fi network as your computer
-
----
-
-## Running the Full Stack
-
-To run both backend and mobile app:
-
-1. **Terminal 1 - Backend:**
-   ```bash
-   cd backend
-   npm run dev
-   ```
-
-2. **Terminal 2 - Mobile:**
-   ```bash
-   cd mobile
-   npx expo start -c
-   ```
-
-3. **In the mobile terminal, press `i` to launch iOS simulator**
+- Connect the device to computer with a cable
+- On iOS devices, go into Settings->General->VPN&Device Management, and under "Developer App" approve your new app.
 
 ---
 
