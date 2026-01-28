@@ -44,11 +44,15 @@ Create a `.env` file in the `backend/` directory with the following variables:
 DATABASE_URL=postgresql://username:password@host:port/database
 JWT_SECRET=your-secret-key-here-make-it-long-and-random
 PORT=4000
+COGNITO_USER_POOL_ID=[your-user-pool-id]
+COGNITO_APP_CLIENT_ID=[your-app-client-id]
 ```
 
 **Required Variables:**
 - `DATABASE_URL`: PostgreSQL connection string
 - `JWT_SECRET`: Secret key for JWT token signing (use a long, random string)
+- `COGNITO_USER_POOL_ID`: App's user pool id in AWS Cognito
+- `COGNITO_APP_CLIENT_ID`: App's client id in AWS Cognito
 
 **Optional Variables:**
 - `PORT`: Server port (defaults to 4000 if not set)
