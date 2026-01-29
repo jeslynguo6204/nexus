@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: TOKENS.danger,
-    marginTop: SPACE.s,
+    marginTop: SPACE.xs,
     fontSize: 13,
     fontWeight: '600',
   },
