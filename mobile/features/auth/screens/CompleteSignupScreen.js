@@ -51,24 +51,22 @@ export default function CompleteSignupScreen({ navigation, route, onSignedIn }) 
       setError('');
       setLoading(true);
 
-      // Prepare preferences for backend
-      // If wantsRomantic is true and romanticPreference exists, user wants romantic connections
-      const datingPreferences = wantsRomantic && romanticPreference
+      // Prepare preferences for backend (arrays: male, female, non-binary; at least one, up to 3)
+      const datingPreferences = wantsRomantic && Array.isArray(romanticPreference) && romanticPreference.length > 0
         ? {
             preference: romanticPreference,
             notLooking: false,
           }
         : {
-            preference: 'everyone', // Default, but dating will be disabled
+            preference: null,
             notLooking: true,
           };
 
-      // If wantsPlatonic is true and platonicPreference exists, user wants platonic connections
-      const friendsPreferences = wantsPlatonic && platonicPreference
+      const friendsPreferences = wantsPlatonic && Array.isArray(platonicPreference) && platonicPreference.length > 0
         ? {
             preference: platonicPreference,
           }
-        : null; // null means friends is disabled
+        : null;
 
       await signupToBackend({
         fullName,
@@ -123,7 +121,7 @@ export default function CompleteSignupScreen({ navigation, route, onSignedIn }) 
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Animated.View style={[styles.formWrap, { opacity: fadeAnim, alignItems: 'center', justifyContent: 'center', flex: 1 }]}>
+            <Animated.View style={[styles.formWrap, { opacity: fadeAnim, alignItems: 'center', justifyContent: 'center', flex: 1, paddingTop: 120 }]}>
               <Text style={styles.logo}>6°</Text>
               <Text style={styles.title}>Setting up your account...</Text>
               {loading && (

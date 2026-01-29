@@ -38,7 +38,8 @@ import Slider from '@react-native-community/slider';
 import styles, { COLORS } from '../../../styles/ProfileFormStyles';
 
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
-const GENDER_OPTIONS = ['male', 'female', 'non-binary', 'everyone'];
+const GENDER_OPTIONS = ['male', 'female', 'non-binary'];
+const filterValidGenderPrefs = (arr) => Array.isArray(arr) ? arr.filter((v) => GENDER_OPTIONS.includes(v)) : [];
 
 export default function ProfileForm({ profile, onSave }) {
   // Basic info
@@ -57,13 +58,15 @@ export default function ProfileForm({ profile, onSave }) {
     profile.is_friends_enabled ?? false
   );
 
-  // Gender preferences
-  const [datingGenderPreference, setDatingGenderPreference] = useState(
-    profile.dating_gender_preference || 'everyone'
-  );
-  const [friendsGenderPreference, setFriendsGenderPreference] = useState(
-    profile.friends_gender_preference || 'everyone'
-  );
+  // Gender preferences (array: at least one, up to 3; filter out legacy "everyone")
+  const [datingGenderPreference, setDatingGenderPreference] = useState(() => {
+    const filtered = filterValidGenderPrefs(profile.dating_gender_preference);
+    return filtered.length > 0 ? filtered : [];
+  });
+  const [friendsGenderPreference, setFriendsGenderPreference] = useState(() => {
+    const filtered = filterValidGenderPrefs(profile.friends_gender_preference);
+    return filtered.length > 0 ? filtered : [];
+  });
 
   // Age / distance preferences
   const [minAgePreference, setMinAgePreference] = useState(
@@ -103,6 +106,15 @@ export default function ProfileForm({ profile, onSave }) {
       return false;
     }
 
+    if (isDatingEnabled && (!Array.isArray(datingGenderPreference) || datingGenderPreference.length === 0)) {
+      Alert.alert('Dating preference', 'Select at least one option for who you want to see (dating).');
+      return false;
+    }
+    if (isFriendsEnabled && (!Array.isArray(friendsGenderPreference) || friendsGenderPreference.length === 0)) {
+      Alert.alert('Friends preference', 'Select at least one option for who you want to see (friends).');
+      return false;
+    }
+
     return true;
   }
 
@@ -111,6 +123,11 @@ export default function ProfileForm({ profile, onSave }) {
 
     const gradYearNum = graduationYear ? Number(graduationYear) : undefined;
     const maxDistanceKm = Math.round(maxDistanceMiles * 1.60934);
+
+    const datingFiltered = filterValidGenderPrefs(datingGenderPreference).slice(0, 3);
+    const friendsFiltered = filterValidGenderPrefs(friendsGenderPreference).slice(0, 3);
+    const datingPref = datingFiltered.length > 0 ? datingFiltered : null;
+    const friendsPref = friendsFiltered.length > 0 ? friendsFiltered : null;
 
     const payload = {
       displayName: displayName || undefined,
@@ -121,8 +138,8 @@ export default function ProfileForm({ profile, onSave }) {
       isDatingEnabled,
       isFriendsEnabled,
 
-      datingGenderPreference,
-      friendsGenderPreference,
+      datingGenderPreference: datingPref,
+      friendsGenderPreference: friendsPref,
 
       minAgePreference,
       maxAgePreference,
@@ -243,11 +260,19 @@ export default function ProfileForm({ profile, onSave }) {
         <Text style={styles.subLabel}>Dating</Text>
         <View style={styles.chipRow}>
           {GENDER_OPTIONS.map((opt) => {
-            const selected = datingGenderPreference === opt;
+            const selected = Array.isArray(datingGenderPreference) && datingGenderPreference.includes(opt);
             return (
               <TouchableOpacity
                 key={opt}
-                onPress={() => setDatingGenderPreference(opt)}
+                onPress={() => {
+                  const arr = Array.isArray(datingGenderPreference) ? [...datingGenderPreference] : [];
+                  if (selected) {
+                    const next = arr.filter((x) => x !== opt);
+                    if (next.length > 0) setDatingGenderPreference(next);
+                  } else {
+                    setDatingGenderPreference([...arr, opt]);
+                  }
+                }}
                 style={[styles.chip, selected && styles.chipSelected]}
               >
                 <Text
@@ -263,11 +288,19 @@ export default function ProfileForm({ profile, onSave }) {
         <Text style={styles.subLabel}>Friends</Text>
         <View style={styles.chipRow}>
           {GENDER_OPTIONS.map((opt) => {
-            const selected = friendsGenderPreference === opt;
+            const selected = Array.isArray(friendsGenderPreference) && friendsGenderPreference.includes(opt);
             return (
               <TouchableOpacity
                 key={opt}
-                onPress={() => setFriendsGenderPreference(opt)}
+                onPress={() => {
+                  const arr = Array.isArray(friendsGenderPreference) ? [...friendsGenderPreference] : [];
+                  if (selected) {
+                    const next = arr.filter((x) => x !== opt);
+                    if (next.length > 0) setFriendsGenderPreference(next);
+                  } else {
+                    setFriendsGenderPreference([...arr, opt]);
+                  }
+                }}
                 style={[styles.chip, selected && styles.chipSelected]}
               >
                 <Text

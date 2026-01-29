@@ -1,12 +1,8 @@
 // src/modules/profiles/profiles.validation.ts
 import { z } from "zod";
 
-export const genderPreferenceEnum = z.enum([
-  "male",
-  "female",
-  "non-binary",
-  "everyone",
-]);
+const genderPreferenceOption = z.enum(["male", "female", "non-binary"]);
+export const genderPreferenceArray = z.array(genderPreferenceOption).min(1).max(3);
 
 export const profileUpdateSchema = z
   .object({
@@ -19,8 +15,8 @@ export const profileUpdateSchema = z
     isDatingEnabled: z.boolean().optional(),
     isFriendsEnabled: z.boolean().optional(),
 
-    datingGenderPreference: genderPreferenceEnum.optional(),
-    friendsGenderPreference: genderPreferenceEnum.optional(),
+    datingGenderPreference: genderPreferenceArray.optional().nullable(),
+    friendsGenderPreference: genderPreferenceArray.optional().nullable(),
 
     minAgePreference: z.number().int().min(18).max(100).optional(),
     maxAgePreference: z.number().int().min(18).max(100).optional(),

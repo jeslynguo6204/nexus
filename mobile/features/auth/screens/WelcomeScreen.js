@@ -18,14 +18,17 @@ function SelectChip({ label, selected, onPress, style }) {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      style={[
+        style={[
         {
           paddingHorizontal: 24,
           paddingVertical: 14,
+          minHeight: 48,
           borderRadius: 999,
           backgroundColor: selected ? '#FFFFFF' : 'rgba(255,255,255,0.2)',
-          borderWidth: selected ? 0 : 1,
-          borderColor: 'rgba(255,255,255,0.4)',
+          borderWidth: 1,
+          borderColor: selected ? 'transparent' : 'rgba(255,255,255,0.4)',
+          justifyContent: 'center',
+          alignItems: 'center',
         },
         style,
       ]}
@@ -90,6 +93,24 @@ export default function WelcomeScreen({ navigation, route }) {
     }
   }
 
+  function handleSkip() {
+    // Skip with default preferences: both romantic and platonic with all three options
+    const params = {
+      fullName,
+      email,
+      phoneNumber,
+      password,
+      gender,
+      dateOfBirth,
+      graduationYear,
+      wantsRomantic: true,
+      wantsPlatonic: true,
+      romanticPreference: ['male', 'female', 'non-binary'],
+      platonicPreference: ['male', 'female', 'non-binary'],
+    };
+    navigation.navigate('CompleteSignup', params);
+  }
+
   return (
     <LinearGradient
       colors={['#1F6299', '#34A4FF']}
@@ -104,14 +125,20 @@ export default function WelcomeScreen({ navigation, route }) {
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleSkip}
+          style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}
+        >
+          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>Skip →</Text>
+        </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: 40 }}
+            contentContainerStyle={{ flexGrow: 1, paddingTop: 12, paddingBottom: 32 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.entryTop}>
+            <View style={[styles.entryTop, { marginTop: 12 }]}>
               <View style={styles.entryLogoCircle}>
                 <Text style={styles.entryLogoText}>6°</Text>
               </View>
@@ -124,24 +151,26 @@ export default function WelcomeScreen({ navigation, route }) {
             </View>
 
             <Animated.View style={[{ width: '100%', paddingHorizontal: 24, opacity: fadeAnim }]}>
-              <View style={{ marginTop: 16, marginBottom: 32 }}>
+              <View style={{ marginTop: 16 }}>
                 <Text style={{ fontSize: 18, fontWeight: '600', color: '#FFFFFF', textAlign: 'center', marginBottom: 16 }}>
                   What type of connections are you interested in?
                 </Text>
-                <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 24 }}>
+                <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 40 }}>
                   Select one or both. You can change this anytime.
                 </Text>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 24 }}>
                   <SelectChip
                     label="Romantic"
                     selected={romantic}
                     onPress={() => setRomantic(!romantic)}
+                    style={{ flex: 1, maxWidth: 140 }}
                   />
                   <SelectChip
                     label="Platonic"
                     selected={platonic}
                     onPress={() => setPlatonic(!platonic)}
+                    style={{ flex: 1, maxWidth: 140 }}
                   />
                 </View>
               </View>

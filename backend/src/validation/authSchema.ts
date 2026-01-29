@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-const genderPreferenceEnum = z.enum(["male", "female", "non-binary", "everyone"]);
+const genderPreferenceOption = z.enum(["male", "female", "non-binary"]);
+const genderPreferenceArray = z.array(genderPreferenceOption).min(1).max(3);
 
 export const signupSchema = z.object({
   email: z.string().email(),
@@ -17,11 +18,11 @@ export const signupSchema = z.object({
     }),
   graduationYear: z.number().int().min(2020).max(2040).optional().nullable(),
   datingPreferences: z.object({
-    preference: genderPreferenceEnum.nullable().optional(),
+    preference: genderPreferenceArray.nullable().optional(),
     notLooking: z.boolean().optional(),
   }).optional().nullable(),
   friendsPreferences: z.object({
-    preference: genderPreferenceEnum.optional(),
+    preference: genderPreferenceArray.optional(),
   }).optional().nullable(),
 });
 

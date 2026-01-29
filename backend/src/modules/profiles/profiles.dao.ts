@@ -17,8 +17,8 @@ export interface ProfileRow {
   };
   is_dating_enabled: boolean;
   is_friends_enabled: boolean;
-  dating_gender_preference: string | null;
-  friends_gender_preference: string | null;
+  dating_gender_preference: string[] | null;
+  friends_gender_preference: string[] | null;
   min_age_preference: number | null;
   max_age_preference: number | null;
   max_distance_km: number | null;
@@ -115,8 +115,8 @@ export interface ProfileUpdateInput {
   academic_year?: string | null; // ENUM: 'Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'
   is_dating_enabled?: boolean;
   is_friends_enabled?: boolean;
-  dating_gender_preference?: string | null;
-  friends_gender_preference?: string | null;
+  dating_gender_preference?: string[] | null;
+  friends_gender_preference?: string[] | null;
   min_age_preference?: number | null;
   max_age_preference?: number | null;
   max_distance_km?: number | null;

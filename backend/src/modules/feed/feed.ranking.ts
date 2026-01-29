@@ -16,8 +16,8 @@ export interface DiscoveryContext {
   userProfile?: {
     school_id: number | null;
     gender: string | null;
-    dating_gender_preference?: string | null;
-    friends_gender_preference?: string | null;
+    dating_gender_preference?: string[] | null;
+    friends_gender_preference?: string[] | null;
     min_age_preference?: number | null;
     max_age_preference?: number | null;
     max_distance_km?: number | null;

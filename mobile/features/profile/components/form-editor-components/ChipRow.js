@@ -40,6 +40,8 @@ export default function ChipRow({
   onSelect,
   allowUnselect = false,
   disabled = false,
+  // When true, selected is an array and toggling adds/removes; at least one must remain unless allowUnselect
+  multiSelect = false,
 
   // NEW:
   // - wrap: true => multi-line chips (recommended for auth)
@@ -50,13 +52,14 @@ export default function ChipRow({
   stylesOverride,
 }) {
   const s = stylesOverride || defaultStyles;
+  const selectedArr = Array.isArray(selected) ? selected : (selected != null ? [selected] : []);
 
   const content = (
     <View style={wrap ? s.chipWrap : { flexDirection: 'row' }}>
       {options.map((opt) => {
         const value = typeof opt === 'string' ? opt : opt.value;
         const label = typeof opt === 'string' ? opt : opt.label;
-        const isSelected = selected === value;
+        const isSelected = multiSelect ? selectedArr.includes(value) : selected === value;
 
         return (
           <TouchableOpacity
@@ -65,8 +68,16 @@ export default function ChipRow({
             disabled={disabled}
             onPress={() => {
               if (disabled) return;
-              if (allowUnselect && isSelected) onSelect?.('');
-              else onSelect?.(value);
+              if (multiSelect) {
+                const next = isSelected
+                  ? selectedArr.filter((v) => v !== value)
+                  : [...selectedArr, value];
+                if (next.length === 0 && !allowUnselect) return;
+                onSelect?.(next);
+              } else {
+                if (allowUnselect && isSelected) onSelect?.('');
+                else onSelect?.(value);
+              }
             }}
             style={[
               s.chip,

@@ -18,15 +18,17 @@ function SelectChip({ label, selected, onPress, style }) {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      style={[
+        style={[
         {
           paddingHorizontal: 20,
           paddingVertical: 12,
+          minHeight: 48,
           borderRadius: 999,
           backgroundColor: selected ? '#FFFFFF' : 'rgba(255,255,255,0.2)',
-          borderWidth: selected ? 0 : 1,
-          borderColor: 'rgba(255,255,255,0.4)',
+          borderWidth: 1,
+          borderColor: selected ? 'transparent' : 'rgba(255,255,255,0.4)',
           marginHorizontal: 6,
+          justifyContent: 'center',
         },
         style,
       ]}
@@ -48,7 +50,6 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
   const [men, setMen] = useState(false);
   const [women, setWomen] = useState(false);
   const [nonBinary, setNonBinary] = useState(false);
-  const everyone = men && women && nonBinary;
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -72,22 +73,13 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
     }).start();
   }, [fadeAnim]);
 
-  // Convert to backend format
+  // Convert to backend format: array of 'male' | 'female' | 'non-binary' (at least one, up to 3)
   const getPreference = () => {
-    if (everyone) {
-      return 'everyone';
-    }
-    if (men && !women && !nonBinary) {
-      return 'male';
-    }
-    if (women && !men && !nonBinary) {
-      return 'female';
-    }
-    if (nonBinary && !men && !women) {
-      return 'non-binary';
-    }
-    // If multiple but not all, default to everyone
-    return 'everyone';
+    const arr = [];
+    if (men) arr.push('male');
+    if (women) arr.push('female');
+    if (nonBinary) arr.push('non-binary');
+    return arr;
   };
 
   function handleFinish() {
@@ -114,6 +106,26 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
     navigation.navigate('CompleteSignup', params);
   }
 
+  function handleSkip() {
+    // Skip with default platonic preference: all three
+    const params = {
+      fullName,
+      email,
+      phoneNumber,
+      password,
+      gender,
+      dateOfBirth,
+      graduationYear,
+      wantsRomantic: !!romanticPreference,
+      wantsPlatonic: true,
+      romanticPreference,
+      platonicPreference: ['male', 'female', 'non-binary'],
+    };
+
+    // Finish signup
+    navigation.navigate('CompleteSignup', params);
+  }
+
   return (
     <LinearGradient
       colors={['#1F6299', '#34A4FF']}
@@ -128,14 +140,20 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleSkip}
+          style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}
+        >
+          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>Skip →</Text>
+        </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: 40 }}
+            contentContainerStyle={{ flexGrow: 1, paddingTop: 12, paddingBottom: 32 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.entryTop}>
+            <View style={[styles.entryTop, { marginTop: 12 }]}>
               <View style={styles.entryLogoCircle}>
                 <Text style={styles.entryLogoText}>6°</Text>
               </View>
@@ -148,12 +166,12 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
             </View>
 
             <Animated.View style={[{ width: '100%', paddingHorizontal: 24, opacity: fadeAnim }]}>
-              <View style={{ marginTop: 16, marginBottom: 32 }}>
-                <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 24 }}>
-                  Select all that apply. This only affects your friends connections.
+              <View style={{ marginTop: 16 }}>
+                <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 40 }}>
+                  Select all that apply. This only affects your <Text style={{ fontWeight: '700' }}>friends</Text> connections.
                 </Text>
 
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
                   <SelectChip
                     label="Men"
                     selected={men}
@@ -168,16 +186,6 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
                     label="Non-Binary"
                     selected={nonBinary}
                     onPress={() => setNonBinary(!nonBinary)}
-                  />
-                  <SelectChip
-                    label="Everyone"
-                    selected={everyone}
-                    onPress={() => {
-                      const next = !everyone;
-                      setMen(next);
-                      setWomen(next);
-                      setNonBinary(next);
-                    }}
                   />
                 </View>
               </View>

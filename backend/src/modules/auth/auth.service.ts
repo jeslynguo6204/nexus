@@ -16,11 +16,11 @@ export async function signup(input: {
   phoneNumber?: string | null;
   graduationYear?: number | null;
   datingPreferences?: {
-    preference: string | null;
+    preference: string[] | null;
     notLooking?: boolean;
   } | null;
   friendsPreferences?: {
-    preference: string;
+    preference: string[];
   } | null;
 }) {
   const { email, password, fullName, dateOfBirth, gender, phoneNumber, graduationYear, datingPreferences, friendsPreferences } = input;
@@ -45,20 +45,19 @@ export async function signup(input: {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // Determine dating preference
-  let datingGenderPreference: string | null = 'everyone';
+  // Determine dating preference (array: male, female, non-binary; at least one, up to 3)
+  let datingGenderPreference: string[] | null = null;
   let isDatingEnabled = false;
-  if (datingPreferences && !datingPreferences.notLooking && datingPreferences.preference) {
+  if (datingPreferences && !datingPreferences.notLooking && Array.isArray(datingPreferences.preference) && datingPreferences.preference.length > 0) {
     datingGenderPreference = datingPreferences.preference;
     isDatingEnabled = true;
-  } else if (datingPreferences?.notLooking) {
-    datingGenderPreference = 'everyone'; // Default, but dating is disabled
-    isDatingEnabled = false;
   }
 
-  // Determine friends preference
-  const friendsGenderPreference = friendsPreferences?.preference || 'everyone';
-  const isFriendsEnabled = !!friendsPreferences; // Friends is enabled only if preferences are provided
+  // Determine friends preference (array)
+  const friendsGenderPreference = (Array.isArray(friendsPreferences?.preference) && friendsPreferences!.preference.length > 0)
+    ? friendsPreferences!.preference
+    : null;
+  const isFriendsEnabled = !!friendsGenderPreference;
 
   const userId = await createUserWithDefaults({
     schoolId: school.id,              // 🔹 no more null

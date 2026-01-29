@@ -8,10 +8,9 @@ import {
 import editProfileStyles from '@/styles/EditProfileStyles';
 
 const GENDER_OPTIONS = [
-  { label: 'Male', value: 'male' },
-  { label: 'Female', value: 'female' },
+  { label: 'Men', value: 'male' },
+  { label: 'Women', value: 'female' },
   { label: 'Non-Binary', value: 'non-binary' },
-  { label: 'Everyone', value: 'everyone' },
 ];
 
 export default function GenderPreferenceSection({ draft, setField }) {
@@ -25,6 +24,7 @@ export default function GenderPreferenceSection({ draft, setField }) {
           onSelect={(v) => draft.isDatingEnabled && setField('datingGenderPreference', v)}
           disabled={!draft.isDatingEnabled}
           wrap={false}
+          multiSelect
         />
       </EditProfileRow>
       <EditProfileRow label="Friends">
@@ -34,6 +34,7 @@ export default function GenderPreferenceSection({ draft, setField }) {
           onSelect={(v) => draft.isFriendsEnabled && setField('friendsGenderPreference', v)}
           disabled={!draft.isFriendsEnabled}
           wrap={false}
+          multiSelect
         />
       </EditProfileRow>
     </>
