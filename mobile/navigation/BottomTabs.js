@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome6 } from '@expo/vector-icons';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
@@ -38,11 +38,11 @@ function Placeholder({ name }) {
 }
 
 const ICON_MAP = {
-  Home: "home",
+  Home: "magnifying-glass",
   Likes: "heart",
-  Friends: "users",
-  Chat: "comments",
-  Profile: "user",
+  Chat: "paper-plane",
+  Friends: "user-group",
+  Profile: "address-card",
 };
 
 export default function BottomTabs({ onSignOut }) {
@@ -72,7 +72,7 @@ export default function BottomTabs({ onSignOut }) {
         },
         tabBarIcon: ({ color, size, focused }) => {
           const iconName = ICON_MAP[route.name];
-          return <FontAwesome name={iconName} size={focused ? 24 : 22} color={color} />;
+          return <FontAwesome6 name={iconName} size={focused ? 24 : 22} color={color} />;
         },
       })}
     >

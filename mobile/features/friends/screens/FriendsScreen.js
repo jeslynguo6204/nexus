@@ -136,7 +136,7 @@ export default function FriendsScreen() {
           onPress={() => Alert.alert('Friends', 'More options coming soon.')}
           hitSlop={8}
         >
-          <FontAwesome name="ellipsis-h" size={20} color="#111111" />
+          <FontAwesome name="bars" size={20} color="#111111" />
         </TouchableOpacity>
       </View>
 
@@ -161,6 +161,7 @@ export default function FriendsScreen() {
 
             {friendRequests.map((request) => {
               const subtitle = contextLine(request);
+              const isFriend = false; // Pending requests: not friends yet
               return (
               <View
                 key={request.request_id}
@@ -176,8 +177,40 @@ export default function FriendsScreen() {
                   shadowRadius: 8,
                   shadowOffset: { width: 0, height: 2 },
                   elevation: 2,
+                  position: 'relative',
                 }}
               >
+                {/* Status chip: top right - grey + user + plus (not friends) or green + user + check (friends) */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 10,
+                    right: 10,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 8,
+                    paddingVertical: 5,
+                    borderRadius: 999,
+                    backgroundColor: isFriend ? '#22C55E' : '#9CA3AF',
+                  }}
+                >
+                  <FontAwesome name="user" size={12} color="#FFFFFF" />
+                  {isFriend ? (
+                    <View style={{ marginLeft: 4 }}>
+                      <FontAwesome name="check" size={12} color="#FFFFFF" />
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => handleAcceptRequest(request.requester_id)}
+                      disabled={processingRequest === request.requester_id}
+                      hitSlop={6}
+                      style={{ padding: 2, marginLeft: 4 }}
+                    >
+                      <FontAwesome name="plus" size={12} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
                 {/* Avatar */}
                 {request.avatar_url ? (
                   <Image
