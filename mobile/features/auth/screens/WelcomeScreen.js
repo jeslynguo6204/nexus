@@ -13,18 +13,43 @@ import { LinearGradient } from 'expo-linear-gradient';
 import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
 import ChipRow from '../../profile/components/form-editor-components/ChipRow';
 
+// Black and white chip styles for preference screens
+const blackWhiteChipStyles = {
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: '#FFFFFF',
+  },
+  chipSelected: {
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    borderColor: 'rgba(0,0,0,0.20)',
+  },
+  chipText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'rgba(0,0,0,0.72)',
+  },
+  chipTextSelected: {
+    color: 'rgba(0,0,0,0.92)',
+    fontWeight: '600',
+  },
+};
+
 function SelectChip({ label, selected, onPress, style }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
       style={[
-        styles.chip,
-        selected && styles.chipSelected,
+        blackWhiteChipStyles.chip,
+        selected && blackWhiteChipStyles.chipSelected,
         style,
       ]}
     >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+      <Text style={[blackWhiteChipStyles.chipText, selected && blackWhiteChipStyles.chipTextSelected]}>
         {label}
       </Text>
     </TouchableOpacity>

@@ -1,6 +1,7 @@
 // ChipRow.js
 import React from 'react';
 import { ScrollView, View, TouchableOpacity, Text } from 'react-native';
+import { COLORS } from '@/styles/themeNEW';
 
 const defaultStyles = {
   chipWrap: {
@@ -8,30 +9,28 @@ const defaultStyles = {
     flexWrap: 'wrap',
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 999,
-    marginRight: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
+    backgroundColor: COLORS.backgroundSubtle, // #F4F4F5 - matches key affiliations unselected
   },
   chipSelected: {
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    borderColor: 'rgba(0,0,0,0.20)',
+    backgroundColor: COLORS.textPrimary, // #111111 - matches key affiliations selected
   },
   chipText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: 'rgba(0,0,0,0.72)',
+    fontWeight: '400',
+    color: COLORS.textPrimary, // #111111 - matches key affiliations unselected text
   },
   chipTextSelected: {
-    color: 'rgba(0,0,0,0.92)',
+    color: COLORS.surface, // #FFFFFF - matches key affiliations selected text
+    fontWeight: '400',
   },
 
   chipDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
 };
 
@@ -53,7 +52,7 @@ export default function ChipRow({
   const s = stylesOverride || defaultStyles;
 
   const content = (
-    <View style={s.chipWrap}>
+    <View style={wrap ? s.chipWrap : { flexDirection: 'row' }}>
       {options.map((opt) => {
         const value = typeof opt === 'string' ? opt : opt.value;
         const label = typeof opt === 'string' ? opt : opt.label;
@@ -73,6 +72,7 @@ export default function ChipRow({
               s.chip,
               isSelected && s.chipSelected,
               disabled && s.chipDisabled,
+              !wrap && { marginBottom: 0 }, // Remove bottom margin when scrolling horizontally
             ]}
           >
             <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
@@ -90,8 +90,9 @@ export default function ChipRow({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingRight: 20 }}
+      contentContainerStyle={{ paddingRight: 20, flexDirection: 'row', alignItems: 'center' }}
       scrollEnabled={!disabled}
+      style={{ flex: 1 }}
     >
       {content}
     </ScrollView>

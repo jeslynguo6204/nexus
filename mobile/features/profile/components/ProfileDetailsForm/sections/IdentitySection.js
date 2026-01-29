@@ -28,23 +28,21 @@ export default function IdentitySection({ draft, setField, openSelectionSheet })
         />
       </EditProfileRow>
       <EditProfileRow label="Gender">
-        <View style={editProfileStyles.chipsWrap}>
-          <ChipRow
-            options={GENDER_OPTIONS}
-            selected={draft.gender}
-            onSelect={(v) => setField('gender', v)}
-          />
-        </View>
+        <ChipRow
+          options={GENDER_OPTIONS}
+          selected={draft.gender}
+          onSelect={(v) => setField('gender', v)}
+          wrap={false}
+        />
       </EditProfileRow>
       <EditProfileRow label="Pronouns">
-        <View style={editProfileStyles.chipsWrap}>
-          <ChipRow
-            options={PRONOUN_OPTIONS}
-            selected={draft.pronouns}
-            onSelect={(v) => setField('pronouns', v)}
-            allowUnselect
-          />
-        </View>
+        <ChipRow
+          options={PRONOUN_OPTIONS}
+          selected={draft.pronouns}
+          onSelect={(v) => setField('pronouns', v)}
+          allowUnselect
+          wrap={false}
+        />
       </EditProfileRow>
       <EditProfileRow
         label="Sexuality"

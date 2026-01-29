@@ -17,23 +17,21 @@ export default function AcademicsSection({ draft, setField, schoolLabel }) {
         <Text style={editProfileStyles.rowValue}>{schoolLabel}</Text>
       </EditProfileRow>
       <EditProfileRow label="Academic year">
-        <View style={editProfileStyles.chipsWrap}>
-          <ChipRow
-            options={ACADEMIC_YEARS}
-            selected={draft.academicYear || ''}
-            onSelect={(v) => setField('academicYear', v)}
-          />
-        </View>
+        <ChipRow
+          options={ACADEMIC_YEARS}
+          selected={draft.academicYear || ''}
+          onSelect={(v) => setField('academicYear', v)}
+          wrap={false}
+        />
       </EditProfileRow>
       <EditProfileRow label="Graduation year">
-        <View style={editProfileStyles.chipsWrap}>
-          <ChipRow
-            options={GRAD_YEARS.map(String)}
-            selected={draft.graduationYear || ''}
-            onSelect={(v) => setField('graduationYear', v)}
-            allowUnselect
-          />
-        </View>
+        <ChipRow
+          options={GRAD_YEARS.map(String)}
+          selected={draft.graduationYear || ''}
+          onSelect={(v) => setField('graduationYear', v)}
+          allowUnselect
+          wrap={false}
+        />
       </EditProfileRow>
       <EditProfileRow label="Major">
         <RowTextInput

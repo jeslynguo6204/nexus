@@ -19,24 +19,22 @@ export default function GenderPreferenceSection({ draft, setField }) {
     <>
       <EditProfileSectionHeader title="Who you want to see" />
       <EditProfileRow label="Dating">
-        <View style={[editProfileStyles.chipsWrap, !draft.isDatingEnabled && { opacity: 0.5 }]}>
-          <ChipRow
-            options={GENDER_OPTIONS}
-            selected={draft.datingGenderPreference}
-            onSelect={(v) => draft.isDatingEnabled && setField('datingGenderPreference', v)}
-            disabled={!draft.isDatingEnabled}
-          />
-        </View>
+        <ChipRow
+          options={GENDER_OPTIONS}
+          selected={draft.datingGenderPreference}
+          onSelect={(v) => draft.isDatingEnabled && setField('datingGenderPreference', v)}
+          disabled={!draft.isDatingEnabled}
+          wrap={false}
+        />
       </EditProfileRow>
       <EditProfileRow label="Friends">
-        <View style={[editProfileStyles.chipsWrap, !draft.isFriendsEnabled && { opacity: 0.5 }]}>
-          <ChipRow
-            options={GENDER_OPTIONS}
-            selected={draft.friendsGenderPreference}
-            onSelect={(v) => draft.isFriendsEnabled && setField('friendsGenderPreference', v)}
-            disabled={!draft.isFriendsEnabled}
-          />
-        </View>
+        <ChipRow
+          options={GENDER_OPTIONS}
+          selected={draft.friendsGenderPreference}
+          onSelect={(v) => draft.isFriendsEnabled && setField('friendsGenderPreference', v)}
+          disabled={!draft.isFriendsEnabled}
+          wrap={false}
+        />
       </EditProfileRow>
     </>
   );
