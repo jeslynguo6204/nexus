@@ -58,7 +58,7 @@ export async function signup(input: {
 
   // Determine friends preference
   const friendsGenderPreference = friendsPreferences?.preference || 'everyone';
-  const isFriendsEnabled = true; // Friends is always enabled if preferences are set
+  const isFriendsEnabled = !!friendsPreferences; // Friends is enabled only if preferences are provided
 
   const userId = await createUserWithDefaults({
     schoolId: school.id,              // 🔹 no more null

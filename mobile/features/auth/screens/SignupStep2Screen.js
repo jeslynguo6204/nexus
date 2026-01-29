@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   KeyboardAvoidingView,
   Modal,
@@ -14,6 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient';
 import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
 import ChipRow from '../../profile/components/form-editor-components/ChipRow';
+import { startEmailSignup } from '../../../auth/cognito';
 
 const GRAD_YEARS = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
 
@@ -106,15 +108,22 @@ export default function SignupStep2Screen({ navigation, route }) {
 
     if (hasErrors) return;
 
-    navigation.navigate('SignupStep3', {
-      fullName,
-      email,
-      phoneNumber,
-      password,
-      gender,
-      dateOfBirth: formatDateOfBirth(dateOfBirth),
-      graduationYear: Number(graduationYear),
-    });
+    // Start email signup to trigger OTP
+    startEmailSignup(email, password)
+      .then((normalizedEmail) => {
+        navigation.navigate('ConfirmOtp', {
+          fullName,
+          email: normalizedEmail,
+          phoneNumber,
+          password,
+          gender,
+          dateOfBirth: formatDateOfBirth(dateOfBirth),
+          graduationYear: Number(graduationYear),
+        });
+      })
+      .catch((error) => {
+        Alert.alert('Error', error.message || 'Failed to start signup');
+      });
   }
 
   return (
