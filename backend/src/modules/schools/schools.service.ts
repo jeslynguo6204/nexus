@@ -31,14 +31,15 @@ export async function resolveSchoolForEmail(email: string): Promise<School> {
     }
   }
 
+  // Check if it's a .edu email first
   if (!domain.endsWith(".edu") && !domain.endsWith(".ac.uk")) {
-  // or whatever list you want
-  const err = new Error("Only academic email addresses are supported");
-  (err as any).statusCode = 400;
-  throw err;
-}
+    const err = new Error("Must be a school email");
+    (err as any).statusCode = 400;
+    throw err;
+  }
 
-  const err = new Error("School for this email domain is not supported");
+  // If it's a .edu but we couldn't find the school, it's not supported yet
+  const err = new Error("That school isn't supported yet");
   (err as any).statusCode = 400;
   throw err;
 }

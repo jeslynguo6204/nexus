@@ -90,8 +90,21 @@ export default function CompleteSignupScreen({ navigation, route, onSignedIn }) 
       }
     } catch (e) {
       const errorMessage = String(e.message || e);
-      setError(errorMessage);
-      Alert.alert('Error', errorMessage);
+      let displayError = errorMessage;
+      
+      // Handle specific error types with user-friendly messages
+      if (errorMessage === "Must be a school email" || errorMessage.includes('Must be a school email')) {
+        displayError = 'Must be a school email';
+      } else if (errorMessage === "That school isn't supported yet" || errorMessage.includes("isn't supported yet")) {
+        displayError = "That school isn't supported yet";
+      } else if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
+        displayError = 'An account with this email already exists';
+      } else if (errorMessage.includes('Missing required')) {
+        displayError = 'Please fill in all required fields';
+      }
+      
+      setError(displayError);
+      Alert.alert('Error', displayError);
       setLoading(false);
     }
   }

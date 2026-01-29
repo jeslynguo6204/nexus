@@ -60,7 +60,12 @@ export default function SignupStep1Screen({ navigation }) {
     return digits || '';
   };
 
-  const isValidPhone = (value) => normalizePhone(value).length === 10;
+  const getPhoneError = (value) => {
+    const normalized = normalizePhone(value);
+    if (!normalized) return 'Required';
+    if (normalized.length < 10) return 'Must be 10 digits';
+    return null;
+  };
 
   const isValidEmail = (value) => {
     const trimmed = (value || '').trim();
@@ -68,7 +73,14 @@ export default function SignupStep1Screen({ navigation }) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
   };
 
-  const isValidPassword = (value) => !!value && value.length >= 8;
+  const getPasswordError = (value) => {
+    if (!value) return 'Required';
+    if (value.length < 8) return 'Must be at least 8 characters';
+    if (!/[A-Z]/.test(value)) return 'Must include an uppercase letter';
+    if (!/[a-z]/.test(value)) return 'Must include a lowercase letter';
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) return 'Must include a special character';
+    return null;
+  };
 
   const showExistingAccountAlert = () => {
     Alert.alert(
@@ -99,30 +111,32 @@ export default function SignupStep1Screen({ navigation }) {
 
     let hasErrors = false;
 
+    // Validate full name
     if (!fullName.trim()) {
       setFullNameError('Required');
       hasErrors = true;
     }
 
+    // Validate email
     if (!email.trim()) {
       setEmailError('Required');
       hasErrors = true;
     } else if (!isValidEmail(email)) {
-      setEmailError('Invalid');
+      setEmailError('Invalid email format');
       hasErrors = true;
     }
 
-    const normalizedPhone = normalizePhone(phoneNumber);
-    if (!normalizedPhone || !isValidPhone(phoneNumber)) {
-      setPhoneError('Invalid');
+    // Validate phone
+    const phoneErr = getPhoneError(phoneNumber);
+    if (phoneErr) {
+      setPhoneError(phoneErr);
       hasErrors = true;
     }
 
-    if (!password) {
-      setPasswordError('Required');
-      hasErrors = true;
-    } else if (!isValidPassword(password)) {
-      setPasswordError('Min 8 chars');
+    // Validate password
+    const passwordErr = getPasswordError(password);
+    if (passwordErr) {
+      setPasswordError(passwordErr);
       hasErrors = true;
     }
 
@@ -131,11 +145,14 @@ export default function SignupStep1Screen({ navigation }) {
     try {
       setLoading(true);
       const normalizedEmail = (email || '').trim().toLowerCase();
+      const normalizedPhone = normalizePhone(phoneNumber);
+      
       const result = await checkEmail(normalizedEmail);
 
       if (result.exists) {
         showExistingAccountAlert();
-        setEmailError('Exists');
+        setEmailError('Account already exists');
+        setLoading(false);
         return;
       }
 
@@ -146,9 +163,27 @@ export default function SignupStep1Screen({ navigation }) {
         password,
       });
     } catch (e) {
-      const errorMessage = String(e.message || e);
-      setEmailError(errorMessage);
-    } finally {
+      // Extract error message from various possible formats
+      let errorMessage = '';
+      if (e.response?.error) {
+        errorMessage = String(e.response.error);
+      } else if (e.message) {
+        errorMessage = String(e.message);
+      } else {
+        errorMessage = String(e);
+      }
+      
+      // Set appropriate error message (displays as red inline text like other field errors)
+      const lowerMessage = errorMessage.toLowerCase();
+      if (lowerMessage.includes('must be a school email') || lowerMessage.includes('school email')) {
+        setEmailError('Must be a school email');
+      } else if (lowerMessage.includes("isn't supported yet") || lowerMessage.includes("isn't available yet") || lowerMessage.includes('not supported')) {
+        setEmailError("That school isn't supported yet");
+      } else if (lowerMessage.includes('already exists') || lowerMessage.includes('already registered')) {
+        setEmailError('Account already exists');
+      } else {
+        setEmailError(errorMessage);
+      }
       setLoading(false);
     }
   }

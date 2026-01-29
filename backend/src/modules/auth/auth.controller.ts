@@ -58,8 +58,39 @@ export async function checkEmail(req: Request, res: Response, next: NextFunction
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
+    
+    // Check if email exists
     const exists = await AuthService.checkEmailExists(email);
-    return res.json({ exists });
+    if (exists) {
+      return res.json({ exists: true });
+    }
+    
+    // Validate school availability
+    try {
+      const { resolveSchoolForEmail } = require("../schools/schools.service");
+      await resolveSchoolForEmail(email);
+      return res.json({ exists: false });
+    } catch (schoolError: any) {
+      console.log("School validation error:", schoolError.message);
+      // If school validation fails, return appropriate error
+      if (schoolError.message === "Must be a school email") {
+        console.log("Returning: Must be a school email");
+        return res.status(400).json({ 
+          error: "Must be a school email",
+          exists: false 
+        });
+      }
+      if (schoolError.message === "That school isn't supported yet") {
+        console.log("Returning: That school isn't supported yet");
+        return res.status(400).json({ 
+          error: "That school isn't supported yet",
+          exists: false 
+        });
+      }
+      // Re-throw other errors
+      console.log("Re-throwing school error:", schoolError);
+      throw schoolError;
+    }
   } catch (err) {
     console.error("❌ Check email error:", err);
     next(err);
