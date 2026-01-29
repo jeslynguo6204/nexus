@@ -33,12 +33,13 @@ function SelectChip({ label, selected, onPress, style }) {
 
 export default function SignupStep3Screen({ navigation, route }) {
   // Dating: make it single-select
-  const [dating, setDating] = useState(''); // '', 'men', 'women', 'everyone', 'notLooking'
+  const [dating, setDating] = useState(''); // '', 'men', 'women', 'nonBinary', 'everyone', 'notLooking'
 
   // Friends: multi-select
   const [friendsMen, setFriendsMen] = useState(true);
   const [friendsWomen, setFriendsWomen] = useState(true);
-  const friendsEveryone = friendsMen && friendsWomen;
+  const [friendsNonBinary, setFriendsNonBinary] = useState(true);
+  const friendsEveryone = friendsMen && friendsWomen && friendsNonBinary;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -55,12 +56,54 @@ export default function SignupStep3Screen({ navigation, route }) {
     }).start();
   }, []);
 
+  // Convert dating preference to backend format
+  const getDatingPreference = () => {
+    if (dating === 'notLooking' || dating === '') {
+      return null; // Not looking - will be handled separately
+    }
+    if (dating === 'everyone') {
+      return 'everyone';
+    }
+    if (dating === 'men') {
+      return 'male';
+    }
+    if (dating === 'women') {
+      return 'female';
+    }
+    if (dating === 'nonBinary') {
+      return 'non-binary';
+    }
+    return null;
+  };
+
+  // Convert friends preference to backend format
+  const getFriendsPreference = () => {
+    if (friendsEveryone) {
+      return 'everyone';
+    }
+    // If only one is selected
+    if (friendsMen && !friendsWomen && !friendsNonBinary) {
+      return 'male';
+    }
+    if (friendsWomen && !friendsMen && !friendsNonBinary) {
+      return 'female';
+    }
+    if (friendsNonBinary && !friendsMen && !friendsWomen) {
+      return 'non-binary';
+    }
+    // If multiple but not all, default to everyone
+    return 'everyone';
+  };
+
   async function handleCreateAccount() {
     try {
       setError('');
       setLoading(true);
 
       const normalizedEmail = await startEmailSignup(email, password);
+
+      const datingPreference = getDatingPreference();
+      const friendsPreference = getFriendsPreference();
 
       navigation.navigate('ConfirmOtp', {
         fullName,
@@ -71,15 +114,11 @@ export default function SignupStep3Screen({ navigation, route }) {
         dateOfBirth,
         graduationYear,
         datingPreferences: {
-          men: dating === 'men' || dating === 'everyone',
-          women: dating === 'women' || dating === 'everyone',
-          everyone: dating === 'everyone',
+          preference: datingPreference,
           notLooking: dating === 'notLooking' || dating === '',
         },
         friendsPreferences: {
-          men: friendsMen,
-          women: friendsWomen,
-          everyone: friendsMen && friendsWomen,
+          preference: friendsPreference,
         },
       });
     } catch (e) {
@@ -133,6 +172,11 @@ export default function SignupStep3Screen({ navigation, route }) {
                   onPress={() => setDating('women')}
                 />
                 <SelectChip
+                  label="Non-Binary"
+                  selected={dating === 'nonBinary'}
+                  onPress={() => setDating('nonBinary')}
+                />
+                <SelectChip
                   label="Everyone"
                   selected={dating === 'everyone'}
                   onPress={() => setDating('everyone')}
@@ -157,12 +201,18 @@ export default function SignupStep3Screen({ navigation, route }) {
                   onPress={() => setFriendsWomen((v) => !v)}
                 />
                 <SelectChip
+                  label="Non-Binary"
+                  selected={friendsNonBinary}
+                  onPress={() => setFriendsNonBinary((v) => !v)}
+                />
+                <SelectChip
                   label="Everyone"
                   selected={friendsEveryone}
                   onPress={() => {
                     const next = !friendsEveryone;
                     setFriendsMen(next);
                     setFriendsWomen(next);
+                    setFriendsNonBinary(next);
                   }}
                 />
               </View>

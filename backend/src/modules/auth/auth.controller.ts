@@ -4,7 +4,7 @@ import * as AuthService from "./auth.service";
 export async function signup(req: Request, res: Response, next: NextFunction) {
   try {
     console.log("📝 Signup attempt received");
-    const { email, password, fullName, dateOfBirth, gender, phoneNumber } = req.body;
+    const { email, password, fullName, dateOfBirth, gender, phoneNumber, graduationYear, datingPreferences, friendsPreferences } = req.body;
 
     if (!email || !password || !fullName) {
       console.log("❌ Signup failed: Missing required fields");
@@ -19,6 +19,9 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
       dateOfBirth,
       gender,
       phoneNumber,
+      graduationYear,
+      datingPreferences,
+      friendsPreferences,
     });
 
     console.log(`✅ Signup successful for: ${email}, userId: ${result.userId}`);
