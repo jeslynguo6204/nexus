@@ -279,3 +279,119 @@ export async function getFriendMatch(
   );
   return rows[0] ?? null;
 }
+
+// Get profiles that have liked the current user (received likes)
+export interface ReceivedLikeProfile {
+  user_id: number;
+  display_name: string | null;
+  bio: string | null;
+  major: string | null;
+  graduation_year: number | null;
+  academic_year: string | null;
+  interests: string[] | null;
+  likes: string[] | null;
+  dislikes: string[] | null;
+  photos: string[] | null;
+  school_id: number | null;
+  school_name: string | null;
+  school_short_name: string | null;
+  age: number | null;
+  date_of_birth: string | null;
+  location_description: string | null;
+  hometown: string | null;
+  languages: string | null;
+  height: number | null;
+  religious_beliefs: string | null;
+  political_affiliation: string | null;
+  ethnicity: string | null;
+  affiliations: number[] | null;
+  featured_affiliations: number[] | null;
+  gender: string | null;
+  dating_gender_preference: string[] | null;
+  friends_gender_preference: string[] | null;
+  like_created_at: string;
+}
+
+export async function getReceivedLikesProfiles(
+  userId: number,
+  mode: 'romantic' | 'platonic' = 'romantic'
+): Promise<ReceivedLikeProfile[]> {
+  const likesTable = mode === 'romantic' ? 'dating_likes' : 'friend_likes';
+  const passesTable = mode === 'romantic' ? 'dating_passes' : 'friend_passes';
+  const matchesTable = mode === 'romantic' ? 'dating_matches' : 'friend_matches';
+
+  const rows = await dbQuery<ReceivedLikeProfile>(
+    `
+    SELECT
+      p.user_id,
+      p.display_name,
+      p.bio,
+      p.major,
+      p.graduation_year,
+      p.academic_year,
+      p.interests,
+      p.likes,
+      p.dislikes,
+      p.age,
+      p.date_of_birth,
+      p.location_description,
+      p.hometown,
+      p.languages,
+      p.height,
+      p.religious_beliefs,
+      p.political_affiliation,
+      p.ethnicity,
+      p.affiliations,
+      p.featured_affiliations,
+      p.gender,
+      p.dating_gender_preference,
+      p.friends_gender_preference,
+      u.school_id,
+      s.name AS school_name,
+      s.short_name AS school_short_name,
+      l.created_at AS like_created_at,
+      ARRAY_AGG(ph.url ORDER BY ph.sort_order, ph.created_at) FILTER (WHERE ph.url IS NOT NULL) AS photos
+    FROM ${likesTable} l
+    JOIN profiles p ON p.user_id = l.liker_id
+    JOIN users u ON u.id = p.user_id
+    LEFT JOIN schools s ON s.id = u.school_id
+    LEFT JOIN photos ph ON ph.user_id = p.user_id
+    WHERE l.likee_id = $1
+      -- Exclude if current user has passed on them
+      AND NOT EXISTS (
+        SELECT 1 FROM ${passesTable} pass
+        WHERE pass.passer_id = $1 AND pass.passee_id = l.liker_id
+      )
+      -- Exclude if already matched
+      AND NOT EXISTS (
+        SELECT 1 FROM ${matchesTable} m
+        WHERE m.is_active = TRUE
+          AND m.unmatched_at IS NULL
+          AND (
+            (m.matcher_id = $1 AND m.matchee_id = l.liker_id)
+            OR (m.matchee_id = $1 AND m.matcher_id = l.liker_id)
+          )
+      )
+      -- Exclude if blocked (bidirectional)
+      AND NOT EXISTS (
+        SELECT 1 FROM blocks b
+        WHERE b.is_active = TRUE
+          AND (
+            (b.blocker_id = $1 AND b.blocked_id = l.liker_id)
+            OR (b.blocker_id = l.liker_id AND b.blocked_id = $1)
+          )
+      )
+    GROUP BY
+      p.user_id, p.display_name, p.bio, p.major, p.graduation_year, p.academic_year,
+      p.interests, p.likes, p.dislikes, p.age, p.date_of_birth, p.location_description,
+      p.hometown, p.languages, p.height, p.religious_beliefs, p.political_affiliation,
+      p.ethnicity, p.affiliations, p.featured_affiliations, p.gender,
+      p.dating_gender_preference, p.friends_gender_preference,
+      u.school_id, s.name, s.short_name, l.created_at
+    ORDER BY l.created_at DESC
+    `,
+    [userId]
+  );
+
+  return rows;
+}

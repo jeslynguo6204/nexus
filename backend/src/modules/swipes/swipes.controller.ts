@@ -2,7 +2,7 @@
 import type { Response } from "express";
 import type { AuthedRequest } from "../../middleware/authMiddleware";
 
-import { recordLike, recordPass, recordFriendLike, recordFriendPass } from "./swipes.service";
+import { recordLike, recordPass, recordFriendLike, recordFriendPass, getReceivedLikes } from "./swipes.service";
 
 export async function likeUserController(req: AuthedRequest, res: Response) {
   try {
@@ -56,6 +56,23 @@ export async function passUserController(req: AuthedRequest, res: Response) {
     });
   } catch (err: any) {
     console.error("POST /swipes/pass/:userId error:", err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+}
+
+export async function getReceivedLikesController(req: AuthedRequest, res: Response) {
+  try {
+    const mode = (req.query.mode as string) || 'romantic';
+    const validMode = mode === 'platonic' ? 'platonic' : 'romantic';
+
+    const profiles = await getReceivedLikes(req.userId!, validMode);
+    
+    res.json({
+      success: true,
+      profiles,
+    });
+  } catch (err: any) {
+    console.error("GET /swipes/received error:", err);
     res.status(err.statusCode || 500).json({ error: err.message });
   }
 }

@@ -8,6 +8,7 @@ import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
 import ChatScreen from '../features/chat/screens/ChatScreen';
 import LikesScreen from '../features/likes/screens/LikesScreen';
+import FriendsScreen from '../features/friends/screens/FriendsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -39,6 +40,7 @@ function Placeholder({ name }) {
 const ICON_MAP = {
   Home: "home",
   Likes: "heart",
+  Friends: "users",
   Chat: "comments",
   Profile: "user",
 };
@@ -77,6 +79,7 @@ export default function BottomTabs({ onSignOut }) {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Likes" component={LikesScreen} />
       <Tab.Screen name="Chat" component={ChatStack} />
+      <Tab.Screen name="Friends" component={FriendsScreen} />
       <Tab.Screen
         name="Profile"
       >

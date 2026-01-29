@@ -57,7 +57,7 @@ import FriendsListScreen from './FriendsListScreen';
 
 import { COLORS } from '../../../styles/ProfileFormStyles';
 import styles from '../../../styles/ProfileScreenStyles';
-import chatStyles from '../../../styles/ChatStyles';
+import mainStyles from '../../../styles/MainPagesStyles';
 
 // ✅ API helpers
 import { fetchMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../../../api/photosAPI';
@@ -366,10 +366,11 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
       const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
       await removeFriend(token, friend.friend_id);
+      // Refresh friends list so the modal list updates immediately
       await loadFriends();
-      if (profile?.friend_count != null) {
-        setProfile((p) => (p ? { ...p, friend_count: Math.max(0, (p.friend_count ?? 0) - 1) } : p));
-      }
+      // Refetch profile from server so friend count and profile card stay in sync
+      const updatedProfile = await getMyProfile();
+      setProfile((p) => (p ? { ...p, ...updatedProfile } : updatedProfile));
     } catch (e) {
       Alert.alert('Error', e.message || 'Failed to unfriend.');
     }
@@ -439,25 +440,24 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={chatStyles.container} edges={['top', 'left', 'right']}>
-      {/* Top bar matching Matches/Chat exactly */}
-      <View style={chatStyles.topBar}>
-        <Pressable style={chatStyles.brandMark} hitSlop={10}>
-          <Text style={chatStyles.brandMarkText}>6°</Text>
+    <SafeAreaView style={mainStyles.container} edges={['top', 'left', 'right']}>
+      {/* Top bar */}
+      <View style={mainStyles.topBar}>
+        <Pressable style={mainStyles.brandMark} hitSlop={10}>
+          <Text style={mainStyles.brandMarkText}>6°</Text>
         </Pressable>
 
-        <View style={chatStyles.centerSlot}>
-          <Text style={chatStyles.title}>Profile</Text>
+        <View style={mainStyles.titleCenteredWrap}>
+          <Text style={mainStyles.title}>Profile</Text>
         </View>
 
-        <View style={chatStyles.rightSlot}>
-          <TouchableOpacity
-            onPress={() => setPrefsVisible(true)}
-            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <FontAwesome name="cog" size={22} color="#111111" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => setPrefsVisible(true)}
+          style={mainStyles.rightSlotIconButton}
+          hitSlop={8}
+        >
+          <FontAwesome name="cog" size={22} color="#111111" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView

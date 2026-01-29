@@ -15,6 +15,7 @@ import {
   checkMutualFriendLike,
   createFriendMatch,
   getFriendMatch,
+  getReceivedLikesProfiles,
 } from "./swipes.dao";
 
 export async function recordLike(likerId: number, likeeId: number) {
@@ -149,4 +150,9 @@ export async function recordFriendPass(passerId: number, passeeId: number) {
   // Create or update the pass (will update timestamp if already exists)
   const pass = await createFriendPass(passerId, passeeId);
   return pass;
+}
+
+export async function getReceivedLikes(userId: number, mode: 'romantic' | 'platonic' = 'romantic') {
+  const profiles = await getReceivedLikesProfiles(userId, mode);
+  return profiles;
 }

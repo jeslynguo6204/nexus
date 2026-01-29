@@ -57,3 +57,29 @@ export async function passUser(token, userId, mode = 'romantic') {
     throw error;
   }
 }
+
+// Get profiles that have liked you (received likes)
+export async function getReceivedLikes(token, mode = 'romantic') {
+  try {
+    const API_BASE = getApiBase();
+    const url = `${API_BASE}/swipes/received?mode=${mode}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "Failed to fetch received likes");
+    }
+
+    const data = await res.json();
+    return data.profiles || []; // Array of profile objects
+  } catch (error) {
+    console.warn("Error fetching received likes:", error);
+    throw error;
+  }
+}
