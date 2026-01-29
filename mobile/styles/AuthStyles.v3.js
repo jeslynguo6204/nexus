@@ -318,3 +318,4 @@ styles.tokens = {
 };
 
 export default styles;
+export { SPACE };
