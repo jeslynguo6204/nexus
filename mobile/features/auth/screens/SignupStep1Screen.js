@@ -243,8 +243,11 @@ export default function SignupStep1Screen({ navigation }) {
                   onBlur={() => setFocused(null)}
                   placeholder="(XXX) XXX-XXXX"
                   placeholderTextColor={styles.tokens.placeholder}
-                  keyboardType="phone-pad"
+                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'phone-pad'}
                   returnKeyType="next"
+                  blurOnSubmit={false}
+                  showSoftInputOnFocus={true}
+                  editable={true}
                 />
               </View>
 
