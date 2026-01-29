@@ -1,6 +1,7 @@
 // ChipRow.js
 import React from 'react';
 import { ScrollView, View, TouchableOpacity, Text } from 'react-native';
+import { COLORS } from '@/styles/themeNEW';
 
 const defaultStyles = {
   chipWrap: {
@@ -8,30 +9,28 @@ const defaultStyles = {
     flexWrap: 'wrap',
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 999,
-    marginRight: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
+    backgroundColor: COLORS.backgroundSubtle, // #F4F4F5 - matches key affiliations unselected
   },
   chipSelected: {
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    borderColor: 'rgba(0,0,0,0.20)',
+    backgroundColor: COLORS.textPrimary, // #111111 - matches key affiliations selected
   },
   chipText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: 'rgba(0,0,0,0.72)',
+    fontWeight: '400',
+    color: COLORS.textPrimary, // #111111 - matches key affiliations unselected text
   },
   chipTextSelected: {
-    color: 'rgba(0,0,0,0.92)',
+    color: COLORS.surface, // #FFFFFF - matches key affiliations selected text
+    fontWeight: '400',
   },
 
   chipDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
 };
 
@@ -41,6 +40,8 @@ export default function ChipRow({
   onSelect,
   allowUnselect = false,
   disabled = false,
+  // When true, selected is an array and toggling adds/removes; at least one must remain unless allowUnselect
+  multiSelect = false,
 
   // NEW:
   // - wrap: true => multi-line chips (recommended for auth)
@@ -51,13 +52,14 @@ export default function ChipRow({
   stylesOverride,
 }) {
   const s = stylesOverride || defaultStyles;
+  const selectedArr = Array.isArray(selected) ? selected : (selected != null ? [selected] : []);
 
   const content = (
-    <View style={s.chipWrap}>
+    <View style={wrap ? s.chipWrap : { flexDirection: 'row' }}>
       {options.map((opt) => {
         const value = typeof opt === 'string' ? opt : opt.value;
         const label = typeof opt === 'string' ? opt : opt.label;
-        const isSelected = selected === value;
+        const isSelected = multiSelect ? selectedArr.includes(value) : selected === value;
 
         return (
           <TouchableOpacity
@@ -66,13 +68,22 @@ export default function ChipRow({
             disabled={disabled}
             onPress={() => {
               if (disabled) return;
-              if (allowUnselect && isSelected) onSelect?.('');
-              else onSelect?.(value);
+              if (multiSelect) {
+                const next = isSelected
+                  ? selectedArr.filter((v) => v !== value)
+                  : [...selectedArr, value];
+                if (next.length === 0 && !allowUnselect) return;
+                onSelect?.(next);
+              } else {
+                if (allowUnselect && isSelected) onSelect?.('');
+                else onSelect?.(value);
+              }
             }}
             style={[
               s.chip,
               isSelected && s.chipSelected,
               disabled && s.chipDisabled,
+              !wrap && { marginBottom: 0 }, // Remove bottom margin when scrolling horizontally
             ]}
           >
             <Text style={[s.chipText, isSelected && s.chipTextSelected]}>
@@ -90,8 +101,9 @@ export default function ChipRow({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingRight: 20 }}
+      contentContainerStyle={{ paddingRight: 20, flexDirection: 'row', alignItems: 'center' }}
       scrollEnabled={!disabled}
+      style={{ flex: 1 }}
     >
       {content}
     </ScrollView>

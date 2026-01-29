@@ -56,8 +56,8 @@ export interface FeedProfileRow {
   affiliations: number[] | null;
   featured_affiliations: number[] | null;
   gender: string | null;
-  dating_gender_preference: string | null;
-  friends_gender_preference: string | null;
+  dating_gender_preference: string[] | null;
+  friends_gender_preference: string[] | null;
   affiliations_info?: AffiliationInfo[] | null;
   dorm?: AffiliationInfo | null;
   friend_count?: number;
@@ -77,8 +77,8 @@ type Scope = "school" | "league" | "area";
  * 4. Viewer has the current mode enabled (romantic or platonic)
  * 5. Profile has gender (not null)
  * 6. Profile has at least one photo
- * 7. Viewer's preference includes profile's gender (or viewer pref is 'everyone')
- * 8. Profile's preference includes viewer's gender (or profile pref is 'everyone')
+ * 7. Viewer's preference array includes profile's gender (p.gender = ANY(viewer_pref))
+ * 8. Profile's preference array includes viewer's gender (viewer.gender = ANY(profile_pref))
  * 9. Profile has mode enabled (is_dating_enabled or is_friends_enabled)
  * 10. Profile is in discovery (show_me_in_discovery = true)
  * 11. Same scope (school/league/area)
@@ -198,36 +198,23 @@ export async function getEligibleFeedProfiles(
     params.push(viewerSchoolId);
   }
 
-  // --- Bidirectional gender eligibility (DAO-level hard constraint) ---
-  //
-  // viewer wants profile:
-  //   viewerPref == 'everyone' OR viewerPref == p.gender
-  //
-  // profile wants viewer:
-  //   profilePref == 'everyone' OR profilePref == viewer.gender
-  //
-  // Also require profile.gender not null.
-  //
+  // --- Bidirectional gender eligibility (array preferences) ---
+  // Viewer's preference array includes profile's gender; profile's preference array includes viewer's gender.
   const viewerGenderParam = i++;
   params.push(viewer.gender);
 
   const viewerPrefParam = i++;
-  params.push(viewerPref); // can be null => treated as everyone in SQL
+  params.push(Array.isArray(viewerPref) ? viewerPref : []);
 
-  // Choose which preference column to use for *profiles* in this mode
   const profilePrefColumn =
     mode === "romantic" ? "p.dating_gender_preference" : "p.friends_gender_preference";
 
+  // Use cast on every use of the array param so PostgreSQL can determine type (fixes "could not determine data type of parameter $4")
+  const viewerPrefCast = `$${viewerPrefParam}::text[]`;
   conditions.push(`
     p.gender IS NOT NULL
-    AND (
-      COALESCE($${viewerPrefParam}, 'everyone') = 'everyone'
-      OR p.gender = COALESCE($${viewerPrefParam}, 'everyone')
-    )
-    AND (
-      COALESCE(${profilePrefColumn}, 'everyone') = 'everyone'
-      OR COALESCE(${profilePrefColumn}, 'everyone') = $${viewerGenderParam}
-    )
+    AND (${viewerPrefCast}) IS NOT NULL AND array_length(${viewerPrefCast}, 1) > 0 AND p.gender = ANY(${viewerPrefCast})
+    AND ${profilePrefColumn} IS NOT NULL AND array_length(${profilePrefColumn}, 1) > 0 AND $${viewerGenderParam} = ANY(${profilePrefColumn})
   `);
 
   // Exclude blocked users (bidirectional)

@@ -51,8 +51,8 @@ export async function createUserWithDefaults(params: {
   gender?: string | null;
   phoneNumber?: string | null;
   graduationYear?: number | null;
-  datingGenderPreference?: string | null;
-  friendsGenderPreference?: string | null;
+  datingGenderPreference?: string[] | null;
+  friendsGenderPreference?: string[] | null;
   isDatingEnabled?: boolean;
   isFriendsEnabled?: boolean;
 }): Promise<number> {
@@ -117,8 +117,8 @@ export async function createUserWithDefaults(params: {
         params.graduationYear ?? null,
         params.isDatingEnabled ?? false,
         params.isFriendsEnabled ?? false,
-        params.datingGenderPreference ?? 'everyone',
-        params.friendsGenderPreference ?? 'everyone',
+        params.datingGenderPreference ?? [],
+        params.friendsGenderPreference ?? [],
       ]
     );
 

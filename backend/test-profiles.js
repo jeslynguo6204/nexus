@@ -152,8 +152,8 @@ async function testUpdateProfile() {
     academicYear: 'Junior', // ENUM: 'Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'
     isDatingEnabled: true,
     isFriendsEnabled: true,
-    datingGenderPreference: 'everyone',
-    friendsGenderPreference: 'everyone',
+    datingGenderPreference: ['male', 'female', 'non-binary'],
+    friendsGenderPreference: ['male', 'female', 'non-binary'],
     minAgePreference: 20,
     maxAgePreference: 30,
     maxDistanceKm: 50,

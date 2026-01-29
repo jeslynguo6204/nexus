@@ -20,11 +20,18 @@ export function buildPreferencesUpdatePayload(profile, draft) {
   const normalizedMinAge = Math.min(minAge, maxAge);
   const normalizedMaxAge = Math.max(minAge, maxAge);
 
+  const VALID_PREFS = ['male', 'female', 'non-binary'];
+  const filterValid = (arr) => Array.isArray(arr) ? arr.filter((v) => VALID_PREFS.includes(v)) : [];
+  const datingFiltered = filterValid(draft.datingGenderPreference);
+  const friendsFiltered = filterValid(draft.friendsGenderPreference);
+  const datingPref = datingFiltered.length > 0 ? datingFiltered.slice(0, 3) : null;
+  const friendsPref = friendsFiltered.length > 0 ? friendsFiltered.slice(0, 3) : null;
+
   return {
     isDatingEnabled: !!draft.isDatingEnabled,
     isFriendsEnabled: !!draft.isFriendsEnabled,
-    datingGenderPreference: draft.datingGenderPreference || 'everyone',
-    friendsGenderPreference: draft.friendsGenderPreference || 'everyone',
+    datingGenderPreference: datingPref,
+    friendsGenderPreference: friendsPref,
     minAgePreference: normalizedMinAge,
     maxAgePreference: normalizedMaxAge,
     maxDistanceKm,

@@ -39,8 +39,18 @@ async function request(path, body) {
     }
 
     if (!res.ok) {
-      console.error('❌ Request failed:', json);
-      throw new Error(json.error || `Request failed with status ${res.status}`);
+      // For 400 status codes (validation errors), log at info level instead of error
+      // The error will be displayed inline in the UI
+      if (res.status === 400) {
+        console.log('⚠️ Validation error:', json.error || json);
+      } else {
+        console.error('❌ Request failed:', json);
+      }
+      const errorMsg = json.error || `Request failed with status ${res.status}`;
+      const error = new Error(errorMsg);
+      error.status = res.status;
+      error.response = json;
+      throw error;
     }
 
     return json;
@@ -48,6 +58,11 @@ async function request(path, body) {
     if (error.name === 'AbortError') {
       console.error('❌ Request timeout - server did not respond in 10 seconds');
       throw new Error('Request timeout - please check your connection and try again');
+    }
+    // Don't log validation errors (400 status) as errors - they're expected and shown inline
+    if (error.status === 400) {
+      // Validation errors are handled in the UI, no need to log as errors
+      throw error;
     }
     console.error('❌ Request error:', error);
     console.error('❌ Error details:', {

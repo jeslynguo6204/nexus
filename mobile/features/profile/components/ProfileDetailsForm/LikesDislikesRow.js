@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { COLORS } from '@/styles/themeNEW';
 import editProfileStyles from '@/styles/EditProfileStyles';
@@ -33,7 +33,17 @@ export default function LikesDislikesRow({ label, items, onPress }) {
               Tap to add
             </Text>
           ) : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                justifyContent: 'flex-end',
+                paddingRight: 8,
+              }}
+              style={{ flex: 1 }}
+            >
               {display.map((item, idx) => (
                 <React.Fragment key={idx}>
                   {idx > 0 ? (
@@ -56,7 +66,7 @@ export default function LikesDislikesRow({ label, items, onPress }) {
                   </Text>
                 </React.Fragment>
               ))}
-            </View>
+            </ScrollView>
           )}
           <View style={editProfileStyles.rowChevron}>
             <FontAwesome name="chevron-right" size={14} color={COLORS.textMuted} />

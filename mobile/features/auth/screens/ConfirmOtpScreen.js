@@ -12,8 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/AuthStyles';
-import { confirmEmailOtp, login, resendOtp } from '../../../auth/cognito';
-import { signup as signupToBackend } from '../../../api/authAPI';
+import { confirmEmailOtp, resendOtp } from '../../../auth/cognito';
 
 export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   const [code, setCode] = useState('');
@@ -31,8 +30,6 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   const dateOfBirth = route?.params?.dateOfBirth || '';
   const phoneNumber = route?.params?.phoneNumber || '';
   const graduationYear = route?.params?.graduationYear || null;
-  const datingPreferences = route?.params?.datingPreferences || null;
-  const friendsPreferences = route?.params?.friendsPreferences || null;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -57,26 +54,22 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
       setError('');
       setLoading(true);
       await confirmEmailOtp(email, code);
-      await signupToBackend({
+      
+      // Navigate to welcome screen after OTP verification
+      // Signup will happen after preferences are collected
+      navigation.navigate('Welcome', {
         fullName,
         email,
-        password,
-        dateOfBirth,
-        gender,
         phoneNumber,
+        password,
+        gender,
+        dateOfBirth,
         graduationYear,
-        datingPreferences,
-        friendsPreferences,
       });
-      await login(email, password);
-      if (onSignedIn) {
-        onSignedIn();
-      }
     } catch (e) {
       const message = String(e.message || e);
       setError(message);
       Alert.alert('Error', message);
-    } finally {
       setLoading(false);
     }
   }
