@@ -10,45 +10,34 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
+import styles from '../../../styles/AuthStyles';
 
-// Black and white chip styles for preference screens
-const blackWhiteChipStyles = {
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-    backgroundColor: '#FFFFFF',
-  },
-  chipSelected: {
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    borderColor: 'rgba(0,0,0,0.20)',
-  },
-  chipText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: 'rgba(0,0,0,0.72)',
-  },
-  chipTextSelected: {
-    color: 'rgba(0,0,0,0.92)',
-    fontWeight: '600',
-  },
-};
-
+// Chip styles matching EntryScreen vibe - white chips on gradient
 function SelectChip({ label, selected, onPress, style }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
       style={[
-        blackWhiteChipStyles.chip,
-        selected && blackWhiteChipStyles.chipSelected,
+        {
+          paddingHorizontal: 20,
+          paddingVertical: 12,
+          borderRadius: 999,
+          backgroundColor: selected ? '#FFFFFF' : 'rgba(255,255,255,0.2)',
+          borderWidth: selected ? 0 : 1,
+          borderColor: 'rgba(255,255,255,0.4)',
+          marginHorizontal: 6,
+        },
         style,
       ]}
     >
-      <Text style={[blackWhiteChipStyles.chipText, selected && blackWhiteChipStyles.chipTextSelected]}>
+      <Text
+        style={{
+          fontSize: 15,
+          fontWeight: '600',
+          color: selected ? '#1F6299' : '#FFFFFF',
+        }}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -56,9 +45,9 @@ function SelectChip({ label, selected, onPress, style }) {
 }
 
 export default function RomanticPreferencesScreen({ navigation, route }) {
-  const [men, setMen] = useState(true);
-  const [women, setWomen] = useState(true);
-  const [nonBinary, setNonBinary] = useState(true);
+  const [men, setMen] = useState(false);
+  const [women, setWomen] = useState(false);
+  const [nonBinary, setNonBinary] = useState(false);
   const everyone = men && women && nonBinary;
 
   const insets = useSafeAreaInsets();
@@ -132,34 +121,44 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
 
   return (
     <LinearGradient
-      colors={AUTH_GRADIENT_CONFIG.colors}
-      start={AUTH_GRADIENT_CONFIG.start}
-      end={AUTH_GRADIENT_CONFIG.end}
-      style={styles.gradientFill}
+      colors={['#1F6299', '#34A4FF']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={{ flex: 1 }}
     >
-      <SafeAreaView style={styles.authContainer} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.backButton, { top: insets.top + 4 }]}
+          style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <ScrollView
-            contentContainerStyle={styles.authContent}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: 40 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.logo}>6°</Text>
-            <Text style={styles.title}>Romantic</Text>
-            <Text style={styles.subtitle}>Who would you like to meet romantically?</Text>
+            <View style={styles.entryTop}>
+              <View style={styles.entryLogoCircle}>
+                <Text style={styles.entryLogoText}>6°</Text>
+              </View>
 
-            <Animated.View style={[styles.formWrap, { opacity: fadeAnim }]}>
-              <View style={styles.fieldBlock}>
-                <Text style={[styles.subtitle, { marginBottom: 16 }]}>Select all that apply.</Text>
+              <Text style={styles.entryAppName}>SIXDEGREES</Text>
 
-                <View style={styles.chipWrap}>
+              <Text style={styles.entryTagline}>
+                Who would you like to meet romantically?
+              </Text>
+            </View>
+
+            <Animated.View style={[{ width: '100%', paddingHorizontal: 24, opacity: fadeAnim }]}>
+              <View style={{ marginTop: 16, marginBottom: 32 }}>
+                <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 24 }}>
+                  Select all that apply. This only affects your romantic matches.
+                </Text>
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
                   <SelectChip
                     label="Men"
                     selected={men}
@@ -186,22 +185,23 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
                     }}
                   />
                 </View>
-
-                <Text style={[styles.subtitle, { marginTop: 12, fontSize: 13 }]}>
-                  This only affects your romantic matches.
-                </Text>
               </View>
 
-              <TouchableOpacity
-                style={[styles.primaryButton, (!men && !women && !nonBinary) && { opacity: 0.5 }]}
-                onPress={handleContinue}
-                disabled={!men && !women && !nonBinary}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {skipPlatonic || !wantsPlatonic ? 'Finish' : 'Continue'}
-                </Text>
-              </TouchableOpacity>
+              <View style={{ alignItems: 'center', width: '100%' }}>
+                <TouchableOpacity
+                  style={[
+                    styles.entryPrimaryButton,
+                    (!men && !women && !nonBinary) && { opacity: 0.5 },
+                  ]}
+                  onPress={handleContinue}
+                  disabled={!men && !women && !nonBinary}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.entryPrimaryButtonText}>
+                    {skipPlatonic || !wantsPlatonic ? 'Finish' : 'Continue'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>

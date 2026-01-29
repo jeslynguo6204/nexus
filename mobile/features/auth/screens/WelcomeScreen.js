@@ -10,46 +10,33 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
-import ChipRow from '../../profile/components/form-editor-components/ChipRow';
+import styles from '../../../styles/AuthStyles';
 
-// Black and white chip styles for preference screens
-const blackWhiteChipStyles = {
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-    backgroundColor: '#FFFFFF',
-  },
-  chipSelected: {
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    borderColor: 'rgba(0,0,0,0.20)',
-  },
-  chipText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: 'rgba(0,0,0,0.72)',
-  },
-  chipTextSelected: {
-    color: 'rgba(0,0,0,0.92)',
-    fontWeight: '600',
-  },
-};
-
+// Chip styles matching EntryScreen vibe - white chips on gradient
 function SelectChip({ label, selected, onPress, style }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
       style={[
-        blackWhiteChipStyles.chip,
-        selected && blackWhiteChipStyles.chipSelected,
+        {
+          paddingHorizontal: 24,
+          paddingVertical: 14,
+          borderRadius: 999,
+          backgroundColor: selected ? '#FFFFFF' : 'rgba(255,255,255,0.2)',
+          borderWidth: selected ? 0 : 1,
+          borderColor: 'rgba(255,255,255,0.4)',
+        },
         style,
       ]}
     >
-      <Text style={[blackWhiteChipStyles.chipText, selected && blackWhiteChipStyles.chipTextSelected]}>
+      <Text
+        style={{
+          fontSize: 16,
+          fontWeight: '600',
+          color: selected ? '#1F6299' : '#FFFFFF',
+        }}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -105,35 +92,47 @@ export default function WelcomeScreen({ navigation, route }) {
 
   return (
     <LinearGradient
-      colors={AUTH_GRADIENT_CONFIG.colors}
-      start={AUTH_GRADIENT_CONFIG.start}
-      end={AUTH_GRADIENT_CONFIG.end}
-      style={styles.gradientFill}
+      colors={['#1F6299', '#34A4FF']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={{ flex: 1 }}
     >
-      <SafeAreaView style={styles.authContainer} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.backButton, { top: insets.top + 4 }]}
+          style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <ScrollView
-            contentContainerStyle={styles.authContent}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: 40 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.logo}>6°</Text>
-            <Text style={styles.title}>Welcome to SixDegrees</Text>
-            <Text style={styles.subtitle}>Let's personalize your experience. You can change this anytime.</Text>
+            <View style={styles.entryTop}>
+              <View style={styles.entryLogoCircle}>
+                <Text style={styles.entryLogoText}>6°</Text>
+              </View>
 
-            <Animated.View style={[styles.formWrap, { opacity: fadeAnim }]}>
-              <View style={styles.fieldBlock}>
-                <Text style={styles.label}>What type of connections are you interested in?</Text>
-                <Text style={[styles.subtitle, { marginTop: 4, marginBottom: 16 }]}>Select one or both.</Text>
+              <Text style={styles.entryAppName}>SIXDEGREES</Text>
 
-                <View style={styles.chipWrap}>
+              <Text style={styles.entryTagline}>
+                Let&apos;s personalize your experience.
+              </Text>
+            </View>
+
+            <Animated.View style={[{ width: '100%', paddingHorizontal: 24, opacity: fadeAnim }]}>
+              <View style={{ marginTop: 16, marginBottom: 32 }}>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: '#FFFFFF', textAlign: 'center', marginBottom: 16 }}>
+                  What type of connections are you interested in?
+                </Text>
+                <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 24 }}>
+                  Select one or both. You can change this anytime.
+                </Text>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
                   <SelectChip
                     label="Romantic"
                     selected={romantic}
@@ -147,14 +146,19 @@ export default function WelcomeScreen({ navigation, route }) {
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={[styles.primaryButton, (!romantic && !platonic) && { opacity: 0.5 }]}
-                onPress={handleContinue}
-                disabled={!romantic && !platonic}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.primaryButtonText}>Continue</Text>
-              </TouchableOpacity>
+              <View style={{ alignItems: 'center', width: '100%' }}>
+                <TouchableOpacity
+                  style={[
+                    styles.entryPrimaryButton,
+                    (!romantic && !platonic) && { opacity: 0.5 },
+                  ]}
+                  onPress={handleContinue}
+                  disabled={!romantic && !platonic}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.entryPrimaryButtonText}>Continue</Text>
+                </TouchableOpacity>
+              </View>
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>

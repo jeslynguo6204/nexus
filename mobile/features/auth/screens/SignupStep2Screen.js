@@ -210,7 +210,7 @@ export default function SignupStep2Screen({ navigation, route }) {
               </View>
 
               <TouchableOpacity style={styles.primaryButton} onPress={handleContinue} activeOpacity={0.9}>
-                <Text style={styles.primaryButtonText}>Continue</Text>
+                <Text style={styles.primaryButtonText}>Create account</Text>
               </TouchableOpacity>
             </Animated.View>
           </ScrollView>
