@@ -119,7 +119,7 @@ const INTEREST_OPTIONS = [
   'Personal Finance',
 ];
 
-export default function ProfileScreen({ onSignOut }) {
+export default function ProfileScreen({ onSignOut, navigation, route }) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
@@ -165,6 +165,17 @@ export default function ProfileScreen({ onSignOut }) {
       }
     })();
   }, []);
+
+  // Auto-open preferences modal when navigating with openPreferences param
+  useEffect(() => {
+    if (route?.params?.openPreferences && !loading && profile) {
+      setPrefsVisible(true);
+      // Clear the param so it doesn't reopen if user navigates back
+      if (navigation?.setParams) {
+        navigation.setParams({ openPreferences: undefined });
+      }
+    }
+  }, [route?.params?.openPreferences, loading, profile, navigation]);
 
   const refreshProfileForFriendCount = useCallback(async () => {
     if (!hasInitiallyLoaded.current) return;

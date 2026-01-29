@@ -8,7 +8,7 @@
 export function preferencesFromProfile(profile) {
   const p = profile || {};
 
-  const isDatingEnabled = p.is_dating_enabled ?? true;
+  const isDatingEnabled = p.is_dating_enabled ?? false;
   const isFriendsEnabled = p.is_friends_enabled ?? false;
 
   const datingGenderPreference = p.dating_gender_preference || 'everyone';

@@ -50,6 +50,11 @@ export async function createUserWithDefaults(params: {
   dateOfBirth?: string | null; // 'YYYY-MM-DD'
   gender?: string | null;
   phoneNumber?: string | null;
+  graduationYear?: number | null;
+  datingGenderPreference?: string | null;
+  friendsGenderPreference?: string | null;
+  isDatingEnabled?: boolean;
+  isFriendsEnabled?: boolean;
 }): Promise<number> {
   const client = await pool.connect();
   try {
@@ -88,10 +93,33 @@ export async function createUserWithDefaults(params: {
 
     await client.query(
       `
-      INSERT INTO profiles (user_id, display_name, show_me_in_discovery, date_of_birth, gender, age)
-      VALUES ($1, $2, TRUE, $3, $4, $5)
+      INSERT INTO profiles (
+        user_id, 
+        display_name, 
+        show_me_in_discovery, 
+        date_of_birth, 
+        gender, 
+        age,
+        graduation_year,
+        is_dating_enabled,
+        is_friends_enabled,
+        dating_gender_preference,
+        friends_gender_preference
+      )
+      VALUES ($1, $2, TRUE, $3, $4, $5, $6, $7, $8, $9, $10)
       `,
-      [userId, params.fullName, params.dateOfBirth ?? null, params.gender ?? null, age]
+      [
+        userId,
+        params.fullName,
+        params.dateOfBirth ?? null,
+        params.gender ?? null,
+        age,
+        params.graduationYear ?? null,
+        params.isDatingEnabled ?? false,
+        params.isFriendsEnabled ?? false,
+        params.datingGenderPreference ?? 'everyone',
+        params.friendsGenderPreference ?? 'everyone',
+      ]
     );
 
     await client.query(

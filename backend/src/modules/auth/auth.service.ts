@@ -14,8 +14,16 @@ export async function signup(input: {
   dateOfBirth?: string | null;
   gender?: string;
   phoneNumber?: string | null;
+  graduationYear?: number | null;
+  datingPreferences?: {
+    preference: string | null;
+    notLooking?: boolean;
+  } | null;
+  friendsPreferences?: {
+    preference: string;
+  } | null;
 }) {
-  const { email, password, fullName, dateOfBirth, gender, phoneNumber } = input;
+  const { email, password, fullName, dateOfBirth, gender, phoneNumber, graduationYear, datingPreferences, friendsPreferences } = input;
 
   // (Basic required checks can also live in the controller; this is just extra safety)
   if (!email || !password || !fullName) {
@@ -37,6 +45,21 @@ export async function signup(input: {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
+  // Determine dating preference
+  let datingGenderPreference: string | null = 'everyone';
+  let isDatingEnabled = false;
+  if (datingPreferences && !datingPreferences.notLooking && datingPreferences.preference) {
+    datingGenderPreference = datingPreferences.preference;
+    isDatingEnabled = true;
+  } else if (datingPreferences?.notLooking) {
+    datingGenderPreference = 'everyone'; // Default, but dating is disabled
+    isDatingEnabled = false;
+  }
+
+  // Determine friends preference
+  const friendsGenderPreference = friendsPreferences?.preference || 'everyone';
+  const isFriendsEnabled = true; // Friends is always enabled if preferences are set
+
   const userId = await createUserWithDefaults({
     schoolId: school.id,              // 🔹 no more null
     email,
@@ -45,6 +68,11 @@ export async function signup(input: {
     dateOfBirth: dateOfBirth ?? null,
     gender,
     phoneNumber: phoneNumber ?? null,
+    graduationYear: graduationYear ?? null,
+    datingGenderPreference,
+    friendsGenderPreference,
+    isDatingEnabled,
+    isFriendsEnabled,
   });
 
   const token = jwt.sign({ userId }, config.jwtSecret, { expiresIn: "7d" });
@@ -72,4 +100,9 @@ export async function login(input: { email: string; password: string }) {
   });
 
   return { userId: user.id, token };
+}
+
+export async function checkEmailExists(email: string): Promise<boolean> {
+  const user = await findUserByEmail(email);
+  return user !== null;
 }

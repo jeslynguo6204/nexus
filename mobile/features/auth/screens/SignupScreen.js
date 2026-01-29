@@ -18,6 +18,12 @@ import { startEmailSignup } from '../../../auth/cognito';
 import ChipRow from '../../profile/components/form-editor-components/ChipRow';
 
 export default function SignupScreen({ navigation }) {
+  // Redirect to the new multi-step signup flow
+  React.useEffect(() => {
+    navigation.replace('SignupStep1');
+  }, [navigation]);
+
+  return null;
   const genderOptions = [
     { label: 'Male', value: 'male' },
     { label: 'Female', value: 'female' },
@@ -33,6 +39,15 @@ export default function SignupScreen({ navigation }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Field-specific error states
+  const [fullNameError, setFullNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [genderError, setGenderError] = useState('');
+  const [dateOfBirthError, setDateOfBirthError] = useState('');
+  
   const insets = useSafeAreaInsets();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -51,7 +66,7 @@ export default function SignupScreen({ navigation }) {
   };
 
   const displayDateOfBirth = (date) => {
-    if (!date) return 'Tap to choose your date of birth';
+    if (!date) return 'Tap to choose your birthday';
     return date.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -59,16 +74,59 @@ export default function SignupScreen({ navigation }) {
     });
   };
 
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digit characters
+    const digits = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits for US format
+    const limitedDigits = digits.slice(0, 10);
+    
+    // Format as (XXX) XXX-XXXX
+    if (limitedDigits.length === 0) {
+      return '';
+    } else if (limitedDigits.length <= 3) {
+      return `(${limitedDigits}`;
+    } else if (limitedDigits.length <= 6) {
+      return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
+    } else {
+      return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`;
+    }
+  };
+
+  const handlePhoneChange = (value) => {
+    const formatted = formatPhoneNumber(value);
+    setPhoneNumber(formatted);
+    // Clear error when user starts typing
+    if (phoneError) setPhoneError('');
+  };
+
   const normalizePhone = (value) => {
     const trimmed = (value || '').trim();
     if (!trimmed) return '';
-    const hasPlus = trimmed.startsWith('+');
     const digits = trimmed.replace(/\D/g, '');
     if (!digits) return '';
-    return hasPlus ? `+${digits}` : digits;
+    return digits;
   };
 
-  const isValidPhone = (value) => /^\+?\d{10,15}$/.test(value);
+  const isValidPhone = (value) => {
+    const digits = normalizePhone(value);
+    return digits.length === 10;
+  };
+
+  const isValidEmail = (value) => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return false;
+    // Basic email validation - must contain @ and a domain
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(trimmed);
+  };
+
+  const isValidPassword = (value) => {
+    if (!value || value.length < 8) {
+      return false;
+    }
+    return true;
+  };
 
   const openDatePicker = () => {
     const baseDate = dateOfBirth || pendingDate;
@@ -94,24 +152,110 @@ export default function SignupScreen({ navigation }) {
   const handleDateDone = () => {
     setDateOfBirth(pendingDate);
     setShowDatePicker(false);
+    // Clear error when date is selected
+    if (dateOfBirthError) setDateOfBirthError('');
+  };
+
+  const isExistingAccountError = (error) => {
+    const errorMessage = String(error?.message || error || '').toLowerCase();
+    const errorName = String(error?.name || '').toLowerCase();
+    
+    return (
+      errorName.includes('usernameexists') ||
+      errorName.includes('aliasexists') ||
+      errorMessage.includes('already exists') ||
+      errorMessage.includes('username exists') ||
+      errorMessage.includes('account with the given email') ||
+      errorMessage.includes('user already exists')
+    );
+  };
+
+  const showExistingAccountAlert = () => {
+    Alert.alert(
+      'Account Already Exists',
+      'An account belonging to that email address already exists.',
+      [
+        {
+          text: 'Try another email address',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset my password',
+          onPress: () => {
+            Alert.alert(
+              'Coming soon!',
+              'Password reset functionality is not implemented yet.'
+            );
+          },
+        },
+        {
+          text: 'Sign-in',
+          onPress: () => {
+            navigation.navigate('Login');
+          },
+          style: 'default',
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   async function handleSignup() {
+    // Clear all previous errors
+    setError('');
+    setFullNameError('');
+    setEmailError('');
+    setPhoneError('');
+    setPasswordError('');
+    setGenderError('');
+    setDateOfBirthError('');
+    
+    let hasErrors = false;
+    
+    // Validate all fields and set field-specific errors
+    if (!fullName.trim()) {
+      setFullNameError('Please enter your full name');
+      hasErrors = true;
+    }
+    
+    if (!email.trim()) {
+      setEmailError('Please enter your school email');
+      hasErrors = true;
+    } else if (!isValidEmail(email)) {
+      setEmailError('Please enter a valid email address');
+      hasErrors = true;
+    }
+    
+    const normalizedPhone = normalizePhone(phoneNumber);
+    if (!normalizedPhone || !isValidPhone(phoneNumber)) {
+      setPhoneError('Please enter a valid phone number');
+      hasErrors = true;
+    }
+    
+    if (!password) {
+      setPasswordError('Please enter a password');
+      hasErrors = true;
+    } else if (!isValidPassword(password)) {
+      setPasswordError('Password must be at least 8 characters long');
+      hasErrors = true;
+    }
+    
+    if (!gender) {
+      setGenderError('Please select a gender');
+      hasErrors = true;
+    }
+    
+    if (!dateOfBirth) {
+      setDateOfBirthError('Please choose your date of birth');
+      hasErrors = true;
+    }
+    
+    // If there are validation errors, stop here
+    if (hasErrors) {
+      return;
+    }
+    
     try {
-      setError('');
-      if (!fullName.trim()) {
-        throw new Error('Please enter your full name');
-      }
-      const normalizedPhone = normalizePhone(phoneNumber);
-      if (!normalizedPhone || !isValidPhone(normalizedPhone)) {
-        throw new Error('Please enter a valid phone number');
-      }
-      if (!gender) {
-        throw new Error('Please select a gender');
-      }
-      if (!dateOfBirth) {
-        throw new Error('Please choose your date of birth');
-      }
       setLoading(true);
       const normalizedEmail = await startEmailSignup(email, password);
       navigation.navigate('ConfirmOtp', {
@@ -123,15 +267,22 @@ export default function SignupScreen({ navigation }) {
         phoneNumber: normalizedPhone,
       });
     } catch (e) {
-      setError(String(e.message || e));
-      Alert.alert('Error', String(e.message || e));
+      // Check if this is an existing account error
+      if (isExistingAccountError(e)) {
+        showExistingAccountAlert();
+        setEmailError('An account with this email already exists');
+      } else {
+        // For other errors (like network issues), show as general error
+        const errorMessage = String(e.message || e);
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <SafeAreaView style={styles.loginContainer}>
+    <SafeAreaView style={styles.loginContainer} edges={['top', 'left', 'right']}>
       <TouchableOpacity
         onPress={() => navigation.navigate('Entry')}
         style={[styles.loginBackButton, { top: insets.top + 4 }]}
@@ -146,6 +297,7 @@ export default function SignupScreen({ navigation }) {
         <ScrollView
           contentContainerStyle={styles.loginContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <Text style={styles.loginLogo}>6°</Text>
           <Text style={styles.loginTitle}>Create your account</Text>
@@ -153,58 +305,100 @@ export default function SignupScreen({ navigation }) {
           <Animated.View
             style={{
               width: '100%',
-              marginTop: 40,
+              marginTop: 10,
               opacity: fadeAnim,
             }}
           >
-            <Text style={styles.loginLabel}>Full name</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
+              <Text style={styles.loginLabel}>Full name</Text>
+              {fullNameError ? (
+                <Text style={styles.errorText}>{fullNameError}</Text>
+              ) : null}
+            </View>
             <TextInput
               style={styles.loginInput}
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={(value) => {
+                setFullName(value);
+                if (fullNameError) setFullNameError('');
+              }}
               placeholder="Jane Doe"
               placeholderTextColor="#D0E2FF"
             />
 
-            <Text style={styles.loginLabel}>Phone number</Text>
-            <TextInput
-              style={styles.loginInput}
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholder="(555) 123-4567"
-              placeholderTextColor="#D0E2FF"
-              keyboardType="phone-pad"
-            />
-
-            <Text style={styles.loginLabel}>School email</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
+              <Text style={styles.loginLabel}>School email</Text>
+              {emailError ? (
+                <Text style={styles.errorText}>{emailError}</Text>
+              ) : null}
+            </View>
             <TextInput
               style={styles.loginInput}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(value) => {
+                setEmail(value);
+                if (emailError) setEmailError('');
+              }}
               placeholder="you@school.edu"
               placeholderTextColor="#D0E2FF"
               autoCapitalize="none"
               keyboardType="email-address"
             />
 
-            <Text style={styles.loginLabel}>Password</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
+              <Text style={styles.loginLabel}>Phone number</Text>
+              {phoneError ? (
+                <Text style={styles.errorText}>{phoneError}</Text>
+              ) : null}
+            </View>
+            <TextInput
+              style={styles.loginInput}
+              value={phoneNumber}
+              onChangeText={handlePhoneChange}
+              placeholder="(XXX) XXX-XXXX"
+              placeholderTextColor="#D0E2FF"
+              keyboardType="phone-pad"
+            />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
+              <Text style={styles.loginLabel}>Password</Text>
+              {passwordError ? (
+                <Text style={styles.errorText}>{passwordError}</Text>
+              ) : null}
+            </View>
             <TextInput
               style={styles.loginInput}
               value={password}
-              onChangeText={setPassword}
-              placeholder="Create a password"
+              onChangeText={(value) => {
+                setPassword(value);
+                if (passwordError) setPasswordError('');
+              }}
+              placeholder="************"
               placeholderTextColor="#D0E2FF"
               secureTextEntry
             />
 
-            <Text style={styles.loginLabel}>Gender</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
+              <Text style={styles.loginLabel}>Gender</Text>
+              {genderError ? (
+                <Text style={styles.errorText}>{genderError}</Text>
+              ) : null}
+            </View>
             <ChipRow
               options={genderOptions}
               selected={gender}
-              onSelect={setGender}
+              onSelect={(value) => {
+                setGender(value);
+                if (genderError) setGenderError('');
+              }}
             />
 
-            <Text style={styles.loginLabel}>Date of birth</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 6 }}>
+              <Text style={styles.loginLabel}>Date of birth</Text>
+              {dateOfBirthError ? (
+                <Text style={styles.errorText}>{dateOfBirthError}</Text>
+              ) : null}
+            </View>
             <TouchableOpacity style={styles.loginInput} onPress={openDatePicker}>
               <Text style={{ color: dateOfBirth ? '#FFFFFF' : '#D0E2FF' }}>
                 {displayDateOfBirth(dateOfBirth)}
@@ -221,7 +415,7 @@ export default function SignupScreen({ navigation }) {
               disabled={loading}
             >
               <Text style={styles.loginButtonText}>
-                {loading ? 'Sending code…' : 'Send code'}
+                {loading ? 'Sending code…' : 'Get verification code'}
               </Text>
             </TouchableOpacity>
 
