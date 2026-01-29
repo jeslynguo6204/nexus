@@ -1,4 +1,4 @@
-package com.sixdegrees.app
+package com.sixdegrees.sixdegreesapp
 
 import android.os.Build
 import android.os.Bundle

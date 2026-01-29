@@ -1,4 +1,4 @@
-package com.sixdegrees.app
+package com.sixdegrees.sixdegreesapp
 
 import android.app.Application
 import android.content.res.Configuration

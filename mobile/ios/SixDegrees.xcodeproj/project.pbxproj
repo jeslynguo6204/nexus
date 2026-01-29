@@ -7,29 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		085F6A3375471E1964EE1D1F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CCC2AE912D47DA574B35C65C /* PrivacyInfo.xcprivacy */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		231AC9C75AC4AF578F2ED087 /* libPods-SixDegrees.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 947EE3BD67FB275C74AAA5AC /* libPods-SixDegrees.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		B5F7D97C434CD16DD705EBD6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D26A6189DB5D44FCFCDED1B6 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		BC50838F083B1824DC40A502 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F8BBFFB112E9A739DF00F438 /* PrivacyInfo.xcprivacy */; };
+		DAB7CC3D2B0329CBBC589FE5 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C54474077BCD6DDD07CEEE8 /* ExpoModulesProvider.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		F55B5C08FAF360246E662DE8 /* libPods-SixDegrees.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EBBF901663F18DC7D1C20256 /* libPods-SixDegrees.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		12B76933F3D9E434B6492BDF /* Pods-SixDegrees.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SixDegrees.release.xcconfig"; path = "Target Support Files/Pods-SixDegrees/Pods-SixDegrees.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* SixDegrees.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SixDegrees.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = SixDegrees/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = SixDegrees/Info.plist; sourceTree = "<group>"; };
-		7D41A3101FECE436477DDF87 /* Pods-SixDegrees.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SixDegrees.release.xcconfig"; path = "Target Support Files/Pods-SixDegrees/Pods-SixDegrees.release.xcconfig"; sourceTree = "<group>"; };
-		947EE3BD67FB275C74AAA5AC /* libPods-SixDegrees.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SixDegrees.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		360313082E6F577F9AA1B02F /* Pods-SixDegrees.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SixDegrees.debug.xcconfig"; path = "Target Support Files/Pods-SixDegrees/Pods-SixDegrees.debug.xcconfig"; sourceTree = "<group>"; };
+		9C54474077BCD6DDD07CEEE8 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-SixDegrees/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = SixDegrees/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		CCC2AE912D47DA574B35C65C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = SixDegrees/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		D26A6189DB5D44FCFCDED1B6 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-SixDegrees/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		DBF193ABD73B14DAB10E41BE /* Pods-SixDegrees.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SixDegrees.debug.xcconfig"; path = "Target Support Files/Pods-SixDegrees/Pods-SixDegrees.debug.xcconfig"; sourceTree = "<group>"; };
+		EBBF901663F18DC7D1C20256 /* libPods-SixDegrees.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SixDegrees.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = SixDegrees/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* SixDegrees-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "SixDegrees-Bridging-Header.h"; path = "SixDegrees/SixDegrees-Bridging-Header.h"; sourceTree = "<group>"; };
+		F8BBFFB112E9A739DF00F438 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = SixDegrees/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,21 +37,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				231AC9C75AC4AF578F2ED087 /* libPods-SixDegrees.a in Frameworks */,
+				F55B5C08FAF360246E662DE8 /* libPods-SixDegrees.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		100291C2260B03EA7FE9BA06 /* SixDegrees */ = {
-			isa = PBXGroup;
-			children = (
-				D26A6189DB5D44FCFCDED1B6 /* ExpoModulesProvider.swift */,
-			);
-			name = SixDegrees;
-			sourceTree = "<group>";
-		};
 		13B07FAE1A68108700A75B9A /* SixDegrees */ = {
 			isa = PBXGroup;
 			children = (
@@ -61,7 +53,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				CCC2AE912D47DA574B35C65C /* PrivacyInfo.xcprivacy */,
+				F8BBFFB112E9A739DF00F438 /* PrivacyInfo.xcprivacy */,
 			);
 			name = SixDegrees;
 			sourceTree = "<group>";
@@ -70,27 +62,19 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				947EE3BD67FB275C74AAA5AC /* libPods-SixDegrees.a */,
+				EBBF901663F18DC7D1C20256 /* libPods-SixDegrees.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		593CD6336714AFCA2EAE2DE6 /* Pods */ = {
+		3E25B90FFBE72BA1C6E0948E /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				DBF193ABD73B14DAB10E41BE /* Pods-SixDegrees.debug.xcconfig */,
-				7D41A3101FECE436477DDF87 /* Pods-SixDegrees.release.xcconfig */,
+				360313082E6F577F9AA1B02F /* Pods-SixDegrees.debug.xcconfig */,
+				12B76933F3D9E434B6492BDF /* Pods-SixDegrees.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
-			sourceTree = "<group>";
-		};
-		72027216EDE3FAAEC31F8AB6 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				100291C2260B03EA7FE9BA06 /* SixDegrees */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -107,8 +91,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				593CD6336714AFCA2EAE2DE6 /* Pods */,
-				72027216EDE3FAAEC31F8AB6 /* ExpoModulesProviders */,
+				3E25B90FFBE72BA1C6E0948E /* Pods */,
+				A76991A1F6593A4C88D4FFD3 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -121,6 +105,22 @@
 				13B07F961A680F5B00A75B9A /* SixDegrees.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8BB7FEC3A32B0109AA0ABB33 /* SixDegrees */ = {
+			isa = PBXGroup;
+			children = (
+				9C54474077BCD6DDD07CEEE8 /* ExpoModulesProvider.swift */,
+			);
+			name = SixDegrees;
+			sourceTree = "<group>";
+		};
+		A76991A1F6593A4C88D4FFD3 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				8BB7FEC3A32B0109AA0ABB33 /* SixDegrees */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "SixDegrees" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				BCAAEA0E326F56ED85283853 /* [Expo] Configure project */,
+				72E2D9EBE707983D427E25F1 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				EAAF36F27571D095A9BBFD04 /* [CP] Embed Pods Frameworks */,
+				9E1629E8EE232D3D46ED8971 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				085F6A3375471E1964EE1D1F /* PrivacyInfo.xcprivacy in Resources */,
+				BC50838F083B1824DC40A502 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,6 +242,30 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		72E2D9EBE707983D427E25F1 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/SixDegrees/SixDegrees.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-SixDegrees/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-SixDegrees/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-SixDegrees/expo-configure-project.sh\"\n";
+		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -274,31 +298,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SixDegrees/Pods-SixDegrees-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		BCAAEA0E326F56ED85283853 /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.xcode.env",
-				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/SixDegrees/SixDegrees.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-SixDegrees/expo-configure-project.sh",
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-SixDegrees/ExpoModulesProvider.swift",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-SixDegrees/expo-configure-project.sh\"\n";
-		};
-		EAAF36F27571D095A9BBFD04 /* [CP] Embed Pods Frameworks */ = {
+		9E1629E8EE232D3D46ED8971 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -328,7 +328,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				B5F7D97C434CD16DD705EBD6 /* ExpoModulesProvider.swift in Sources */,
+				DAB7CC3D2B0329CBBC589FE5 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -337,7 +337,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = DBF193ABD73B14DAB10E41BE /* Pods-SixDegrees.debug.xcconfig */;
+			baseConfigurationReference = 360313082E6F577F9AA1B02F /* Pods-SixDegrees.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -361,7 +361,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sixdegrees.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sixdegrees.sixdegreesapp;
 				PRODUCT_NAME = SixDegrees;
 				SWIFT_OBJC_BRIDGING_HEADER = "SixDegrees/SixDegrees-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -373,7 +373,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D41A3101FECE436477DDF87 /* Pods-SixDegrees.release.xcconfig */;
+			baseConfigurationReference = 12B76933F3D9E434B6492BDF /* Pods-SixDegrees.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -392,7 +392,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sixdegrees.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sixdegrees.sixdegreesapp;
 				PRODUCT_NAME = SixDegrees;
 				SWIFT_OBJC_BRIDGING_HEADER = "SixDegrees/SixDegrees-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;

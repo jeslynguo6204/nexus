@@ -3,10 +3,10 @@ export default {
     name: "Six Degrees",
     slug: "six-degrees",
     android: {
-      package: "com.sixdegrees.app",
+      package: "com.sixdegrees.sixdegreesapp",
     },
     ios: {
-      bundleIdentifier: "com.sixdegrees.app",
+      bundleIdentifier: "com.sixdegrees.sixdegreesapp",
     },
     extra: {
       apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL,
