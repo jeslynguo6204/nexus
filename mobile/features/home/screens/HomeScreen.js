@@ -19,8 +19,9 @@ import ModeToggleButton from '../../../navigation/ModeToggleButton';
 import styles from '../../../styles/ChatStyles';
 import { getIdToken } from '../../../auth/tokens';
 import homeStyles from '../../../styles/HomeStyles';
+import { getPreferencesUpdated, setPreferencesUpdated } from '../preferencesUpdatedFlag';
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -164,13 +165,13 @@ export default function HomeScreen({ navigation }) {
     };
   }, []);
 
-  // Reload profile when screen comes into focus (to pick up preference changes)
+  // Only refresh feed when preferences were updated (user saved on Profile; they stay on Profile, we refresh next time they open this tab)
   useFocusEffect(
     useCallback(() => {
-      if (!loading) {
-        loadProfile();
-      }
-    }, [loadProfile, loading])
+      if (!getPreferencesUpdated() || loading) return;
+      setPreferencesUpdated(false);
+      loadProfile();
+    }, [loading, loadProfile])
   );
 
   // Set initial mode once when profile is loaded, and update if modes change

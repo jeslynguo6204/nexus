@@ -45,6 +45,7 @@ export default function LikesScreen() {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [processingRequest, setProcessingRequest] = useState(null);
   const hasSetInitialMode = useRef(false);
+  const isFirstFocusRef = useRef(true);
 
   const loadProfile = useCallback(async (showLoading = false) => {
     try {
@@ -164,9 +165,13 @@ export default function LikesScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reload profile and friend requests when screen comes into focus (silent refresh)
+  // Reload profile and friend requests when screen comes back into focus (skip first focus to avoid double load on mount)
   useFocusEffect(
     useCallback(() => {
+      if (isFirstFocusRef.current) {
+        isFirstFocusRef.current = false;
+        return;
+      }
       if (!loading) {
         loadProfile(false);
         loadFriendRequests();

@@ -51,6 +51,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import ProfileDetailsForm from '../components/ProfileDetailsForm/ProfileDetailsForm';
 import ProfilePreferencesForm from '../components/ProfilePreferencesForm/ProfilePreferencesForm';
 import ProfileCard from '../../home/components/ProfileCard';
+import { setPreferencesUpdated } from '../../home/preferencesUpdatedFlag';
 import PreviewModal from '../components/PreviewModal';
 import FriendsListScreen from './FriendsListScreen';
 
@@ -641,6 +642,7 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
               onSave={async (payload) => {
                 await handleSave(payload);
                 setPrefsVisible(false);
+                setPreferencesUpdated(true);
               }}
               onClose={() => setPrefsVisible(false)}
               onLogOut={async () => {

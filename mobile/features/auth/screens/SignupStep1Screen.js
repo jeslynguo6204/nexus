@@ -257,7 +257,7 @@ export default function SignupStep1Screen({ navigation }) {
                   }}
                   onFocus={() => setFocused('email')}
                   onBlur={() => setFocused(null)}
-                  placeholder="you@school.edu"
+                  placeholder="pennkey@upenn.edu"
                   placeholderTextColor={styles.tokens.placeholder}
                   autoCapitalize="none"
                   keyboardType="email-address"
