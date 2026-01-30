@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 
-import styles from '../../../styles/ChatStyles';
-import homeStyles from '../../../styles/HomeStyles';
+import styles from '../../../styles/ChatStyles'; // Keep for chatRow, matchItem, etc.
+import mainStyles from '../../../styles/MainPagesStyles';
 import { getChats, getAllMatches } from '../../../api/matchesAPI';
 import { getMyProfile } from '../../../api/profileAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
@@ -310,7 +310,7 @@ export default function InboxScreen({ navigation }) {
 
   if (loading || !hasLoadedMatches) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={mainStyles.container}>
         <ActivityIndicator style={{ flex: 1 }} />
       </SafeAreaView>
     );
@@ -319,18 +319,17 @@ export default function InboxScreen({ navigation }) {
   // If no matches, show centered empty state
   if (matches.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={mainStyles.container} edges={['top', 'left', 'right']}>
         {/* Top bar */}
-        <View style={styles.topBar}>
-          <Pressable style={styles.brandMark} hitSlop={10}>
-            <Text style={styles.brandMarkText}>6°</Text>
+        <View style={mainStyles.topBar}>
+          <Pressable style={mainStyles.brandMark} hitSlop={10}>
+            <Text style={mainStyles.brandMarkText}>6°</Text>
           </Pressable>
 
-          <View style={styles.centerSlot}>
-            <Text style={styles.title}>Matches</Text>
+          <View style={mainStyles.titleCenteredWrap}>
+            <Text style={mainStyles.title}>Matches</Text>
           </View>
 
-          {/* Mode toggle button */}
           <ModeToggleButton
             mode={mode}
             onModeChange={setMode}
@@ -340,10 +339,10 @@ export default function InboxScreen({ navigation }) {
         </View>
 
         {/* Centered empty state for no matches */}
-        <View style={homeStyles.emptyWrap}>
-          <View style={homeStyles.emptyCard}>
-            <Text style={homeStyles.emptyTitle}>No matches yet</Text>
-            <Text style={homeStyles.emptySub}>Start swiping to find matches!</Text>
+        <View style={mainStyles.emptyWrap}>
+          <View style={mainStyles.emptyCard}>
+            <Text style={mainStyles.emptyTitle}>No matches yet</Text>
+            <Text style={mainStyles.emptySub}>Start swiping to find matches!</Text>
             <TouchableOpacity
               style={styles.emptyStateButton}
               onPress={() => navigation.navigate('Home')}
@@ -357,18 +356,17 @@ export default function InboxScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={mainStyles.container} edges={['top', 'left', 'right']}>
       {/* Top bar */}
-      <View style={styles.topBar}>
-        <Pressable style={styles.brandMark} hitSlop={10}>
-          <Text style={styles.brandMarkText}>6°</Text>
+      <View style={mainStyles.topBar}>
+        <Pressable style={mainStyles.brandMark} hitSlop={10}>
+          <Text style={mainStyles.brandMarkText}>6°</Text>
         </Pressable>
 
-        <View style={styles.centerSlot}>
-          <Text style={styles.title}>Matches</Text>
+        <View style={mainStyles.titleCenteredWrap}>
+          <Text style={mainStyles.title}>Matches</Text>
         </View>
 
-        {/* Mode toggle button */}
         <ModeToggleButton
           mode={mode}
           onModeChange={setMode}

@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/authMiddleware";
 
-import { likeUserController, passUserController } from "./swipes.controller";
+import { likeUserController, passUserController, getReceivedLikesController } from "./swipes.controller";
 
 const router = Router();
 
@@ -14,5 +14,8 @@ router.post("/like/:userId", likeUserController);
 
 // POST /swipes/pass/:userId - Pass on a user (swipe left)
 router.post("/pass/:userId", passUserController);
+
+// GET /swipes/received - Get profiles that have liked you (received likes)
+router.get("/received", getReceivedLikesController);
 
 export default router;

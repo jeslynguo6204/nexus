@@ -2,12 +2,13 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome6 } from '@expo/vector-icons';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
 import ChatScreen from '../features/chat/screens/ChatScreen';
 import LikesScreen from '../features/likes/screens/LikesScreen';
+import FriendsScreen from '../features/friends/screens/FriendsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -37,10 +38,11 @@ function Placeholder({ name }) {
 }
 
 const ICON_MAP = {
-  Home: "home",
+  Home: "magnifying-glass",
   Likes: "heart",
-  Chat: "comments",
-  Profile: "user",
+  Chat: "paper-plane",
+  Friends: "user-group",
+  Profile: "address-card",
 };
 
 export default function BottomTabs({ onSignOut }) {
@@ -48,35 +50,31 @@ export default function BottomTabs({ onSignOut }) {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarShowLabel: true,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: '#111111',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#F2F2F7',
-          height: 70,
-          paddingBottom: 20,
-          paddingTop: 4,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '400',
-          letterSpacing: 0.1,
-          marginTop: -4,
+          height: 56,
+          paddingBottom: 8,
+          paddingTop: 12,
+          justifyContent: 'center',
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: -4,
         },
         tabBarIcon: ({ color, size, focused }) => {
           const iconName = ICON_MAP[route.name];
-          return <FontAwesome name={iconName} size={focused ? 24 : 22} color={color} />;
+          return <FontAwesome6 name={iconName} size={focused ? 24 : 22} color={color} />;
         },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Likes" component={LikesScreen} />
       <Tab.Screen name="Chat" component={ChatStack} />
+      <Tab.Screen name="Friends" component={FriendsScreen} />
       <Tab.Screen
         name="Profile"
       >

@@ -16,9 +16,9 @@ import { getMyProfile } from '../../../api/profileAPI';
 import { trackPhotoLike, trackPhotoPass, fetchMyPhotos } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
-import styles from '../../../styles/ChatStyles';
+import mainStyles from '../../../styles/MainPagesStyles';
+import styles from '../../../styles/ChatStyles'; // Keep for emptyStateButton
 import { getIdToken } from '../../../auth/tokens';
-import homeStyles from '../../../styles/HomeStyles';
 import { getPreferencesUpdated, setPreferencesUpdated } from '../preferencesUpdatedFlag';
 
 export default function HomeScreen({ navigation, route }) {
@@ -36,6 +36,7 @@ export default function HomeScreen({ navigation, route }) {
   const isLoadingFeedRef = useRef(false);
   const lastLoadedModeRef = useRef(null);
   const isMountedRef = useRef(false);
+  const isFirstDiscoverFocusRef = useRef(true);
   const previousProfileStateRef = useRef({
     gender: null,
     dating_gender_preference: null,
@@ -174,6 +175,20 @@ export default function HomeScreen({ navigation, route }) {
     }, [loading, loadProfile])
   );
 
+  // Refetch feed when returning to Discover so friendship status (e.g. after accepting on card or Friends screen) is up to date
+  useFocusEffect(
+    useCallback(() => {
+      if (isFirstDiscoverFocusRef.current) {
+        isFirstDiscoverFocusRef.current = false;
+        return;
+      }
+      if (!loading && myProfile && hasSetInitialMode) {
+        lastLoadedModeRef.current = null;
+        loadFeed();
+      }
+    }, [loading, myProfile, hasSetInitialMode, loadFeed])
+  );
+
   // Set initial mode once when profile is loaded, and update if modes change
   useEffect(() => {
     if (!myProfile) {
@@ -292,7 +307,7 @@ export default function HomeScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={mainStyles.container} edges={['top', 'left', 'right']}>
         <ActivityIndicator style={{ flex: 1 }} />
       </SafeAreaView>
     );
@@ -301,15 +316,15 @@ export default function HomeScreen({ navigation, route }) {
   const current = profiles[currentIndex];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      {/* Top bar (use ChatStyles to match Matches and Likes exactly) */}
-      <View style={styles.topBar}>
-        <Pressable style={styles.brandMark} hitSlop={10}>
-          <Text style={styles.brandMarkText}>6°</Text>
+    <SafeAreaView style={mainStyles.container} edges={['top', 'left', 'right']}>
+      {/* Top bar */}
+      <View style={mainStyles.topBar}>
+        <Pressable style={mainStyles.brandMark} hitSlop={10}>
+          <Text style={mainStyles.brandMarkText}>6°</Text>
         </Pressable>
 
-        <View style={styles.centerSlot}>
-          <Text style={styles.title}>Discover</Text>
+        <View style={mainStyles.titleCenteredWrap}>
+          <Text style={mainStyles.title}>Discover</Text>
         </View>
 
         <ModeToggleButton
@@ -321,12 +336,12 @@ export default function HomeScreen({ navigation, route }) {
       </View>
 
       {needsProfileSetup ? (
-        <View style={homeStyles.emptyWrap}>
-          <View style={homeStyles.emptyCard}>
-            <Text style={homeStyles.emptyTitle}>
+        <View style={mainStyles.emptyWrap}>
+          <View style={mainStyles.emptyCard}>
+            <Text style={mainStyles.emptyTitle}>
               Finish building your profile to start swiping!
             </Text>
-            <Text style={homeStyles.emptySub}>
+            <Text style={mainStyles.emptySub}>
               Make sure your profile has at least one photo and that you have enabled at least one swiping mode.
             </Text>
           </View>
@@ -338,7 +353,7 @@ export default function HomeScreen({ navigation, route }) {
           </Pressable>
         </View>
       ) : loadingFeed ? (
-        <View style={styles.centeredEmptyState}>
+        <View style={mainStyles.emptyWrap}>
           <ActivityIndicator />
         </View>
       ) : current ? (
@@ -350,12 +365,12 @@ export default function HomeScreen({ navigation, route }) {
           onNext={moveToNextCard}
         />
       ) : (
-        <View style={homeStyles.emptyWrap}>
-          <View style={homeStyles.emptyCard}>
-            <Text style={homeStyles.emptyTitle}>
+        <View style={mainStyles.emptyWrap}>
+          <View style={mainStyles.emptyCard}>
+            <Text style={mainStyles.emptyTitle}>
               That's all for now!
             </Text>
-            <Text style={homeStyles.emptySub}>Check back later for new profiles.</Text>
+            <Text style={mainStyles.emptySub}>Check back later for new profiles.</Text>
           </View>
         </View>
       )}
