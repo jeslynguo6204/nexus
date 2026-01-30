@@ -161,7 +161,34 @@ export default function FriendsScreen() {
 
             {friendRequests.map((request) => {
               const subtitle = contextLine(request);
-              const isFriend = false; // Pending requests: not friends yet
+              const isProcessing = processingRequest === request.requester_id;
+              const btnHeight = 30;
+              const btnPaddingH = 12;
+              const acceptStyle = {
+                height: btnHeight,
+                paddingHorizontal: btnPaddingH,
+                borderRadius: btnHeight / 2,
+                backgroundColor: 'rgba(15, 59, 97, 0.8)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: 72,
+                marginBottom: 6,
+              };
+              const denyStyle = {
+                height: btnHeight,
+                paddingHorizontal: btnPaddingH,
+                borderRadius: btnHeight / 2,
+                backgroundColor: 'rgba(156, 163, 175, 0.8)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: 72,
+              };
+              const btnTextStyle = {
+                color: '#FFFFFF',
+                fontSize: 12,
+                fontWeight: '700',
+                letterSpacing: 0.2,
+              };
               return (
               <View
                 key={request.request_id}
@@ -177,40 +204,8 @@ export default function FriendsScreen() {
                   shadowRadius: 8,
                   shadowOffset: { width: 0, height: 2 },
                   elevation: 2,
-                  position: 'relative',
                 }}
               >
-                {/* Status chip: top right - grey + user + plus (not friends) or green + user + check (friends) */}
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 10,
-                    right: 10,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 8,
-                    paddingVertical: 5,
-                    borderRadius: 999,
-                    backgroundColor: isFriend ? '#22C55E' : '#9CA3AF',
-                  }}
-                >
-                  <FontAwesome name="user" size={12} color="#FFFFFF" />
-                  {isFriend ? (
-                    <View style={{ marginLeft: 4 }}>
-                      <FontAwesome name="check" size={12} color="#FFFFFF" />
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={() => handleAcceptRequest(request.requester_id)}
-                      disabled={processingRequest === request.requester_id}
-                      hitSlop={6}
-                      style={{ padding: 2, marginLeft: 4 }}
-                    >
-                      <FontAwesome name="plus" size={12} color="#FFFFFF" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
                 {/* Avatar */}
                 {request.avatar_url ? (
                   <Image
@@ -247,42 +242,27 @@ export default function FriendsScreen() {
                   ) : null}
                 </View>
 
-                {/* Action buttons */}
-                <View style={{ flexDirection: 'column' }}>
+                {/* Action buttons — pill style matching Discover friend chip */}
+                <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                   <TouchableOpacity
                     onPress={() => handleAcceptRequest(request.requester_id)}
-                    disabled={processingRequest === request.requester_id}
-                    style={{
-                      backgroundColor: COLORS.primary,
-                      paddingHorizontal: 20,
-                      paddingVertical: 8,
-                      borderRadius: 12,
-                      minWidth: 80,
-                      alignItems: 'center',
-                      marginBottom: 8,
-                    }}
+                    disabled={isProcessing}
+                    style={acceptStyle}
+                    activeOpacity={0.85}
                   >
-                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>
-                      {processingRequest === request.requester_id ? '...' : 'Accept'}
+                    <Text style={btnTextStyle}>
+                      {isProcessing ? '...' : 'Accept'}
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={() => handleDeclineRequest(request.requester_id)}
-                    disabled={processingRequest === request.requester_id}
-                    style={{
-                      backgroundColor: COLORS.surfaceElevated || '#f0f0f0',
-                      paddingHorizontal: 20,
-                      paddingVertical: 8,
-                      borderRadius: 12,
-                      minWidth: 80,
-                      alignItems: 'center',
-                      borderWidth: 1,
-                      borderColor: COLORS.border || '#e0e0e0',
-                    }}
+                    disabled={isProcessing}
+                    style={denyStyle}
+                    activeOpacity={0.85}
                   >
-                    <Text style={{ color: COLORS.textPrimary || '#000', fontWeight: '600', fontSize: 14 }}>
-                      {processingRequest === request.requester_id ? '...' : 'Deny'}
+                    <Text style={btnTextStyle}>
+                      {isProcessing ? '...' : 'Deny'}
                     </Text>
                   </TouchableOpacity>
                 </View>

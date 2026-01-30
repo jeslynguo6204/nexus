@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../../styles/themeNEW';
 import styles from '../../../styles/ProfileCardStyles';
@@ -376,21 +377,6 @@ export default function ProfileCard({
     }
   }, [friendshipStatus, friendActionLoading, profile, isOwnProfile]);
 
-  const getFriendButtonText = useCallback(() => {
-    switch (friendshipStatus) {
-      case 'none':
-        return 'Add Friend';
-      case 'pending_sent':
-        return 'Request Sent';
-      case 'pending_received':
-        return 'Accept Request';
-      case 'friends':
-        return 'Friends';
-      default:
-        return 'Add Friend';
-    }
-  }, [friendshipStatus]);
-
   // Profile data
   const academicYear = coalesce(profile?.academic_year);
   const locationDescription = coalesce(profile?.location_description);
@@ -619,6 +605,71 @@ export default function ProfileCard({
               activeOpacity={0.15}
             />
 
+{/* Friend status chip: photo-safe states — Add Friend (gray), Requested (style-guide blue), Accept/Friends (dark blue); ~80% opacity */}
+{!isOwnProfile && (() => {
+  const FILL = 0.8;
+  const DARK_BLUE = `rgba(15, 59, 97, ${FILL})`;
+  const GRAY_ADD = `rgba(156, 163, 175, ${FILL})`;
+  const PRIMARY_BLUE = `rgba(37, 99, 235, ${FILL})`;
+
+  const status = friendshipStatus;
+  const isFriends = status === 'friends';
+  const isPendingSent = status === 'pending_sent';
+  const isPendingReceived = status === 'pending_received';
+
+  const label =
+    isFriends ? 'Friends' :
+    isPendingSent ? 'Requested' :
+    isPendingReceived ? 'Accept' :
+    'Add Friend';
+
+  const CHIP_HEIGHT = 30;
+  const CHIP_WIDTH = 100;
+  const chipStyle = {
+    position: 'absolute',
+    top: 12,
+    right: 14,
+    zIndex: 35,
+    height: CHIP_HEIGHT,
+    width: CHIP_WIDTH,
+    paddingHorizontal: 10,
+    borderRadius: CHIP_HEIGHT / 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    backgroundColor: isFriends || isPendingReceived
+      ? DARK_BLUE
+      : isPendingSent
+        ? PRIMARY_BLUE
+        : GRAY_ADD,
+  };
+
+  const textStyle = {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  };
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={handleFriendAction}
+      disabled={friendActionLoading}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      style={chipStyle}
+    >
+      <Text style={textStyle} numberOfLines={1}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+})()}
+
+
             {/* CAPTION OVERLAY (tight) */}
             <View style={styles.captionOverlay} pointerEvents="box-none">
               <LinearGradient
@@ -665,31 +716,6 @@ export default function ProfileCard({
                   ⌃
                 </Animated.Text>
               </Pressable>
-
-              {/* Friend button */}
-              {!isOwnProfile && (
-                <TouchableOpacity
-                  onPress={handleFriendAction}
-                  disabled={friendActionLoading}
-                  style={[
-                    styles.friendButton,
-                    friendshipStatus === 'friends' && styles.friendButtonActive,
-                    friendshipStatus === 'pending_sent' && styles.friendButtonPending,
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.friendButtonText,
-                      (friendshipStatus === 'friends' || friendshipStatus === 'pending_sent') && {
-                        color: COLORS.primary,
-                      },
-                    ]}
-                  >
-                    {getFriendButtonText()}
-                  </Text>
-                </TouchableOpacity>
-              )}
             </View>
           </Animated.View>
 

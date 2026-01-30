@@ -36,6 +36,7 @@ export default function HomeScreen({ navigation, route }) {
   const isLoadingFeedRef = useRef(false);
   const lastLoadedModeRef = useRef(null);
   const isMountedRef = useRef(false);
+  const isFirstDiscoverFocusRef = useRef(true);
   const previousProfileStateRef = useRef({
     gender: null,
     dating_gender_preference: null,
@@ -172,6 +173,20 @@ export default function HomeScreen({ navigation, route }) {
       setPreferencesUpdated(false);
       loadProfile();
     }, [loading, loadProfile])
+  );
+
+  // Refetch feed when returning to Discover so friendship status (e.g. after accepting on card or Friends screen) is up to date
+  useFocusEffect(
+    useCallback(() => {
+      if (isFirstDiscoverFocusRef.current) {
+        isFirstDiscoverFocusRef.current = false;
+        return;
+      }
+      if (!loading && myProfile && hasSetInitialMode) {
+        lastLoadedModeRef.current = null;
+        loadFeed();
+      }
+    }, [loading, myProfile, hasSetInitialMode, loadFeed])
   );
 
   // Set initial mode once when profile is loaded, and update if modes change

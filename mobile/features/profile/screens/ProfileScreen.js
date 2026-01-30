@@ -191,6 +191,7 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
   useFocusEffect(
     useCallback(() => {
       refreshProfileForFriendCount();
+      loadFriends();
     }, [refreshProfileForFriendCount])
   );
 
