@@ -281,6 +281,15 @@ export async function getFriendMatch(
 }
 
 // Get profiles that have liked the current user (received likes)
+export interface AffiliationInfo {
+  id: number;
+  name: string;
+  short_name: string | null;
+  category_id: number;
+  category_name: string;
+  is_dorm: boolean;
+}
+
 export interface ReceivedLikeProfile {
   user_id: number;
   display_name: string | null;
@@ -306,6 +315,8 @@ export interface ReceivedLikeProfile {
   ethnicity: string | null;
   affiliations: number[] | null;
   featured_affiliations: number[] | null;
+  affiliations_info?: AffiliationInfo[] | null;
+  dorm?: AffiliationInfo | null;
   gender: string | null;
   dating_gender_preference: string[] | null;
   friends_gender_preference: string[] | null;
@@ -393,5 +404,72 @@ export async function getReceivedLikesProfiles(
     [userId]
   );
 
-  return rows;
+  // Attach resolved affiliations info for each profile
+  const profilesWithAffiliations = await Promise.all(
+    rows.map(async (profile) => {
+      let affiliationsInfo: AffiliationInfo[] = [];
+      let dorm: AffiliationInfo | null = null;
+
+      if (Array.isArray(profile.affiliations) && profile.affiliations.length > 0) {
+        const affiliationRows = await dbQuery<{
+          id: number;
+          name: string;
+          short_name: string | null;
+          category_id: number;
+          category_name: string;
+        }>(
+          `
+          SELECT 
+            a.id,
+            a.name,
+            a.short_name,
+            a.category_id,
+            ac.name AS category_name
+          FROM affiliations a
+          JOIN affiliation_categories ac ON ac.id = a.category_id
+          WHERE a.id = ANY($1::int[])
+          `,
+          [profile.affiliations]
+        );
+
+        const dormCategory = await dbQuery<{ id: number }>(
+          `SELECT id
+           FROM affiliation_categories
+           WHERE (LOWER(name) = 'dorm' OR LOWER(name) = 'dorms' OR LOWER(name) LIKE '%dorm%')
+             AND LOWER(name) NOT LIKE '%house%'
+           LIMIT 1`
+        );
+        const dormCategoryId = dormCategory[0]?.id;
+
+        affiliationsInfo = affiliationRows.map((row) => {
+          const isDorm =
+            row.category_id === dormCategoryId &&
+            !row.category_name.toLowerCase().includes("house");
+
+          return {
+            id: row.id,
+            name: row.name,
+            short_name: row.short_name,
+            category_id: row.category_id,
+            category_name: row.category_name,
+            is_dorm: isDorm,
+          };
+        });
+
+        const dormAffil = affiliationsInfo.find((a) => a.is_dorm);
+        if (dormAffil) {
+          dorm = dormAffil;
+          affiliationsInfo = affiliationsInfo.filter((a) => !a.is_dorm);
+        }
+      }
+
+      return {
+        ...profile,
+        affiliations_info: affiliationsInfo.length ? affiliationsInfo : null,
+        dorm,
+      };
+    })
+  );
+
+  return profilesWithAffiliations;
 }

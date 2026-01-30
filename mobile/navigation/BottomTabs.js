@@ -8,6 +8,7 @@ import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
 import ChatScreen from '../features/chat/screens/ChatScreen';
 import LikesScreen from '../features/likes/screens/LikesScreen';
+import LikesSwipeScreen from '../features/likes/screens/LikesSwipeScreen';
 import FriendsScreen from '../features/friends/screens/FriendsScreen';
 
 const Tab = createBottomTabNavigator();
@@ -20,6 +21,22 @@ function ChatStack() {
       <Stack.Screen 
         name="ChatScreen" 
         component={ChatScreen}
+        options={{
+          animationEnabled: true,
+          cardStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function LikesStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="LikesScreenTab" component={LikesScreen} />
+      <Stack.Screen 
+        name="LikesSwipe" 
+        component={LikesSwipeScreen}
         options={{
           animationEnabled: true,
           cardStyle: { backgroundColor: '#FFFFFF' },
@@ -72,7 +89,7 @@ export default function BottomTabs({ onSignOut }) {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Likes" component={LikesScreen} />
+      <Tab.Screen name="Likes" component={LikesStack} />
       <Tab.Screen name="Chat" component={ChatStack} />
       <Tab.Screen name="Friends" component={FriendsScreen} />
       <Tab.Screen

@@ -7,7 +7,6 @@ import {
   Alert,
   Pressable,
   ScrollView,
-  FlatList,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,16 +17,16 @@ import { getMyProfile } from '../../../api/profileAPI';
 import { getReceivedLikes } from '../../../api/swipesAPI';
 import { getIdToken } from '../../../auth/tokens';
 import MiniProfileCard from '../components/MiniProfileCard';
-import UserProfilePreviewModal from '../../profile/components/UserProfilePreviewModal';
 
 import mainStyles from '../../../styles/MainPagesStyles';
 import { COLORS } from '../../../styles/themeNEW';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_PADDING = 16;
-const CARD_GAP = 12;
+const CARD_GAP = 10;
 const CARDS_PER_ROW = 3;
-const CARD_WIDTH = (SCREEN_WIDTH - CARD_PADDING * 2 - CARD_GAP * (CARDS_PER_ROW - 1)) / CARDS_PER_ROW;
+const GRID_WIDTH = SCREEN_WIDTH - CARD_PADDING * 2;
+const CARD_WIDTH = (GRID_WIDTH - CARD_GAP * (CARDS_PER_ROW - 1)) / CARDS_PER_ROW;
 
 export default function LikesScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
@@ -35,8 +34,6 @@ export default function LikesScreen({ navigation }) {
   const [mode, setMode] = useState('romantic');
   const [receivedLikes, setReceivedLikes] = useState([]);
   const [likesLoading, setLikesLoading] = useState(false);
-  const [previewUserId, setPreviewUserId] = useState(null);
-  const [profilePreviewVisible, setProfilePreviewVisible] = useState(false);
   const hasSetInitialMode = useRef(false);
   const isFirstFocusRef = useRef(true);
   const loadReceivedLikesRef = useRef(loadReceivedLikes);
@@ -89,16 +86,18 @@ export default function LikesScreen({ navigation }) {
   }, [mode]);
 
   const handleProfilePress = useCallback((profile) => {
-    if (profile?.user_id) {
-      setPreviewUserId(profile.user_id);
-      setProfilePreviewVisible(true);
-    }
-  }, []);
-
-  const closeProfilePreview = useCallback(() => {
-    setProfilePreviewVisible(false);
-    setPreviewUserId(null);
-  }, []);
+    if (!profile?.user_id) return;
+    
+    // Find the index of the clicked profile
+    const profileIndex = receivedLikes.findIndex(p => p.user_id === profile.user_id);
+    
+    // Navigate to swipe screen with all received likes, starting at clicked profile
+    navigation.navigate('LikesSwipe', {
+      profiles: receivedLikes,
+      startIndex: profileIndex >= 0 ? profileIndex : 0,
+      mode: mode,
+    });
+  }, [receivedLikes, mode, navigation]);
 
   useEffect(() => {
     if (!myProfile) {
@@ -152,9 +151,14 @@ export default function LikesScreen({ navigation }) {
     const rowItems = [];
     for (let i = 0; i < CARDS_PER_ROW; i++) {
       const profileIndex = rowIndex * CARDS_PER_ROW + i;
+      const isLastInRow = i === CARDS_PER_ROW - 1;
+      const itemStyle = {
+        width: CARD_WIDTH,
+        marginRight: isLastInRow ? 0 : CARD_GAP,
+      };
       if (profileIndex < receivedLikes.length) {
         rowItems.push(
-          <View key={profileIndex} style={{ width: CARD_WIDTH }}>
+          <View key={profileIndex} style={itemStyle}>
             <MiniProfileCard
               profile={receivedLikes[profileIndex]}
               onPress={() => handleProfilePress(receivedLikes[profileIndex])}
@@ -162,12 +166,11 @@ export default function LikesScreen({ navigation }) {
           </View>
         );
       } else {
-        // Empty space to maintain grid alignment
-        rowItems.push(<View key={`empty-${i}`} style={{ width: CARD_WIDTH }} />);
+        rowItems.push(<View key={`empty-${i}`} style={itemStyle} />);
       }
     }
     return (
-      <View key={rowIndex} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: CARD_GAP }}>
+      <View key={rowIndex} style={{ flexDirection: 'row', marginBottom: CARD_GAP, width: GRID_WIDTH }}>
         {rowItems}
       </View>
     );
@@ -223,8 +226,9 @@ export default function LikesScreen({ navigation }) {
         ) : (
           <ScrollView
             contentContainerStyle={{
-              padding: CARD_PADDING,
+              paddingVertical: CARD_PADDING,
               paddingBottom: CARD_PADDING + 20,
+              alignItems: 'center',
             }}
             showsVerticalScrollIndicator={false}
           >
@@ -232,12 +236,6 @@ export default function LikesScreen({ navigation }) {
           </ScrollView>
         )}
       </View>
-
-      <UserProfilePreviewModal
-        visible={profilePreviewVisible}
-        userId={previewUserId}
-        onClose={closeProfilePreview}
-      />
     </SafeAreaView>
   );
 }

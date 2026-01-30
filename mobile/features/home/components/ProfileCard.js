@@ -721,7 +721,7 @@ export default function ProfileCard({
 
           <View style={[styles.expandedContent, isOwnProfile && { paddingBottom: 8 }]}>
             {/* ABOUT section (with heading) */}
-            {(academicYear || major || dormName || hometown) && (
+            {((academicYear && major) || dormName || locationDescription || hometown) && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>ABOUT</Text>
 
@@ -731,9 +731,11 @@ export default function ProfileCard({
                   </Text>
                 )}
 
-                {dormName && (
+                {dormName ? (
                   <Text style={styles.aboutLineSecondary}>Lives in {dormName}</Text>
-                )}
+                ) : locationDescription ? (
+                  <Text style={styles.aboutLineSecondary}>Lives in {locationDescription}</Text>
+                ) : null}
 
                 {hometown && (
                   <Text style={styles.aboutLineSecondary}>From {hometown}</Text>
@@ -741,7 +743,7 @@ export default function ProfileCard({
               </View>
             )}
 
-            {(academicYear || major || dormName || hometown) && (
+            {((academicYear && major) || dormName || locationDescription || hometown) && (
               <View style={styles.divider} />
             )}
 
