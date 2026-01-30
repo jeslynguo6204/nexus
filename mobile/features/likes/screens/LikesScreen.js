@@ -17,7 +17,6 @@ import { getMyProfile } from '../../../api/profileAPI';
 import { getReceivedLikes } from '../../../api/swipesAPI';
 import { getIdToken } from '../../../auth/tokens';
 import MiniProfileCard from '../components/MiniProfileCard';
-import UserProfilePreviewModal from '../../profile/components/UserProfilePreviewModal';
 
 import mainStyles from '../../../styles/MainPagesStyles';
 import { COLORS } from '../../../styles/themeNEW';
@@ -35,8 +34,6 @@ export default function LikesScreen({ navigation }) {
   const [mode, setMode] = useState('romantic');
   const [receivedLikes, setReceivedLikes] = useState([]);
   const [likesLoading, setLikesLoading] = useState(false);
-  const [previewUserId, setPreviewUserId] = useState(null);
-  const [profilePreviewVisible, setProfilePreviewVisible] = useState(false);
   const hasSetInitialMode = useRef(false);
   const isFirstFocusRef = useRef(true);
   const loadReceivedLikesRef = useRef(loadReceivedLikes);
@@ -89,16 +86,18 @@ export default function LikesScreen({ navigation }) {
   }, [mode]);
 
   const handleProfilePress = useCallback((profile) => {
-    if (profile?.user_id) {
-      setPreviewUserId(profile.user_id);
-      setProfilePreviewVisible(true);
-    }
-  }, []);
-
-  const closeProfilePreview = useCallback(() => {
-    setProfilePreviewVisible(false);
-    setPreviewUserId(null);
-  }, []);
+    if (!profile?.user_id) return;
+    
+    // Find the index of the clicked profile
+    const profileIndex = receivedLikes.findIndex(p => p.user_id === profile.user_id);
+    
+    // Navigate to swipe screen with all received likes, starting at clicked profile
+    navigation.navigate('LikesSwipe', {
+      profiles: receivedLikes,
+      startIndex: profileIndex >= 0 ? profileIndex : 0,
+      mode: mode,
+    });
+  }, [receivedLikes, mode, navigation]);
 
   useEffect(() => {
     if (!myProfile) {
@@ -237,12 +236,6 @@ export default function LikesScreen({ navigation }) {
           </ScrollView>
         )}
       </View>
-
-      <UserProfilePreviewModal
-        visible={profilePreviewVisible}
-        userId={previewUserId}
-        onClose={closeProfilePreview}
-      />
     </SafeAreaView>
   );
 }
