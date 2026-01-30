@@ -734,7 +734,7 @@ export default function ProfileCard({
                 {dormName ? (
                   <Text style={styles.aboutLineSecondary}>Lives in {dormName}</Text>
                 ) : locationDescription ? (
-                  <Text style={styles.aboutLineSecondary}>Lives {locationDescription}</Text>
+                  <Text style={styles.aboutLineSecondary}>Lives in {locationDescription}</Text>
                 ) : null}
 
                 {hometown && (
