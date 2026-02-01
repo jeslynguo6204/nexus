@@ -6,6 +6,7 @@ import SignupScreen from '../features/auth/screens/SignupScreen';
 import SignupStep1Screen from '../features/auth/screens/SignupStep1Screen';
 import SignupStep2Screen from '../features/auth/screens/SignupStep2Screen';
 import ConfirmOtpScreen from '../features/auth/screens/ConfirmOtpScreen';
+import ForgotPasswordScreen from '../features/auth/screens/ForgotPasswordScreen';
 import WelcomeScreen from '../features/auth/screens/WelcomeScreen';
 import RomanticPreferencesScreen from '../features/auth/screens/RomanticPreferencesScreen';
 import PlatonicPreferencesScreen from '../features/auth/screens/PlatonicPreferencesScreen';
@@ -33,6 +34,7 @@ export default function AuthStack({ onSignedIn }) {
       <Stack.Screen name="ConfirmOtp">
         {(props) => <ConfirmOtpScreen {...props} onSignedIn={onSignedIn} />}
       </Stack.Screen>
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="RomanticPreferences" component={RomanticPreferencesScreen} />
       <Stack.Screen name="PlatonicPreferences" component={PlatonicPreferencesScreen} />

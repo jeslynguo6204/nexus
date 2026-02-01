@@ -222,9 +222,7 @@ export default function LoginScreen({ navigation, onSignedIn }) {
                     top: Platform.select({ ios: 78, android: 74 }),
                     right: 0,
                   }}
-                  onPress={() =>
-                    Alert.alert('Coming soon!', 'Forgot password flow is not implemented yet.')
-                  }
+                  onPress={() => navigation.navigate('ForgotPassword')}
                   activeOpacity={0.85}
                 >
                   <Text style={[styles.subtitle, { marginTop: SPACE.s, textDecorationLine: 'underline' }]}>

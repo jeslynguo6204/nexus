@@ -75,12 +75,12 @@ export default function BottomTabs({ onSignOut }) {
           borderTopWidth: 1,
           borderTopColor: '#F2F2F7',
           height: 56,
-          paddingBottom: 8,
-          paddingTop: 12,
+          paddingBottom: 4,
+          paddingTop: 6,
           justifyContent: 'center',
         },
         tabBarIconStyle: {
-          marginTop: -4,
+          marginTop: 0,
         },
         tabBarIcon: ({ color, size, focused }) => {
           const iconName = ICON_MAP[route.name];

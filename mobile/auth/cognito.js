@@ -1,4 +1,11 @@
-import { confirmSignUp, resendSignUpCode, signIn, signUp } from 'aws-amplify/auth';
+import {
+  confirmResetPassword,
+  confirmSignUp,
+  resendSignUpCode,
+  resetPassword,
+  signIn,
+  signUp,
+} from 'aws-amplify/auth';
 
 const ALLOWED_EMAIL_DOMAINS = ['.edu'];
 
@@ -102,6 +109,43 @@ export async function resendOtp(email) {
   } catch (error) {
     console.warn('Amplify resendSignUpCode error:', error);
     console.warn('Amplify resendSignUpCode error details:', serializeAuthError(error));
+    throw new Error(formatAuthError(error));
+  }
+}
+
+export async function startPasswordReset(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) {
+    throw new Error('Please enter your email');
+  }
+  if (!isAllowedDomain(normalizedEmail)) {
+    throw new Error('Please use your .edu email');
+  }
+
+  try {
+    await resetPassword({ username: normalizedEmail });
+  } catch (error) {
+    console.warn('Amplify resetPassword error:', error);
+    console.warn('Amplify resetPassword error details:', serializeAuthError(error));
+    throw new Error(formatAuthError(error));
+  }
+}
+
+export async function confirmPasswordReset(email, code, newPassword) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !code?.trim() || !newPassword) {
+    throw new Error('Please enter the code and a new password');
+  }
+
+  try {
+    await confirmResetPassword({
+      username: normalizedEmail,
+      confirmationCode: code.trim(),
+      newPassword,
+    });
+  } catch (error) {
+    console.warn('Amplify confirmResetPassword error:', error);
+    console.warn('Amplify confirmResetPassword error details:', serializeAuthError(error));
     throw new Error(formatAuthError(error));
   }
 }
