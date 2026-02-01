@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome6 } from '@expo/vector-icons';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
@@ -63,6 +64,8 @@ const ICON_MAP = {
 };
 
 export default function BottomTabs({ onSignOut }) {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -74,10 +77,13 @@ export default function BottomTabs({ onSignOut }) {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#F2F2F7',
-          height: 56,
-          paddingBottom: 4,
+          height: 49 + insets.bottom,
+          paddingBottom: insets.bottom,
+          paddingTop: 0,
+        },
+        tabBarItemStyle: {
           paddingTop: 6,
-          justifyContent: 'center',
+          paddingBottom: 0,
         },
         tabBarIconStyle: {
           marginTop: 0,
