@@ -252,6 +252,63 @@ export async function getFriendsWithDetails(
 }
 
 /**
+ * Get mutual friends with details between two users
+ */
+export async function getMutualFriendsWithDetails(
+  currentUserId: number,
+  otherUserId: number
+): Promise<FriendWithDetails[]> {
+  const rows = await dbQuery<FriendWithDetails>(
+    `WITH current_friends AS (
+        SELECT
+          CASE
+            WHEN user_id_1 = $1 THEN user_id_2
+            ELSE user_id_1
+          END AS friend_id
+        FROM friendships
+        WHERE (user_id_1 = $1 OR user_id_2 = $1)
+          AND status = 'accepted'
+      ),
+      other_friends AS (
+        SELECT
+          CASE
+            WHEN user_id_1 = $2 THEN user_id_2
+            ELSE user_id_1
+          END AS friend_id
+        FROM friendships
+        WHERE (user_id_1 = $2 OR user_id_2 = $2)
+          AND status = 'accepted'
+      )
+      SELECT
+        cf.friend_id,
+        p.display_name,
+        p.bio,
+        EXTRACT(YEAR FROM AGE(u.date_of_birth)) AS age,
+        s.name AS school_name,
+        s.short_name AS school_short_name,
+        p.graduation_year,
+        ph.url AS avatar_url,
+        (
+          SELECT COALESCE(
+            array_agg(COALESCE(a.short_name, a.name) ORDER BY ord) FILTER (WHERE a.id IS NOT NULL),
+            ARRAY[]::text[]
+          )
+          FROM unnest(COALESCE((p.featured_affiliations)[1:2], ARRAY[]::int[])) WITH ORDINALITY AS t(id, ord)
+          LEFT JOIN affiliations a ON a.id = t.id
+        ) AS featured_affiliation_short_names
+      FROM current_friends cf
+      JOIN other_friends ofr ON ofr.friend_id = cf.friend_id
+      JOIN users u ON u.id = cf.friend_id
+      LEFT JOIN profiles p ON p.user_id = u.id
+      LEFT JOIN schools s ON s.id = u.school_id
+      LEFT JOIN photos ph ON ph.user_id = u.id AND ph.is_primary = TRUE
+      ORDER BY p.display_name`,
+    [currentUserId, otherUserId]
+  );
+  return rows;
+}
+
+/**
  * Get pending friend requests with user details (for displaying in UI)
  */
 export async function getPendingRequestsWithDetails(

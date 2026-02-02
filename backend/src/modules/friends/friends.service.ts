@@ -12,6 +12,7 @@ import {
   getAcceptedFriends,
   getFriendCount,
   getFriendsWithDetails,
+  getMutualFriendsWithDetails,
   getFriendshipStatus,
   FriendRequestRow,
   FriendWithDetails,
@@ -233,6 +234,20 @@ export async function getFriendsList(userId: number): Promise<FriendWithDetails[
   return friends.map((f) => ({
     ...f,
     featured_affiliation_short_names: ensureStringArray(f.featured_affiliation_short_names),
+  }));
+}
+
+/**
+ * Get mutual friends list between current user and another user
+ */
+export async function getMutualFriendsList(
+  currentUserId: number,
+  otherUserId: number
+): Promise<FriendWithDetails[]> {
+  const mutuals = await getMutualFriendsWithDetails(currentUserId, otherUserId);
+  return mutuals.map((m) => ({
+    ...m,
+    featured_affiliation_short_names: ensureStringArray(m.featured_affiliation_short_names),
   }));
 }
 

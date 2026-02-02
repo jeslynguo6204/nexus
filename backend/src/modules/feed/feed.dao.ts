@@ -61,6 +61,7 @@ export interface FeedProfileRow {
   affiliations_info?: AffiliationInfo[] | null;
   dorm?: AffiliationInfo | null;
   friend_count?: number;
+  mutual_count?: number;
   friendship_status?: string;
 }
 
@@ -284,6 +285,29 @@ export async function getEligibleFeedProfiles(
         WHERE (f.user_id_1 = p.user_id OR f.user_id_2 = p.user_id)
           AND f.status = 'accepted'
       ) AS friend_count,
+      (
+        SELECT COUNT(*)
+        FROM (
+          SELECT
+            CASE
+              WHEN f.user_id_1 = $${blockParam} THEN f.user_id_2
+              ELSE f.user_id_1
+            END AS friend_id
+          FROM friendships f
+          WHERE (f.user_id_1 = $${blockParam} OR f.user_id_2 = $${blockParam})
+            AND f.status = 'accepted'
+        ) cf
+        JOIN (
+          SELECT
+            CASE
+              WHEN f.user_id_1 = p.user_id THEN f.user_id_2
+              ELSE f.user_id_1
+            END AS friend_id
+          FROM friendships f
+          WHERE (f.user_id_1 = p.user_id OR f.user_id_2 = p.user_id)
+            AND f.status = 'accepted'
+        ) pf ON pf.friend_id = cf.friend_id
+      ) AS mutual_count,
       (
         CASE
           WHEN EXISTS (

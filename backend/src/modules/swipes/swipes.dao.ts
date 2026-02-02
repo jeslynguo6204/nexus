@@ -320,6 +320,7 @@ export interface ReceivedLikeProfile {
   gender: string | null;
   dating_gender_preference: string[] | null;
   friends_gender_preference: string[] | null;
+  mutual_count?: number;
   like_created_at: string;
 }
 
@@ -360,6 +361,29 @@ export async function getReceivedLikesProfiles(
       u.school_id,
       s.name AS school_name,
       s.short_name AS school_short_name,
+      (
+        SELECT COUNT(*)
+        FROM (
+          SELECT
+            CASE
+              WHEN f.user_id_1 = $1 THEN f.user_id_2
+              ELSE f.user_id_1
+            END AS friend_id
+          FROM friendships f
+          WHERE (f.user_id_1 = $1 OR f.user_id_2 = $1)
+            AND f.status = 'accepted'
+        ) cf
+        JOIN (
+          SELECT
+            CASE
+              WHEN f.user_id_1 = p.user_id THEN f.user_id_2
+              ELSE f.user_id_1
+            END AS friend_id
+          FROM friendships f
+          WHERE (f.user_id_1 = p.user_id OR f.user_id_2 = p.user_id)
+            AND f.status = 'accepted'
+        ) pf ON pf.friend_id = cf.friend_id
+      ) AS mutual_count,
       l.created_at AS like_created_at,
       ARRAY_AGG(ph.url ORDER BY ph.sort_order, ph.created_at) FILTER (WHERE ph.url IS NOT NULL) AS photos
     FROM ${likesTable} l

@@ -129,6 +129,26 @@ export async function getFriendsList(token) {
 }
 
 /**
+ * Get mutual friends list with another user
+ * @param {string} token - Auth token
+ * @param {number} userId - Other user ID
+ * @returns {Promise<{count: number, mutuals: Array}>}
+ */
+export async function getMutualFriends(token, userId) {
+  const API_BASE = getApiBase();
+  const res = await fetch(`${API_BASE}/friends/mutuals/${userId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "Failed to get mutual friends");
+  return json;
+}
+
+/**
  * Get friend count for current user
  * @param {string} token - Auth token
  * @returns {Promise<{count: number}>}
