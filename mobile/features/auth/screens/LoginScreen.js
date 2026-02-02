@@ -18,7 +18,6 @@ import { login } from '../../../auth/cognito';
 import { checkEmail } from '../../../api/authAPI';
 
 export default function LoginScreen({ navigation, onSignedIn }) {
-  console.log("LoginScreen render");
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 

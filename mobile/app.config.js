@@ -12,6 +12,16 @@ export default {
     },
     ios: {
       bundleIdentifier: "com.sixdegrees.sixdegreesapp",
+      infoPlist: {
+        NSAppTransportSecurity: {
+          NSExceptionDomains: {
+            "sixdegrees.dev": {
+              NSExceptionAllowsInsecureHTTPLoads: false,
+              NSIncludesSubdomains: true,
+            },
+          },
+        },
+      },
     },
     extra: {
       apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL,

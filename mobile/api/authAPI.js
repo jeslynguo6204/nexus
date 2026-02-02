@@ -60,17 +60,21 @@ async function request(path, body) {
       console.error('❌ Request timeout - server did not respond in 10 seconds');
       throw new Error('Request timeout - please check your connection and try again');
     }
-    // Don't log validation errors (400 status) as errors - they're expected and shown inline
     if (error.status === 400) {
-      // Validation errors are handled in the UI, no need to log as errors
       throw error;
     }
-    console.error('❌ Request error:', error);
-    console.error('❌ Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error('❌ Request error:', error?.message || error);
+    try {
+      const details = {
+        name: error?.name,
+        message: error?.message,
+        code: error?.code,
+        cause: error?.cause?.message ?? error?.cause,
+      };
+      console.error('❌ Error details:', JSON.stringify(details, null, 2));
+    } catch (e) {
+      console.error('❌ Error details:', String(error));
+    }
     throw error;
   }
 }
