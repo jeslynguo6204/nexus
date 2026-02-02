@@ -18,6 +18,7 @@ import { login } from '../../../auth/cognito';
 import { checkEmail } from '../../../api/authAPI';
 
 export default function LoginScreen({ navigation, onSignedIn }) {
+  console.log("LoginScreen render");
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -140,9 +141,9 @@ export default function LoginScreen({ navigation, onSignedIn }) {
             <Text style={styles.title}>Welcome back!</Text>
             <Text style={styles.subtitle}>Log in to continue.</Text>
 
-            <Animated.View style={[styles.formWrap, { opacity: fadeAnim }]}>
+            <Animated.View style={[styles.formWrap, { opacity: fadeAnim, marginTop: 48 }]}>
               {/* Email — minHeight reserves space for label + input + one error line so layout doesn't shift */}
-              <View style={[styles.fieldBlock, { minHeight: 100 }]}>
+              <View style={[styles.fieldBlock, { minHeight: 100, marginBottom: 4 }]}>
                 <View style={styles.fieldHeaderRow}>
                   <Text style={styles.label}>Email</Text>
                 </View>

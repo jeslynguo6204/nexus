@@ -224,8 +224,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   loginContent: {
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 24,
+    paddingBottom: 24,
     alignItems: 'center',
   },
 
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginBottom: 12,
-    marginTop: 0,
+    marginTop: 12,
   },
 
   // centered "Welcome back!"

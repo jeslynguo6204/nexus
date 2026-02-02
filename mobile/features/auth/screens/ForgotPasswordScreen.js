@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
 import styles from '../../../styles/AuthStyles';
 import { confirmPasswordReset, startPasswordReset } from '../../../auth/cognito';
 
@@ -22,6 +24,9 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const insets = useSafeAreaInsets();
+  const placeholderColor = 'rgba(255,255,255,0.62)';
+  const inputBorderColor = 'rgba(255,255,255,0.22)';
+  const fieldSpacing = { marginBottom: 16 };
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -66,7 +71,13 @@ export default function ForgotPasswordScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.loginContainer}>
+    <LinearGradient
+      colors={AUTH_GRADIENT_CONFIG.colors}
+      start={AUTH_GRADIENT_CONFIG.start}
+      end={AUTH_GRADIENT_CONFIG.end}
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView style={styles.loginContainer}>
       <TouchableOpacity
         onPress={() => navigation.goBack()}
         style={[styles.loginBackButton, { top: insets.top + 4 }]}
@@ -92,38 +103,44 @@ export default function ForgotPasswordScreen({ navigation }) {
               opacity: fadeAnim,
             }}
           >
-            <Text style={styles.loginLabel}>Email</Text>
-            <TextInput
-              style={styles.loginInput}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@school.edu"
-              placeholderTextColor="#D0E2FF"
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
+            <View style={fieldSpacing}>
+              <Text style={styles.loginLabel}>Email</Text>
+              <TextInput
+                style={[styles.loginInput, { borderColor: inputBorderColor }]}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@school.edu"
+                placeholderTextColor={placeholderColor}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
 
             {step === 'confirm' ? (
               <>
-                <Text style={styles.loginLabel}>Reset code</Text>
-                <TextInput
-                  style={styles.loginInput}
-                  value={code}
-                  onChangeText={setCode}
-                  placeholder="Enter the code"
-                  placeholderTextColor="#D0E2FF"
-                  keyboardType="number-pad"
-                />
+                <View style={fieldSpacing}>
+                  <Text style={styles.loginLabel}>Reset code</Text>
+                  <TextInput
+                    style={[styles.loginInput, { borderColor: inputBorderColor }]}
+                    value={code}
+                    onChangeText={setCode}
+                    placeholder="Enter the code"
+                    placeholderTextColor={placeholderColor}
+                    keyboardType="number-pad"
+                  />
+                </View>
 
-                <Text style={styles.loginLabel}>New password</Text>
-                <TextInput
-                  style={styles.loginInput}
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  placeholder="Create a new password"
-                  placeholderTextColor="#D0E2FF"
-                  secureTextEntry
-                />
+                <View style={fieldSpacing}>
+                  <Text style={styles.loginLabel}>New password</Text>
+                  <TextInput
+                    style={[styles.loginInput, { borderColor: inputBorderColor }]}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Create a new password"
+                    placeholderTextColor={placeholderColor}
+                    secureTextEntry
+                  />
+                </View>
               </>
             ) : null}
 
@@ -158,6 +175,7 @@ export default function ForgotPasswordScreen({ navigation }) {
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
