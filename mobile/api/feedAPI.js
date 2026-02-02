@@ -2,6 +2,7 @@
 import Constants from 'expo-constants';
 
 const API_BASE = Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:4000';
+console.log('Feed API base:', API_BASE);
 
 export async function getFeedProfiles(token, mode = 'romantic', scope = 'school') {
   const params = new URLSearchParams();

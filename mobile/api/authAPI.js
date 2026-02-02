@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 
 const getApiBase = () => {
+  console.log("API_BASE:", Constants?.expoConfig?.extra?.apiBaseUrl);
   return Constants?.expoConfig?.extra?.apiBaseUrl || "http://localhost:4000";
 };
 

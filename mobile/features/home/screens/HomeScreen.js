@@ -22,6 +22,7 @@ import { getIdToken } from '../../../auth/tokens';
 import { getPreferencesUpdated, setPreferencesUpdated } from '../preferencesUpdatedFlag';
 
 export default function HomeScreen({ navigation, route }) {
+  console.log("HomeScreen render");
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
