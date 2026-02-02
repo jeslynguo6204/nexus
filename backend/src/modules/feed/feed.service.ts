@@ -75,9 +75,10 @@ export async function getFeedForUser(
   // 4️⃣ Ranking = ordering only (no filtering)
   const orderedProfiles = getDiscoveryFeed(eligibleProfiles, context);
 
-  // 5️⃣ Shape response for frontend
+  // 5️⃣ Shape response for frontend (explicit mutual_count so it is never dropped)
   return orderedProfiles.map((row) => ({
     ...row,
+    mutual_count: row.mutual_count != null ? Number(row.mutual_count) : 0,
     school: {
       id: row.school_id,
       name: row.school_name,

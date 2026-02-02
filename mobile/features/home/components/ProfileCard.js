@@ -12,6 +12,8 @@ import {
   Easing,
   StyleSheet,
   Alert,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,6 +27,7 @@ import {
   acceptFriendRequest,
   cancelFriendRequest,
   removeFriend,
+  getMutualFriends,
 } from '../../../api/friendsAPI';
 import { getIdToken } from '../../../auth/tokens';
 
@@ -117,6 +120,17 @@ function normalizeIdArray(arr) {
     .filter((x) => x !== null && Number.isInteger(x) && x > 0);
 }
 
+function buildFriendContextLine(friend) {
+  const school = friend?.school_short_name || friend?.school_name || '';
+  const yr = friend?.graduation_year != null ? `'${String(friend.graduation_year).slice(-2)}` : null;
+  const schoolAndYear = [school, yr].filter(Boolean).join(' ');
+  const affs = Array.isArray(friend?.featured_affiliation_short_names)
+    ? friend.featured_affiliation_short_names.slice(0, 2).filter(Boolean)
+    : [];
+  const parts = [schoolAndYear, ...affs].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+}
+
 const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeIndex }) {
   if (!count || count <= 1) return null;
 
@@ -156,6 +170,9 @@ export default function ProfileCard({
   const [blockReportSheetOpen, setBlockReportSheetOpen] = useState(false);
   const [friendshipStatus, setFriendshipStatus] = useState(profile?.friendship_status || 'none');
   const [friendActionLoading, setFriendActionLoading] = useState(false);
+  const [mutualsVisible, setMutualsVisible] = useState(false);
+  const [mutualsLoading, setMutualsLoading] = useState(false);
+  const [mutualFriends, setMutualFriends] = useState([]);
 
   const scrollRef = useRef(null);
   const isClosingRef = useRef(false);
@@ -225,7 +242,10 @@ export default function ProfileCard({
     scrollRef.current?.scrollTo?.({ y: 0, animated: false });
     chevronRotation.setValue(0);
     expansion.setValue(0);
-  }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    setMutualsVisible(false);
+    setMutualFriends([]);
+    setMutualsLoading(false);
+  }, [profile?.user_id || profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track photo views (skip when previewing own profile)
   useEffect(() => {
@@ -398,14 +418,47 @@ export default function ProfileCard({
 
   const bio = coalesce(profile?.bio);
 
-  const mutualCount =
-    typeof profile?.mutual_count === 'number'
-      ? profile.mutual_count
-      : typeof profile?.mutuals_count === 'number'
-        ? profile.mutuals_count
-        : typeof profile?.mutuals === 'number'
-          ? profile.mutuals
-          : null;
+  const rawMutual =
+    profile?.mutual_count ?? profile?.mutuals_count ?? profile?.mutuals ?? profile?.mutualCount ?? profile?.mutualsCount;
+  const mutualCount = (() => {
+    if (rawMutual == null) return null;
+    if (typeof rawMutual === 'number') return Number.isFinite(rawMutual) ? rawMutual : null;
+    if (typeof rawMutual === 'string') {
+      const n = parseInt(rawMutual, 10);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  })();
+  if (__DEV__ && !isOwnProfile && profile?.user_id) {
+    console.log('[ProfileCard] mutual_count debug', { userId: profile.user_id, rawMutual, mutualCount });
+  }
+
+  const openMutuals = useCallback(async () => {
+    if (isOwnProfile) return;
+    if (!mutualCount || mutualCount <= 0) return;
+
+    const userId = profile?.user_id || profile?.id;
+    if (!userId) return;
+
+    setMutualsVisible(true);
+
+    if (mutualFriends.length > 0) return;
+
+    try {
+      setMutualsLoading(true);
+      const token = await getIdToken();
+      if (!token) return;
+      const data = await getMutualFriends(token, userId);
+      setMutualFriends(Array.isArray(data?.mutuals) ? data.mutuals : []);
+    } catch (error) {
+      console.error('Failed to load mutual friends:', error);
+      Alert.alert('Error', 'Failed to load mutual friends. Please try again.');
+    } finally {
+      setMutualsLoading(false);
+    }
+  }, [isOwnProfile, mutualCount, mutualFriends.length, profile]);
+
+  const closeMutuals = useCallback(() => setMutualsVisible(false), []);
 
   // affiliations
   const affiliationsInfo = profile?.affiliations_info || [];
@@ -691,12 +744,12 @@ export default function ProfileCard({
                     </Text>
                   )}
 
-                  {mutualCount !== null && mutualCount > 0 && (
-                    <View style={styles.mutualsChip}>
+                  {!isOwnProfile && mutualCount !== null && mutualCount > 0 && (
+                    <Pressable onPress={openMutuals} style={styles.mutualsChip} hitSlop={6}>
                       <Text style={styles.mutualsChipText}>
-                        {mutualCount} mutual{mutualCount !== 1 ? 's' : ''}
+                        {mutualCount}+ mutuals
                       </Text>
-                    </View>
+                    </Pressable>
                   )}
                 </View>
 
@@ -832,6 +885,104 @@ export default function ProfileCard({
           </View>
         </AnimatedScrollView>
       </Animated.View>
+
+      <Modal visible={mutualsVisible} animationType="slide" onRequestClose={closeMutuals}>
+        <View style={{ flex: 1, backgroundColor: COLORS.surface }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 16,
+              paddingTop: 16,
+              paddingBottom: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: COLORS.divider,
+            }}
+          >
+            <TouchableOpacity onPress={closeMutuals} hitSlop={12} style={{ padding: 8, marginLeft: -8 }}>
+              <FontAwesome name="chevron-left" size={22} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+            <Text
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                fontSize: 18,
+                fontWeight: '700',
+                color: COLORS.textPrimary,
+              }}
+            >
+              Mutual Friends
+            </Text>
+            <View style={{ width: 38 }} />
+          </View>
+
+          {mutualsLoading ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={COLORS.textPrimary} />
+            </View>
+          ) : mutualFriends.length === 0 ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+              <Text style={{ fontSize: 16, color: COLORS.textMuted }}>No mutual friends yet</Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 24 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {mutualFriends.map((friend) => {
+                const subtitle = buildFriendContextLine(friend);
+                return (
+                  <View
+                    key={friend.friend_id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
+                      borderBottomWidth: 1,
+                      borderBottomColor: COLORS.divider,
+                    }}
+                  >
+                    {friend.avatar_url ? (
+                      <Image
+                        source={{ uri: friend.avatar_url }}
+                        style={{ width: 52, height: 52, borderRadius: 26, marginRight: 14 }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: 26,
+                          backgroundColor: COLORS.backgroundSubtle,
+                          marginRight: 14,
+                        }}
+                      />
+                    )}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={{ fontSize: 16, fontWeight: '600', color: COLORS.textPrimary }}
+                        numberOfLines={1}
+                      >
+                        {friend.display_name || 'Unknown'}
+                      </Text>
+                      {subtitle ? (
+                        <Text
+                          style={{ fontSize: 14, color: COLORS.textMuted, marginTop: 2 }}
+                          numberOfLines={1}
+                        >
+                          {subtitle}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
 
       {/* Bottom Sheet (still here since your file includes it) */}
       <MoreAboutMeSheet

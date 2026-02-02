@@ -44,6 +44,7 @@ export interface ProfileRow {
   date_of_birth: string | null; // DATE comes back as string from pg
   featured_affiliations: number[] | null; // Array of affiliation IDs (up to 2) for preview
   friend_count?: number;
+  mutual_count?: number;
   updated_at: string;
 }
 
@@ -258,6 +259,29 @@ export async function getPublicProfileByUserId(
         WHERE (f.user_id_1 = p.user_id OR f.user_id_2 = p.user_id)
           AND f.status = 'accepted'
       ) AS friend_count,
+      (
+        SELECT COUNT(*)
+        FROM (
+          SELECT
+            CASE
+              WHEN f.user_id_1 = $2 THEN f.user_id_2
+              ELSE f.user_id_1
+            END AS friend_id
+          FROM friendships f
+          WHERE (f.user_id_1 = $2 OR f.user_id_2 = $2)
+            AND f.status = 'accepted'
+        ) cf
+        JOIN (
+          SELECT
+            CASE
+              WHEN f.user_id_1 = p.user_id THEN f.user_id_2
+              ELSE f.user_id_1
+            END AS friend_id
+          FROM friendships f
+          WHERE (f.user_id_1 = p.user_id OR f.user_id_2 = p.user_id)
+            AND f.status = 'accepted'
+        ) pf ON pf.friend_id = cf.friend_id
+      ) AS mutual_count,
       (
         CASE
           WHEN EXISTS (

@@ -19,6 +19,11 @@ export async function getFeed(req: AuthedRequest, res: Response) {
 
     const profiles = await FeedService.getFeedForUser(userId, { mode, scope });
 
+    if (profiles.length > 0) {
+      const first = profiles[0] as Record<string, unknown>;
+      console.log("[Feed] first profile mutual_count:", first?.mutual_count, "keys:", Object.keys(first || {}).filter((k) => k.includes("mutual")));
+    }
+
     return res.json({ profiles });
   } catch (err: any) {
     console.error("=== FEED CONTROLLER ERROR ===");

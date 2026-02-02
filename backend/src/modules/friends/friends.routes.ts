@@ -10,6 +10,7 @@ import {
   getPendingRequestsDetailedController,
   getSentRequestsController,
   getFriendsListController,
+  getMutualFriendsController,
   getFriendCountController,
   checkFriendshipStatusController,
 } from "./friends.controller";
@@ -30,6 +31,7 @@ router.delete("/:userId", removeFriendController);
 
 // Get friend data
 router.get("/list", getFriendsListController);
+router.get("/mutuals/:userId", getMutualFriendsController);
 router.get("/count", getFriendCountController);
 router.get("/requests/pending", getPendingRequestsController);
 router.get("/requests/pending/detailed", getPendingRequestsDetailedController);

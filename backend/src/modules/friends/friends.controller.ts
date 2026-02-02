@@ -10,6 +10,7 @@ import {
   getPendingRequestsDetailed,
   getSentRequests,
   getFriendsList,
+  getMutualFriendsList,
   getUserFriendCount,
   checkFriendshipStatus,
 } from "./friends.service";
@@ -185,6 +186,28 @@ export async function getFriendsListController(
     res.json({ friends });
   } catch (err: any) {
     console.error("GET /friends/list error:", err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+}
+
+/**
+ * GET /friends/mutuals/:userId
+ * Get mutual friends between current user and another user
+ */
+export async function getMutualFriendsController(
+  req: AuthedRequest,
+  res: Response
+) {
+  try {
+    const otherUserId = Number(req.params.userId);
+    if (isNaN(otherUserId)) {
+      return res.status(400).json({ error: "Invalid userId" });
+    }
+
+    const mutuals = await getMutualFriendsList(req.userId!, otherUserId);
+    res.json({ count: mutuals.length, mutuals });
+  } catch (err: any) {
+    console.error("GET /friends/mutuals/:userId error:", err);
     res.status(err.statusCode || 500).json({ error: err.message });
   }
 }
