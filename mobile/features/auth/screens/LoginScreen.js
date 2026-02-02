@@ -4,8 +4,9 @@ import {
   Alert,
   Animated,
   KeyboardAvoidingView,
+  Keyboard,
+  PanResponder,
   Platform,
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -28,9 +29,22 @@ export default function LoginScreen({ navigation, onSignedIn }) {
 
   const [emailFocused, setEmailFocused] = useState(false);
   const [pwFocused, setPwFocused] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        gestureState.dy > 12 && Math.abs(gestureState.dx) < 20,
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 20) {
+          Keyboard.dismiss();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -39,6 +53,25 @@ export default function LoginScreen({ navigation, onSignedIn }) {
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    Animated.timing(headerAnim, {
+      toValue: keyboardVisible ? 1 : 0,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [keyboardVisible, headerAnim]);
 
   function setFieldErrors(emailErr, passwordErr) {
     setEmailError(emailErr || '');
@@ -81,7 +114,7 @@ export default function LoginScreen({ navigation, onSignedIn }) {
       
       // If we got a response and email doesn't exist
       if (emailCheckSucceeded && emailCheck && !emailCheck.exists) {
-        setFieldErrors('No account found with this email. Sign up to create an account.', '');
+        setFieldErrors('Sign up to create an account', '');
         setLoading(false);
         return;
       }
@@ -104,7 +137,7 @@ export default function LoginScreen({ navigation, onSignedIn }) {
       } else {
         // Login failed - if we successfully checked email exists, this must be wrong password
         if (emailCheckSucceeded && emailCheck && emailCheck.exists) {
-          setFieldErrors('', 'Incorrect password.');
+          setFieldErrors('', 'Incorrect password');
         } else {
           // We couldn't check email, so show generic error on email field
           setFieldErrors('Login failed. Please check your email and password.', '');
@@ -132,20 +165,46 @@ export default function LoginScreen({ navigation, onSignedIn }) {
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <ScrollView
-            contentContainerStyle={styles.authContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+          <View
+            style={styles.authContent}
+            {...panResponder.panHandlers}
           >
             <Text style={styles.logo}>6°</Text>
             <Text style={styles.title}>Welcome back!</Text>
-            <Text style={styles.subtitle}>Log in to continue.</Text>
+            <Animated.Text
+              style={{
+                ...styles.subtitle,
+                opacity: headerAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0],
+                }),
+              }}
+            >
+              Log in to continue.
+            </Animated.Text>
 
-            <Animated.View style={[styles.formWrap, { opacity: fadeAnim, marginTop: 48 }]}>
+            <Animated.View
+              style={[
+                styles.formWrap,
+                {
+                  opacity: fadeAnim,
+                  marginTop: 48,
+                  transform: [
+                    {
+                      translateY: headerAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, -60],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
               {/* Email — minHeight reserves space for label + input + one error line so layout doesn't shift */}
-              <View style={[styles.fieldBlock, { minHeight: 100, marginBottom: 4 }]}>
+              <View style={[styles.fieldBlock, { minHeight: 100, marginBottom: 0 }]}>
                 <View style={styles.fieldHeaderRow}>
                   <Text style={styles.label}>Email</Text>
+                  {!!emailError && <Text style={styles.inlineError}>{emailError}</Text>}
                 </View>
 
                 <TextInput
@@ -174,7 +233,6 @@ export default function LoginScreen({ navigation, onSignedIn }) {
                   onBlur={() => setEmailFocused(false)}
                   returnKeyType="next"
                 />
-                {!!emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
               </View>
 
               {/* Password */}
@@ -182,6 +240,7 @@ export default function LoginScreen({ navigation, onSignedIn }) {
               <View style={[styles.fieldBlock, { minHeight: 100 }]}>
                 <View style={styles.fieldHeaderRow}>
                   <Text style={styles.label}>Password</Text>
+                  {!!passwordError && <Text style={styles.inlineError}>{passwordError}</Text>}
                 </View>
 
                 <TextInput
@@ -212,15 +271,11 @@ export default function LoginScreen({ navigation, onSignedIn }) {
                 />
                 
                 {/* Error text in normal flow below input */}
-                {!!passwordError && (
-                  <Text style={styles.errorText}>{passwordError}</Text>
-                )}
-
                 {/* "Forgot password?" button positioned absolutely so it stays at fixed position (10px below input) */}
                 <TouchableOpacity
                   style={{ 
                     position: 'absolute',
-                    top: Platform.select({ ios: 78, android: 74 }),
+                    top: Platform.select({ ios: 72, android: 68 }),
                     right: 0,
                   }}
                   onPress={() => navigation.navigate('ForgotPassword')}
@@ -235,6 +290,7 @@ export default function LoginScreen({ navigation, onSignedIn }) {
               <TouchableOpacity
                 style={[
                   styles.primaryButton,
+                  { marginTop: 20 },
                   (!email.trim() || !password || loading) && { opacity: 0.5 },
                 ]}
                 onPress={handleLogin}
@@ -246,7 +302,7 @@ export default function LoginScreen({ navigation, onSignedIn }) {
 
               {/* Footer link */}
               <TouchableOpacity
-                style={{ marginTop: 18, alignSelf: 'center' }}
+                style={{ marginTop: 8, alignSelf: 'center' }}
                 onPress={() => navigation.navigate('SignupStep1')}
                 activeOpacity={0.85}
               >
@@ -258,7 +314,7 @@ export default function LoginScreen({ navigation, onSignedIn }) {
                 </Text>
               </TouchableOpacity>
             </Animated.View>
-          </ScrollView>
+          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </LinearGradient>
