@@ -144,7 +144,8 @@ const styles = StyleSheet.create({
   contextLineMutualsWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 59, 97, 0.8)',
+    // backgroundColor: 'rgba(15, 59, 97, 0.8)',
+    backgroundColor: '#36A8FF',
     paddingVertical: 3,
     paddingHorizontal: 6,
     borderRadius: 999,
@@ -159,7 +160,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   contextLineBold: {
-    color: 'rgba(255,255,255,0.78)',
+    // color: 'rgba(255,255,255,0.78)',
+    color: '#FFFFFF',
     fontSize: 13,
     letterSpacing: 0.1,
     fontWeight: '900',
