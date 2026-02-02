@@ -78,6 +78,7 @@ export default function HomeScreen({ navigation, route }) {
       setProfiles(Array.isArray(fetchedProfiles) ? fetchedProfiles : []);
       setCurrentIndex(0);
       if (isInitialLoad) setLoading(false);
+      setLoadingFeed(false);
     } catch (e) {
       console.warn('Error loading feed:', e);
       console.warn('Error details:', e.message);
@@ -101,9 +102,9 @@ export default function HomeScreen({ navigation, route }) {
       // Reset on error so we can retry
       lastLoadedModeRef.current = null;
       if (isInitialLoad) setLoading(false);
+      setLoadingFeed(false);
     } finally {
       isLoadingFeedRef.current = false;
-      setLoadingFeed(false);
     }
   }, [mode, needsProfileSetup]);
 
@@ -227,12 +228,13 @@ export default function HomeScreen({ navigation, route }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myProfile]);
 
-  // Load feed once when profile and mode are ready
+  // Load feed once when profile and mode are ready.
+  // The deck (SwipeDeck) re-renders whenever this screen re-renders. We batch feed-complete updates
+  // (profiles, currentIndex, loading, loadingFeed) in loadFeed so the deck only re-renders once when the feed is ready.
   useEffect(() => {
     if (!isMountedRef.current) return;
     if (needsProfileSetup) return;
     if (!myProfile || !hasSetInitialMode || lastLoadedModeRef.current === mode) return;
-    // Pass loading so initial load skips loadingFeed and sets loading false when done (fewer renders)
     loadFeed(loading);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, myProfile, mode, hasSetInitialMode, needsProfileSetup]);
@@ -359,6 +361,7 @@ export default function HomeScreen({ navigation, route }) {
         <SwipeDeck
           profiles={profiles}
           currentIndex={currentIndex}
+          currentUserId={myUserId}
           onSwipeRight={handleSwipeRight}
           onSwipeLeft={handleSwipeLeft}
           onNext={moveToNextCard}

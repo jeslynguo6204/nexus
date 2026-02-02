@@ -156,6 +156,7 @@ export default function ProfileCard({
   onPhotoIndexChange,
   isOwnProfile = false,
   disableUpwardExpansion = false,
+  currentUserId = null,
 }) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
@@ -432,7 +433,14 @@ export default function ProfileCard({
     return null;
   })();
   if (__DEV__ && !isOwnProfile && profile?.user_id) {
-    console.log('[ProfileCard] mutual_count debug', { userId: profile.user_id, rawMutual, mutualCount });
+    // Logs once per card per render. You see 6 logs because SwipeDeck renders 3 cards (current + 2 next)
+    // and the parent often re-renders twice on load, so 3 × 2 = 6.
+    console.log('[ProfileCard] mutual_count debug', {
+      currentUserId: currentUserId ?? '(not passed)',
+      profileUserId: profile.user_id,
+      mutualCount,
+      rawMutual,
+    });
   }
 
   const openMutuals = useCallback(async () => {
@@ -740,18 +748,32 @@ export default function ProfileCard({
                 </Text>
 
                 <View style={styles.contextLineContainer}>
-                  {!!previewContextParts.length && (
-                    <Text style={styles.contextLine} numberOfLines={1}>
-                      {previewContextParts.join(' · ')}
-                    </Text>
-                  )}
-
-                  {!isOwnProfile && mutualCount !== null && mutualCount > 0 && (
-                    <Pressable onPress={openMutuals} style={styles.mutualsChip} hitSlop={6}>
-                      <Text style={styles.mutualsChipText}>
-                        {mutualCount}+ mutuals
-                      </Text>
-                    </Pressable>
+                  {(!!previewContextParts.length || (!isOwnProfile && mutualCount !== null && mutualCount > 0)) && (
+                    <View style={styles.contextLineRow}>
+                      {!!previewContextParts.length && (
+                        <Text style={styles.contextLine} numberOfLines={1}>
+                          {previewContextParts.join(' · ')}
+                        </Text>
+                      )}
+                      {!!previewContextParts.length && !isOwnProfile && mutualCount !== null && mutualCount > 0 && (
+                        <Text style={styles.contextLine}> · </Text>
+                      )}
+                      {!isOwnProfile && mutualCount !== null && mutualCount > 0 && (
+                        <Pressable
+                          onPress={openMutuals}
+                          style={styles.contextLineMutualsWrap}
+                          hitSlop={6}
+                        >
+                          <Text style={styles.contextLineBold}>{mutualCount}+ </Text>
+                          <FontAwesome5
+                            name="user-friends"
+                            size={11}
+                            color="rgba(255,255,255,0.78)"
+                            style={styles.contextLineMutualsIcon}
+                          />
+                        </Pressable>
+                      )}
+                    </View>
                   )}
                 </View>
 

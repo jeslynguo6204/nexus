@@ -15,6 +15,7 @@ const SWIPE_THRESHOLD = 0.25 * SCREEN_WIDTH;
 export default function SwipeDeck({
   profiles = [],
   currentIndex = 0,
+  currentUserId = null,
   onSwipeRight,
   onSwipeLeft,
   onNext,
@@ -172,7 +173,7 @@ export default function SwipeDeck({
                 ]}
                 pointerEvents="none"
               >
-                <ProfileCard profile={p} photos={p?.photos || []} />
+                <ProfileCard profile={p} photos={p?.photos || []} currentUserId={currentUserId} />
               </View>
             );
           }
@@ -194,6 +195,7 @@ export default function SwipeDeck({
               <ProfileCard
                 profile={p}
                 photos={p?.photos || []}
+                currentUserId={currentUserId}
                 onDetailsOpenChange={setDetailsOpen}
                 photoIndex={currentPhotoIndex}
                 onPhotoIndexChange={setCurrentPhotoIndex}
