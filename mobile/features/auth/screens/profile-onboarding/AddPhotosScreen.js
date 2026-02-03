@@ -31,6 +31,7 @@ function photosFromParams(params) {
 
 export default function AddPhotosScreen({ navigation, route }) {
   const routeParams = route.params || {};
+  const backPayloadRef = useRef({});
   const [photos, setPhotos] = useState(() => photosFromParams(routeParams));
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
@@ -80,19 +81,23 @@ export default function AddPhotosScreen({ navigation, route }) {
 
     navigation.navigate('AcademicsScreen', {
       ...routeParams,
+      ...backPayloadRef.current,
       photos: photos.map((p) => p.uri),
+      onBackWithData: (data) => { backPayloadRef.current = data; },
     });
   }
 
   function handleSkip() {
-    navigation.navigate('AcademicsScreen', { ...routeParams });
+    navigation.navigate('AcademicsScreen', {
+      ...routeParams,
+      ...backPayloadRef.current,
+      onBackWithData: (data) => { backPayloadRef.current = data; },
+    });
   }
 
   function handleBack() {
-    navigation.navigate('PlatonicPreferences', {
-      ...routeParams,
-      photos: photos.map((p) => p.uri),
-    });
+    routeParams.onBackWithData?.({ photos: photos.map((p) => p.uri) });
+    navigation.goBack();
   }
 
   return (

@@ -44,6 +44,7 @@ export default function AddAffiliationsScreen({ navigation, route }) {
   const [dorms, setDorms] = useState([]);
   const [affiliationsByCategory, setAffiliationsByCategory] = useState({});
   const routeParams = route.params || {};
+  const backPayloadRef = useRef({});
   const initialAffiliationIds = Array.isArray(routeParams.affiliations)
     ? routeParams.affiliations.map((id) => Number(id)).filter((n) => !Number.isNaN(n) && n > 0)
     : [];
@@ -115,23 +116,29 @@ export default function AddAffiliationsScreen({ navigation, route }) {
   function handleContinue() {
     navigation.navigate('KeyAffiliationsScreen', {
       ...routeParams,
+      ...backPayloadRef.current,
       affiliations: selectedAffiliationIds,
       affiliationsByCategory,
       dorms,
+      onBackWithData: (data) => { backPayloadRef.current = data; },
     });
   }
 
   function handleSkip() {
-    navigation.navigate('KeyAffiliationsScreen', { ...routeParams });
+    navigation.navigate('KeyAffiliationsScreen', {
+      ...routeParams,
+      ...backPayloadRef.current,
+      onBackWithData: (data) => { backPayloadRef.current = data; },
+    });
   }
 
   function handleBack() {
-    navigation.navigate('LikesDislikesScreen', {
-      ...routeParams,
+    routeParams.onBackWithData?.({
       affiliations: selectedAffiliationIds,
       affiliationsByCategory,
       dorms,
     });
+    navigation.goBack();
   }
 
   if (loading && !fetchError) {

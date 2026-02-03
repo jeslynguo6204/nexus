@@ -130,19 +130,17 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
       wantsPlatonic,
       romanticPreference,
       fromLogin: !!fromLogin,
+      onBackWithData: routeParams.onBackWithData,
     };
 
     if (skipPlatonic || !wantsPlatonic) {
-      // Only romantic - skip to profile onboarding
       navigation.navigate('AddPhotosScreen', params);
     } else {
-      // Go to platonic preferences
       navigation.navigate('PlatonicPreferences', params);
     }
   }
 
   function handleSkip() {
-    // Skip with default romantic preference: all three
     const params = {
       fullName,
       email,
@@ -155,13 +153,12 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
       wantsPlatonic,
       romanticPreference: ['male', 'female', 'non-binary'],
       fromLogin: !!fromLogin,
+      onBackWithData: routeParams.onBackWithData,
     };
 
     if (skipPlatonic || !wantsPlatonic) {
-      // Only romantic - skip to profile onboarding
       navigation.navigate('AddPhotosScreen', params);
     } else {
-      // Go to platonic preferences
       navigation.navigate('PlatonicPreferences', params);
     }
   }
@@ -175,13 +172,10 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('Welcome', {
-              ...routeParams,
-              wantsRomantic: true,
-              wantsPlatonic: wantsPlatonic ?? false,
-            })
-          }
+          onPress={() => {
+            routeParams.onBackWithData?.({ wantsRomantic: true, wantsPlatonic: wantsPlatonic ?? false });
+            navigation.goBack();
+          }}
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>

@@ -67,6 +67,7 @@ function padToThree(arr) {
 
 export default function LikesDislikesScreen({ navigation, route }) {
   const routeParams = route.params || {};
+  const backPayloadRef = useRef({});
   const [likes, setLikes] = useState(() => padToThree(routeParams.likes));
   const [dislikes, setDislikes] = useState(() => padToThree(routeParams.dislikes));
 
@@ -92,21 +93,24 @@ export default function LikesDislikesScreen({ navigation, route }) {
   function handleContinue() {
     navigation.navigate('AddAffiliationsScreen', {
       ...routeParams,
+      ...backPayloadRef.current,
       likes: filledLikes,
       dislikes: filledDislikes,
+      onBackWithData: (data) => { backPayloadRef.current = data; },
     });
   }
 
   function handleSkip() {
-    navigation.navigate('AddAffiliationsScreen', { ...routeParams });
+    navigation.navigate('AddAffiliationsScreen', {
+      ...routeParams,
+      ...backPayloadRef.current,
+      onBackWithData: (data) => { backPayloadRef.current = data; },
+    });
   }
 
   function handleBack() {
-    navigation.navigate('AcademicsScreen', {
-      ...routeParams,
-      likes: filledLikes,
-      dislikes: filledDislikes,
-    });
+    routeParams.onBackWithData?.({ likes: filledLikes, dislikes: filledDislikes });
+    navigation.goBack();
   }
 
   return (

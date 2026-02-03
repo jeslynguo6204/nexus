@@ -130,14 +130,13 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
       romanticPreference,
       platonicPreference,
       fromLogin: !!fromLogin,
+      onBackWithData: routeParams.onBackWithData,
     };
 
-    // Continue to profile onboarding
     navigation.navigate('AddPhotosScreen', params);
   }
 
   function handleSkip() {
-    // Skip with default platonic preference: all three
     const params = {
       fullName,
       email,
@@ -151,9 +150,9 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
       romanticPreference,
       platonicPreference: ['male', 'female', 'non-binary'],
       fromLogin: !!fromLogin,
+      onBackWithData: routeParams.onBackWithData,
     };
 
-    // Continue to profile onboarding
     navigation.navigate('AddPhotosScreen', params);
   }
 
@@ -166,12 +165,10 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('RomanticPreferences', {
-              ...routeParams,
-              platonicPreference: getPreference(),
-            })
-          }
+          onPress={() => {
+            routeParams.onBackWithData?.({ platonicPreference: getPreference() });
+            navigation.goBack();
+          }}
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>

@@ -130,11 +130,11 @@ export default function KeyAffiliationsScreen({ navigation, route }) {
   }
 
   function handleBack() {
-    navigation.navigate('AddAffiliationsScreen', {
-      ...routeParams,
+    routeParams.onBackWithData?.({
       affiliations: selectedIds,
       featuredAffiliations: featuredAffiliations.length > 0 ? featuredAffiliations : null,
     });
+    navigation.goBack();
   }
 
   return (

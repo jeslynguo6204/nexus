@@ -64,6 +64,7 @@ export default function WelcomeScreen({ navigation, route, onSignedIn }) {
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const backPayloadRef = useRef({});
 
   useEffect(() => {
     setRomantic(!!wantsRomantic);
@@ -84,6 +85,7 @@ export default function WelcomeScreen({ navigation, route, onSignedIn }) {
     }
 
     const params = {
+      ...backPayloadRef.current,
       fullName,
       email,
       phoneNumber,
@@ -94,9 +96,9 @@ export default function WelcomeScreen({ navigation, route, onSignedIn }) {
       wantsRomantic: romantic,
       wantsPlatonic: platonic,
       fromLogin: !!fromLogin,
+      onBackWithData: (data) => { backPayloadRef.current = data; },
     };
 
-    // Navigate based on what was selected
     if (romantic && platonic) {
       navigation.navigate('RomanticPreferences', params);
     } else if (romantic) {
@@ -107,8 +109,8 @@ export default function WelcomeScreen({ navigation, route, onSignedIn }) {
   }
 
   function handleSkip() {
-    // Skip = go to next screen in flow (Add Photos), same as bypassing Continue with default prefs
     const params = {
+      ...backPayloadRef.current,
       fullName,
       email,
       phoneNumber,
@@ -121,6 +123,7 @@ export default function WelcomeScreen({ navigation, route, onSignedIn }) {
       romanticPreference: ['male', 'female', 'non-binary'],
       platonicPreference: ['male', 'female', 'non-binary'],
       fromLogin: !!fromLogin,
+      onBackWithData: (data) => { backPayloadRef.current = data; },
     };
     navigation.navigate('AddPhotosScreen', params);
   }
