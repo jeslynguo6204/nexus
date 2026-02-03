@@ -1,0 +1,1 @@
+<Text style={styles.mutuals}><Icon name="friend" size={16} color="#FFFFFF" /> </Text>

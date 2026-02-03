@@ -134,17 +134,35 @@ const styles = StyleSheet.create({
   },
 
   contextLineContainer: {
+    marginTop: 6,
+  },
+  contextLineRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginTop: 6,
-    gap: 6,
+  },
+  contextLineMutualsWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#36A8FF',
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 999,
+  },
+  contextLineMutualsIcon: {
+    marginLeft: 2,
   },
   contextLine: {
     color: 'rgba(255,255,255,0.78)',
     fontSize: 13,
     letterSpacing: 0.1,
     fontWeight: '700',
+  },
+  contextLineBold: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 13,
+    letterSpacing: 0.1,
+    fontWeight: '900',
   },
 
   mutualsChip: {

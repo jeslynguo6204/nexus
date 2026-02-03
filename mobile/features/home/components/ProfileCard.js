@@ -738,18 +738,32 @@ export default function ProfileCard({
                 </Text>
 
                 <View style={styles.contextLineContainer}>
-                  {!!previewContextParts.length && (
-                    <Text style={styles.contextLine} numberOfLines={1}>
-                      {previewContextParts.join(' · ')}
-                    </Text>
-                  )}
-
-                  {!isOwnProfile && mutualCount !== null && mutualCount > 0 && (
-                    <Pressable onPress={openMutuals} style={styles.mutualsChip} hitSlop={6}>
-                      <Text style={styles.mutualsChipText}>
-                        {mutualCount}+ mutuals
-                      </Text>
-                    </Pressable>
+                  {(!!previewContextParts.length || (!isOwnProfile && mutualCount !== null && mutualCount > 0)) && (
+                    <View style={styles.contextLineRow}>
+                      {!!previewContextParts.length && (
+                        <Text style={styles.contextLine} numberOfLines={1}>
+                          {previewContextParts.join(' · ')}
+                        </Text>
+                      )}
+                      {!!previewContextParts.length && !isOwnProfile && mutualCount !== null && mutualCount > 0 && (
+                        <Text style={styles.contextLine}> · </Text>
+                      )}
+                      {!isOwnProfile && mutualCount !== null && mutualCount > 0 && (
+                        <Pressable
+                          onPress={openMutuals}
+                          style={styles.contextLineMutualsWrap}
+                          hitSlop={6}
+                        >
+                          <Text style={styles.contextLineBold}>{mutualCount}+ </Text>
+                          <FontAwesome5
+                            name="user-friends"
+                            size={11}
+                            color="rgba(255,255,255,0.78)"
+                            style={styles.contextLineMutualsIcon}
+                          />
+                        </Pressable>
+                      )}
+                    </View>
                   )}
                 </View>
 

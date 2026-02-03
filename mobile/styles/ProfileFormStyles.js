@@ -152,6 +152,17 @@ const styles = StyleSheet.create({
   sectionSpacer: {
     height: 12,
   },
+
+  mutuals: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 });
 
 export default styles;
