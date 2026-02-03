@@ -55,10 +55,17 @@ export default function ComingSoonScreen() {
   useEffect(() => {
     async function fetchCount() {
       try {
-        const res = await fetch(`${getApiBase()}/users/count`);
-        const json = await res.json();
+        const url = `${getApiBase()}/users/count`;
+        console.log('Fetching user count from:', url);
+        const res = await fetch(url);
+        const text = await res.text();
+        console.log('Raw response:', text.substring(0, 200));
+        const json = JSON.parse(text);
+        console.log('User count response:', json);
         if (typeof json?.count === 'number') setUserCount(json.count);
-      } catch {}
+      } catch (err) {
+        console.error('Failed to fetch user count:', err);
+      }
     }
     fetchCount();
   }, []);
