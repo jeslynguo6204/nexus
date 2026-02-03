@@ -9,6 +9,7 @@ import { Amplify } from 'aws-amplify';
 import { getCurrentUser, signOut } from 'aws-amplify/auth';
 import BottomTabs from './navigation/BottomTabs';
 import AuthStack from './navigation/AuthStack';
+import { ModeProvider } from './contexts/ModeContext';
 import amplifyConfig from './amplifyConfig';
 
 Amplify.configure(amplifyConfig);
@@ -126,7 +127,9 @@ export default function App() {
             <SignOutTransitionScreen />
             <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: fadeAnim }]}>
               {isSignedIn ? (
-                <BottomTabs onSignOut={handleSignOut} />
+                <ModeProvider>
+                  <BottomTabs onSignOut={handleSignOut} />
+                </ModeProvider>
               ) : (
                 <AuthStack onSignedIn={handleSignedIn} />
               )}

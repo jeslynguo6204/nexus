@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
+import { useMode } from '../../../contexts/ModeContext';
 import { getMyProfile } from '../../../api/profileAPI';
 import { getReceivedLikes } from '../../../api/swipesAPI';
 import { getIdToken } from '../../../auth/tokens';
@@ -31,10 +32,9 @@ const CARD_WIDTH = (GRID_WIDTH - CARD_GAP * (CARDS_PER_ROW - 1)) / CARDS_PER_ROW
 export default function LikesScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [myProfile, setMyProfile] = useState(null);
-  const [mode, setMode] = useState('romantic');
+  const { mode, setMode, hasSetInitialMode, setHasSetInitialMode } = useMode();
   const [receivedLikes, setReceivedLikes] = useState([]);
   const [likesLoading, setLikesLoading] = useState(false);
-  const hasSetInitialMode = useRef(false);
   const isFirstFocusRef = useRef(true);
   const loadReceivedLikesRef = useRef(loadReceivedLikes);
   loadReceivedLikesRef.current = loadReceivedLikes;
@@ -104,8 +104,8 @@ export default function LikesScreen({ navigation }) {
       return;
     }
     
-    if (!hasSetInitialMode.current) {
-      hasSetInitialMode.current = true;
+    if (!hasSetInitialMode) {
+      setHasSetInitialMode(true);
       if (myProfile.is_dating_enabled && !myProfile.is_friends_enabled) {
         setMode('romantic');
       } else if (myProfile.is_friends_enabled && !myProfile.is_dating_enabled) {
@@ -122,7 +122,7 @@ export default function LikesScreen({ navigation }) {
         return currentMode;
       });
     }
-  }, [myProfile]);
+  }, [myProfile, hasSetInitialMode, setMode, setHasSetInitialMode]);
 
   // Load profile on mount
   useEffect(() => {
