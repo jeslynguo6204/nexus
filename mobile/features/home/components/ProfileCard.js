@@ -15,6 +15,7 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../../styles/themeNEW';
@@ -174,6 +175,7 @@ export default function ProfileCard({
   const [mutualsLoading, setMutualsLoading] = useState(false);
   const [mutualFriends, setMutualFriends] = useState([]);
 
+  const insets = useSafeAreaInsets();
   const scrollRef = useRef(null);
   const isClosingRef = useRef(false);
 
@@ -738,18 +740,32 @@ export default function ProfileCard({
                 </Text>
 
                 <View style={styles.contextLineContainer}>
-                  {!!previewContextParts.length && (
-                    <Text style={styles.contextLine} numberOfLines={1}>
-                      {previewContextParts.join(' · ')}
-                    </Text>
-                  )}
-
-                  {!isOwnProfile && mutualCount !== null && mutualCount > 0 && (
-                    <Pressable onPress={openMutuals} style={styles.mutualsChip} hitSlop={6}>
-                      <Text style={styles.mutualsChipText}>
-                        {mutualCount}+ mutuals
-                      </Text>
-                    </Pressable>
+                  {(!!previewContextParts.length || (!isOwnProfile && mutualCount !== null && mutualCount > 0)) && (
+                    <View style={styles.contextLineRow}>
+                      {!!previewContextParts.length && (
+                        <Text style={styles.contextLine} numberOfLines={1}>
+                          {previewContextParts.join(' · ')}
+                        </Text>
+                      )}
+                      {!!previewContextParts.length && !isOwnProfile && mutualCount !== null && mutualCount > 0 && (
+                        <Text style={styles.contextLine}> · </Text>
+                      )}
+                      {!isOwnProfile && mutualCount !== null && mutualCount > 0 && (
+                        <Pressable
+                          onPress={openMutuals}
+                          style={styles.contextLineMutualsWrap}
+                          hitSlop={6}
+                        >
+                          <Text style={styles.contextLineBold}>{mutualCount}+ </Text>
+                          <FontAwesome5
+                            name="user-friends"
+                            size={11}
+                            color="white"
+                            style={styles.contextLineMutualsIcon}
+                          />
+                        </Pressable>
+                      )}
+                    </View>
                   )}
                 </View>
 
@@ -893,7 +909,7 @@ export default function ProfileCard({
               flexDirection: 'row',
               alignItems: 'center',
               paddingHorizontal: 16,
-              paddingTop: 16,
+              paddingTop: insets.top + 8,
               paddingBottom: 12,
               borderBottomWidth: 1,
               borderBottomColor: COLORS.divider,
@@ -927,7 +943,7 @@ export default function ProfileCard({
           ) : (
             <ScrollView
               style={{ flex: 1 }}
-              contentContainerStyle={{ paddingBottom: 24 }}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
               showsVerticalScrollIndicator={false}
             >
               {mutualFriends.map((friend) => {

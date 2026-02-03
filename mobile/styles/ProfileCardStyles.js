@@ -134,11 +134,24 @@ const styles = StyleSheet.create({
   },
 
   contextLineContainer: {
+    marginTop: 6,
+  },
+  contextLineRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginTop: 6,
-    gap: 6,
+  },
+  // Mutuals chip: background only; number + icon use contextLineBold and contextLineMutualsIcon
+  contextLineMutualsWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#36A8FF',
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 999,
+  },
+  contextLineMutualsIcon: {
+    marginLeft: 2,
   },
   contextLine: {
     color: 'rgba(255,255,255,0.78)',
@@ -146,20 +159,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
     fontWeight: '700',
   },
-
-  mutualsChip: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.20)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.30)',
-  },
-  mutualsChipText: {
-    color: 'rgba(255,255,255,0.95)',
-    fontSize: 12,
-    fontWeight: '700',
+  // Number and "+" in mutuals chip (bold)
+  contextLineBold: {
+    color: 'white',
+    fontSize: 13,
     letterSpacing: 0.1,
+    fontWeight: '900',
   },
 
   bioText: {
