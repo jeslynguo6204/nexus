@@ -2,11 +2,11 @@ export default {
   expo: {
     name: "Six Degrees",
     slug: "six-degrees",
-    icon: "./assets/Number 6 with Degree Symbol.png",
+    icon: "./assets/six-degrees-early-logo.png",
     android: {
       package: "com.sixdegrees.sixdegreesapp",
       adaptiveIcon: {
-        foregroundImage: "./assets/Number 6 with Degree Symbol.png",
+        foregroundImage: "./assets/six-degrees-early-logo.png",
         backgroundColor: "#4A90E2",
       },
     },
