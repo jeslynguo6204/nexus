@@ -81,14 +81,19 @@ function AcademicYearChip({ year, selected, onPress }) {
 const ACADEMIC_YEARS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'];
 
 export default function AcademicsScreen({ navigation, route }) {
-  const [school, setSchool] = useState('University of Pennsylvania');
-  const [major, setMajor] = useState('');
-  const [academicYear, setAcademicYear] = useState('');
+  const routeParams = route.params || {};
+  const [school, setSchool] = useState(routeParams.school ?? 'University of Pennsylvania');
+  const [major, setMajor] = useState(routeParams.major ?? '');
+  const [academicYear, setAcademicYear] = useState(routeParams.academicYear ?? '');
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const routeParams = route.params || {};
+  useEffect(() => {
+    if (routeParams.school != null) setSchool(routeParams.school);
+    if (routeParams.major != null) setMajor(routeParams.major);
+    if (routeParams.academicYear != null) setAcademicYear(routeParams.academicYear);
+  }, [routeParams.school, routeParams.major, routeParams.academicYear]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -107,6 +112,19 @@ export default function AcademicsScreen({ navigation, route }) {
     });
   }
 
+  function handleSkip() {
+    navigation.navigate('LikesDislikesScreen', { ...routeParams });
+  }
+
+  function handleBack() {
+    navigation.navigate('AddPhotosScreen', {
+      ...routeParams,
+      school,
+      major,
+      academicYear,
+    });
+  }
+
   return (
     <LinearGradient
       colors={['#1F6299', '#34A4FF']}
@@ -116,10 +134,16 @@ export default function AcademicsScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleBack}
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleSkip}
+          style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}
+        >
+          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>Skip →</Text>
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>

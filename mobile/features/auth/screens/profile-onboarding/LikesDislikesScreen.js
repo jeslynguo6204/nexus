@@ -60,14 +60,23 @@ function ItemInput({ value, onChangeText, placeholder, onRemovePress }) {
   );
 }
 
+function padToThree(arr) {
+  const a = Array.isArray(arr) ? arr.filter((s) => String(s ?? '').trim() !== '') : [];
+  return [a[0] ?? '', a[1] ?? '', a[2] ?? ''];
+}
+
 export default function LikesDislikesScreen({ navigation, route }) {
-  const [likes, setLikes] = useState(['', '', '']);
-  const [dislikes, setDislikes] = useState(['', '', '']);
+  const routeParams = route.params || {};
+  const [likes, setLikes] = useState(() => padToThree(routeParams.likes));
+  const [dislikes, setDislikes] = useState(() => padToThree(routeParams.dislikes));
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const routeParams = route.params || {};
+  useEffect(() => {
+    setLikes(padToThree(routeParams.likes));
+    setDislikes(padToThree(routeParams.dislikes));
+  }, [routeParams.likes, routeParams.dislikes]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -77,13 +86,26 @@ export default function LikesDislikesScreen({ navigation, route }) {
     }).start();
   }, [fadeAnim]);
 
-  const filledLikes = likes.filter(l => l.trim() !== '');
+  const filledLikes = likes.filter((l) => l.trim() !== '');
+  const filledDislikes = dislikes.filter((d) => d.trim() !== '');
 
   function handleContinue() {
     navigation.navigate('AddAffiliationsScreen', {
       ...routeParams,
       likes: filledLikes,
-      dislikes: dislikes.filter(d => d.trim() !== ''),
+      dislikes: filledDislikes,
+    });
+  }
+
+  function handleSkip() {
+    navigation.navigate('AddAffiliationsScreen', { ...routeParams });
+  }
+
+  function handleBack() {
+    navigation.navigate('AcademicsScreen', {
+      ...routeParams,
+      likes: filledLikes,
+      dislikes: filledDislikes,
     });
   }
 
@@ -96,10 +118,16 @@ export default function LikesDislikesScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleBack}
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleSkip}
+          style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}
+        >
+          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>Skip →</Text>
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>

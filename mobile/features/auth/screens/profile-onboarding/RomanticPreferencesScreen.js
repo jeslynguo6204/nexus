@@ -55,10 +55,22 @@ function SelectChip({ label, selected, onPress, style }) {
   );
 }
 
+function prefToChips(pref) {
+  if (!Array.isArray(pref) || pref.length === 0) return { men: false, women: false, nonBinary: false };
+  return {
+    men: pref.includes('male'),
+    women: pref.includes('female'),
+    nonBinary: pref.includes('non-binary'),
+  };
+}
+
 export default function RomanticPreferencesScreen({ navigation, route }) {
-  const [men, setMen] = useState(false);
-  const [women, setWomen] = useState(false);
-  const [nonBinary, setNonBinary] = useState(false);
+  const routeParams = route.params || {};
+  const { romanticPreference } = routeParams;
+  const initial = prefToChips(romanticPreference);
+  const [men, setMen] = useState(initial.men);
+  const [women, setWomen] = useState(initial.women);
+  const [nonBinary, setNonBinary] = useState(initial.nonBinary);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -73,7 +85,15 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
     graduationYear,
     wantsPlatonic,
     skipPlatonic,
-  } = route.params || {};
+    fromLogin,
+  } = routeParams;
+
+  useEffect(() => {
+    const next = prefToChips(romanticPreference);
+    setMen(next.men);
+    setWomen(next.women);
+    setNonBinary(next.nonBinary);
+  }, [romanticPreference]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -109,6 +129,7 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
       wantsRomantic: true,
       wantsPlatonic,
       romanticPreference,
+      fromLogin: !!fromLogin,
     };
 
     if (skipPlatonic || !wantsPlatonic) {
@@ -133,6 +154,7 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
       wantsRomantic: true,
       wantsPlatonic,
       romanticPreference: ['male', 'female', 'non-binary'],
+      fromLogin: !!fromLogin,
     };
 
     if (skipPlatonic || !wantsPlatonic) {
@@ -153,7 +175,13 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() =>
+            navigation.navigate('Welcome', {
+              ...routeParams,
+              wantsRomantic: true,
+              wantsPlatonic: wantsPlatonic ?? false,
+            })
+          }
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>

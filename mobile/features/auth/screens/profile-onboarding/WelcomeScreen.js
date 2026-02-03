@@ -55,14 +55,20 @@ function SelectChip({ label, selected, onPress, style }) {
   );
 }
 
-export default function WelcomeScreen({ navigation, route }) {
-  const [romantic, setRomantic] = useState(false);
-  const [platonic, setPlatonic] = useState(false);
+export default function WelcomeScreen({ navigation, route, onSignedIn }) {
+  const params = route.params || {};
+  const { fullName, email, phoneNumber, password, gender, dateOfBirth, graduationYear, fromLogin, wantsRomantic, wantsPlatonic } = params;
+
+  const [romantic, setRomantic] = useState(!!wantsRomantic);
+  const [platonic, setPlatonic] = useState(!!wantsPlatonic);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const { fullName, email, phoneNumber, password, gender, dateOfBirth, graduationYear } = route.params || {};
+  useEffect(() => {
+    setRomantic(!!wantsRomantic);
+    setPlatonic(!!wantsPlatonic);
+  }, [wantsRomantic, wantsPlatonic]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -87,23 +93,21 @@ export default function WelcomeScreen({ navigation, route }) {
       graduationYear,
       wantsRomantic: romantic,
       wantsPlatonic: platonic,
+      fromLogin: !!fromLogin,
     };
 
     // Navigate based on what was selected
     if (romantic && platonic) {
-      // Go to romantic first, then platonic
       navigation.navigate('RomanticPreferences', params);
     } else if (romantic) {
-      // Only romantic
       navigation.navigate('RomanticPreferences', { ...params, skipPlatonic: true });
     } else {
-      // Only platonic
       navigation.navigate('PlatonicPreferences', params);
     }
   }
 
   function handleSkip() {
-    // Skip with default preferences: both romantic and platonic with all three options
+    // Skip = go to next screen in flow (Add Photos), same as bypassing Continue with default prefs
     const params = {
       fullName,
       email,
@@ -116,8 +120,9 @@ export default function WelcomeScreen({ navigation, route }) {
       wantsPlatonic: true,
       romanticPreference: ['male', 'female', 'non-binary'],
       platonicPreference: ['male', 'female', 'non-binary'],
+      fromLogin: !!fromLogin,
     };
-    navigation.navigate('CompleteSignup', params);
+    navigation.navigate('AddPhotosScreen', params);
   }
 
   return (
@@ -128,7 +133,6 @@ export default function WelcomeScreen({ navigation, route }) {
       style={{ flex: 1 }}
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
-        {/* No back button - can't go back from welcome */}
         <TouchableOpacity
           onPress={handleSkip}
           style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}

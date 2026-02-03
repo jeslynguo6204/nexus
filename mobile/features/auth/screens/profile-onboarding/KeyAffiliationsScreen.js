@@ -58,15 +58,17 @@ function AffiliationChip({ affiliation, selected, disabled, onPress }) {
 }
 
 export default function KeyAffiliationsScreen({ navigation, route }) {
-  const [featuredAffiliations, setFeaturedAffiliations] = useState([]);
-
-  const insets = useSafeAreaInsets();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
   const routeParams = route.params || {};
   const selectedIds = routeParams.affiliations || routeParams.selectedAffiliations || [];
   const affiliationsByCategory = routeParams.affiliationsByCategory || {};
   const dorms = routeParams.dorms || [];
+  const initialFeatured = Array.isArray(routeParams.featuredAffiliations)
+    ? routeParams.featuredAffiliations.map(Number).filter((n) => !Number.isNaN(n) && n > 0)
+    : [];
+  const [featuredAffiliations, setFeaturedAffiliations] = useState(initialFeatured);
+
+  const insets = useSafeAreaInsets();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const selectedAffiliations = useMemo(() => {
     const map = new Map();
@@ -85,6 +87,13 @@ export default function KeyAffiliationsScreen({ navigation, route }) {
     () => new Set(featuredAffiliations.map(Number)),
     [featuredAffiliations]
   );
+
+  useEffect(() => {
+    const next = Array.isArray(routeParams.featuredAffiliations)
+      ? routeParams.featuredAffiliations.map(Number).filter((n) => !Number.isNaN(n) && n > 0)
+      : [];
+    if (next.length > 0) setFeaturedAffiliations(next);
+  }, [routeParams.featuredAffiliations]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -116,6 +125,18 @@ export default function KeyAffiliationsScreen({ navigation, route }) {
     });
   }
 
+  function handleSkip() {
+    navigation.navigate('CompleteSignup', { ...routeParams });
+  }
+
+  function handleBack() {
+    navigation.navigate('AddAffiliationsScreen', {
+      ...routeParams,
+      affiliations: selectedIds,
+      featuredAffiliations: featuredAffiliations.length > 0 ? featuredAffiliations : null,
+    });
+  }
+
   return (
     <LinearGradient
       colors={['#1F6299', '#34A4FF']}
@@ -125,10 +146,16 @@ export default function KeyAffiliationsScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleBack}
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleSkip}
+          style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}
+        >
+          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>Skip →</Text>
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>

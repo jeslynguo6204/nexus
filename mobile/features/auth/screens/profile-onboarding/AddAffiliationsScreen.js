@@ -43,13 +43,16 @@ export default function AddAffiliationsScreen({ navigation, route }) {
   const [fetchError, setFetchError] = useState(null);
   const [dorms, setDorms] = useState([]);
   const [affiliationsByCategory, setAffiliationsByCategory] = useState({});
-  const [selectedAffiliationIds, setSelectedAffiliationIds] = useState([]);
+  const routeParams = route.params || {};
+  const initialAffiliationIds = Array.isArray(routeParams.affiliations)
+    ? routeParams.affiliations.map((id) => Number(id)).filter((n) => !Number.isNaN(n) && n > 0)
+    : [];
+  const [selectedAffiliationIds, setSelectedAffiliationIds] = useState(initialAffiliationIds);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [sheetConfig, setSheetConfig] = useState(null);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const routeParams = route.params || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -118,6 +121,19 @@ export default function AddAffiliationsScreen({ navigation, route }) {
     });
   }
 
+  function handleSkip() {
+    navigation.navigate('KeyAffiliationsScreen', { ...routeParams });
+  }
+
+  function handleBack() {
+    navigation.navigate('LikesDislikesScreen', {
+      ...routeParams,
+      affiliations: selectedAffiliationIds,
+      affiliationsByCategory,
+      dorms,
+    });
+  }
+
   if (loading && !fetchError) {
     return (
       <LinearGradient
@@ -141,7 +157,7 @@ export default function AddAffiliationsScreen({ navigation, route }) {
       >
         <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={handleBack}
             style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
           >
             <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
@@ -172,10 +188,16 @@ export default function AddAffiliationsScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleBack}
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleSkip}
+          style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}
+        >
+          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>Skip →</Text>
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>

@@ -40,7 +40,9 @@ export default function AuthStack({ onSignedIn }) {
         {(props) => <ConfirmOtpScreen {...props} onSignedIn={onSignedIn} />}
       </Stack.Screen>
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="Welcome">
+        {(props) => <WelcomeScreen {...props} onSignedIn={onSignedIn} />}
+      </Stack.Screen>
       <Stack.Screen name="RomanticPreferences" component={RomanticPreferencesScreen} />
       <Stack.Screen name="PlatonicPreferences" component={PlatonicPreferencesScreen} />
       <Stack.Screen name="AddPhotosScreen" component={AddPhotosScreen} />
