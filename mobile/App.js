@@ -7,7 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Amplify } from 'aws-amplify';
 import { getCurrentUser, signOut } from 'aws-amplify/auth';
-import BottomTabs from './navigation/BottomTabs';
+import MainStack from './navigation/MainStack';
 import AuthStack from './navigation/AuthStack';
 import { ModeProvider } from './contexts/ModeContext';
 import amplifyConfig from './amplifyConfig';
@@ -128,7 +128,7 @@ export default function App() {
             <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: fadeAnim }]}>
               {isSignedIn ? (
                 <ModeProvider>
-                  <BottomTabs onSignOut={handleSignOut} />
+                  <MainStack onSignOut={handleSignOut} onSignedIn={handleSignedIn} />
                 </ModeProvider>
               ) : (
                 <AuthStack onSignedIn={handleSignedIn} />

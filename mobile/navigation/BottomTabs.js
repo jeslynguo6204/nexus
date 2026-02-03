@@ -13,6 +13,7 @@ import LikesScreen from '../features/likes/screens/LikesScreen';
 import LikesSwipeScreen from '../features/likes/screens/LikesSwipeScreen';
 import FriendsScreen from '../features/friends/screens/FriendsScreen';
 import ComingSoonScreen from '../features/launch-specific/ComingSoonScreen';
+import OnboardingTestScreen from '../features/auth/screens/OnboardingTestScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -64,6 +65,7 @@ const ICON_MAP = {
   Friends: "user-group",
   Profile: "address-card",
   ComingSoon: "hourglass-half",
+  OnboardingTest: "vial",
 };
 
 export default function BottomTabs({ onSignOut }) {
@@ -117,6 +119,22 @@ export default function BottomTabs({ onSignOut }) {
               },
             }}
           />
+          <Tab.Screen
+            name="OnboardingTest"
+            component={OnboardingTestScreen}
+            options={{
+              tabBarLabel: 'Test',
+              tabBarShowLabel: true,
+              tabBarStyle: {
+                backgroundColor: '#FFFFFF',
+                borderTopWidth: 1,
+                borderTopColor: '#F2F2F7',
+                height: 49 + insets.bottom,
+                paddingBottom: insets.bottom,
+                paddingTop: 0,
+              },
+            }}
+          />
           <Tab.Screen 
             name="Profile"
             options={{
@@ -139,6 +157,11 @@ export default function BottomTabs({ onSignOut }) {
           <Tab.Screen name="Likes" component={LikesStack} />
           <Tab.Screen name="Chat" component={ChatStack} />
           <Tab.Screen name="Friends" component={FriendsScreen} />
+          <Tab.Screen
+            name="OnboardingTest"
+            component={OnboardingTestScreen}
+            options={{ tabBarLabel: 'Test', tabBarShowLabel: true }}
+          />
           <Tab.Screen name="Profile">
             {(props) => <ProfileScreen {...props} onSignOut={onSignOut} />}
           </Tab.Screen>
