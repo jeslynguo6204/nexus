@@ -13,8 +13,7 @@ export async function sendMessage(
   mode: 'romantic' | 'platonic' = 'romantic'
 ): Promise<{
   chatId: number;
-  messageId: number;
-  message: string;
+  message: MessageRow;
 }> {
   if (!messageBody || !messageBody.trim()) {
     const err = new Error("Message body cannot be empty");
@@ -51,8 +50,7 @@ export async function sendMessage(
     );
     return {
       chatId: result.chatId,
-      messageId: result.messageId,
-      message: "Message sent successfully",
+      message: result.message,
     };
   } catch (error) {
     const err = error as any;

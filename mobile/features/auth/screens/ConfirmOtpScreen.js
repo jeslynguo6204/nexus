@@ -3,6 +3,8 @@ import {
   Alert,
   Animated,
   KeyboardAvoidingView,
+  Keyboard,
+  PanResponder,
   Platform,
   ScrollView,
   Text,
@@ -22,6 +24,17 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   const [resendTimer, setResendTimer] = useState(30);
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        gestureState.dy > 12 && Math.abs(gestureState.dx) < 20,
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 20) {
+          Keyboard.dismiss();
+        }
+      },
+    })
+  ).current;
 
   const email = route?.params?.email || '';
   const password = route?.params?.password || '';
@@ -110,6 +123,7 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
         <ScrollView
           contentContainerStyle={styles.loginContent}
           keyboardShouldPersistTaps="handled"
+          {...panResponder.panHandlers}
         >
           <Text style={styles.loginLogo}>6°</Text>
           <Text style={styles.loginTitle}>Verify your email</Text>

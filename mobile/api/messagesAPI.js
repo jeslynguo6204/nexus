@@ -26,7 +26,7 @@ export async function sendMessage(matchId, messageBody, mode = 'romantic') {
     }
 
     const data = await response.json();
-    return data; // { chatId, messageId, message }
+    return data; // { chatId, message }
   } catch (error) {
     console.error('Error sending message:', error);
     throw error;

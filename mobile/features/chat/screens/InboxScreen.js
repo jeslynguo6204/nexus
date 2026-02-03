@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import Constants from 'expo-constants';
+import io from 'socket.io-client';
 
 import styles from '../../../styles/ChatStyles'; // Keep for chatRow, matchItem, etc.
 import mainStyles from '../../../styles/MainPagesStyles';
@@ -41,75 +43,72 @@ const formatTimeAgo = (dateString) => {
   }
 };
 
-// Hard-coded sample chats for preview
-const HARDCODED_CHATS = [
-  {
-    id: 'c1',
-    match_user_id: 'match_123',
-    display_name: 'Alex',
-    avatar_url: 'https://picsum.photos/200?31',
-    last_message: 'Hey! How are you doing?',
-    time: 'now',
-    unread: true,
-  },
-  {
-    id: 'c2',
-    match_user_id: 'match_456',
-    display_name: 'Paige',
-    avatar_url: 'https://picsum.photos/200?32',
-    last_message: 'That sounds great! Let me know when you\'re free',
-    time: '5m',
-    unread: true,
-  },
-  {
-    id: 'c3',
-    match_user_id: 'match_789',
-    display_name: 'Jordan',
-    avatar_url: 'https://picsum.photos/200?33',
-    last_message: 'Thanks for the recommendation!',
-    time: '1h',
-    unread: false,
-  },
-  {
-    id: 'c4',
-    match_user_id: 'match_101',
-    display_name: 'Sam',
-    avatar_url: 'https://picsum.photos/200?34',
-    last_message: 'See you tomorrow!',
-    time: '3h',
-    unread: false,
-  },
-  {
-    id: 'c5',
-    match_user_id: 'match_202',
-    display_name: 'Taylor',
-    avatar_url: 'https://picsum.photos/200?35',
-    last_message: 'You started the conversation',
-    time: '1d',
-    unread: false,
-  },
-  {
-    id: 'c6',
-    match_user_id: 'match_303',
-    display_name: 'Morgan',
-    avatar_url: 'https://picsum.photos/200?36',
-    last_message: 'Looking forward to it!',
-    time: '2d',
-    unread: false,
-  },
-];
-
 export default function InboxScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [hasLoadedMatches, setHasLoadedMatches] = useState(false);
+  const [hasLoadedChats, setHasLoadedChats] = useState(false);
 
   const [matches, setMatches] = useState([]);
   const [chats, setChats] = useState([]);
   const [myProfile, setMyProfile] = useState(null);
+  const [socketConnected, setSocketConnected] = useState(false);
   
   const [mode, setMode] = useState('romantic'); // romantic | platonic
   const hasSetInitialMode = useRef(false);
   const isLoadingRef = useRef(false);
+  const socketRef = useRef(null);
+  const joinedMatchesRef = useRef(new Set());
+  const matchesRef = useRef([]);
+  const profileRef = useRef(null);
+  const modeRef = useRef(mode);
+
+  const API_BASE = useMemo(() => {
+    return Constants?.expoConfig?.extra?.apiBaseUrl || 'https://sixdegrees.dev';
+  }, []);
+
+  useEffect(() => {
+    matchesRef.current = matches;
+  }, [matches]);
+
+  useEffect(() => {
+    profileRef.current = myProfile;
+  }, [myProfile]);
+
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+
+  const handleIncomingMessage = useCallback((msg) => {
+    const currentMode = modeRef.current;
+    if (msg?.mode && msg.mode !== currentMode) return;
+    if (!msg?.match_id) return;
+    const matchId = msg.match_id.toString();
+    const currentProfile = profileRef.current;
+    const isMine = currentProfile?.user_id && msg.sender_user_id === currentProfile.user_id;
+    const preview = msg.body || '';
+    const timeLabel = formatTimeAgo(msg.created_at);
+    const currentMatches = matchesRef.current || [];
+
+    setChats((prevChats) => {
+      const others = prevChats.filter((c) => String(c.id) !== matchId);
+      const existing = prevChats.find((c) => String(c.id) === matchId);
+      const matchMeta = currentMatches.find((m) => String(m.id) === matchId);
+
+      const base = existing || matchMeta || {};
+      const updated = {
+        id: matchId,
+        match_user_id: base.match_user_id,
+        display_name: base.display_name || 'Chat',
+        avatar_url: base.avatar_url || 'https://picsum.photos/200?99',
+        chat_id: msg.chat_id || base.chat_id || null,
+        last_message: preview,
+        time: timeLabel,
+        unread: isMine ? false : true,
+      };
+
+      return [updated, ...others];
+    });
+  }, []);
 
   const loadInboxData = useCallback(async (showLoading = false) => {
     // Prevent multiple simultaneous loads
@@ -143,6 +142,7 @@ export default function InboxScreen({ navigation }) {
             m.avatar_url ||
             'https://picsum.photos/200?99',
           created_at: m.created_at,
+          chat_id: m.chat_id,
         })
       );
 
@@ -161,15 +161,20 @@ export default function InboxScreen({ navigation }) {
           avatar_url:
             c.avatar_url ||
             'https://picsum.photos/200?99',
+          chat_id: c.chat_id,
           last_message: c.last_message_preview || 'No messages yet',
-          time: c.last_message_at ? formatTimeAgo(c.last_message_at) : null,
+          time: c.last_message_at ? new Date(c.last_message_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : null,
           unread: false, // TODO: implement unread status when messages are fetched
         })
       );
 
-      // For preview: use hardcoded chats if no real chats exist
-      // TODO: Remove hardcoded chats when real messaging is fully implemented
-      setChats(formattedChats.length > 0 ? formattedChats : HARDCODED_CHATS);
+      // Sticky cards: only replace with non-empty results; otherwise keep existing unless first load
+      setChats((prev) => {
+        if (formattedChats.length > 0) return formattedChats;
+        if (!hasLoadedChats) return formattedChats; // first load can be empty
+        return prev; // keep previous cards if new fetch is empty
+      });
+      setHasLoadedChats(true);
     } catch (e) {
       console.warn('Error loading inbox:', e);
       // Don't show alert for network errors - they're expected if server isn't running
@@ -185,6 +190,55 @@ export default function InboxScreen({ navigation }) {
       isLoadingRef.current = false;
     }
   }, [mode]);
+
+  // Connect to the socket server for realtime chat previews
+  useEffect(() => {
+    let isMounted = true;
+    const connect = async () => {
+      try {
+        const token = await getIdToken();
+        if (!token || !isMounted) return;
+
+        const socket = io(API_BASE, {
+          transports: ['websocket'],
+          auth: { token },
+        });
+        socketRef.current = socket;
+
+        socket.on('connect', () => setSocketConnected(true));
+        socket.on('disconnect', () => setSocketConnected(false));
+        socket.on('message', handleIncomingMessage);
+      } catch (e) {
+        console.warn('Inbox socket connection failed', e);
+      }
+    };
+
+    connect();
+    return () => {
+      isMounted = false;
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      setSocketConnected(false);
+    };
+  }, [API_BASE]);
+
+  // Reset joined-room tracking when mode changes
+  useEffect(() => {
+    joinedMatchesRef.current = new Set();
+  }, [mode]);
+
+  // Join a room for every known match so we receive new message events
+  useEffect(() => {
+    if (!socketRef.current || !socketConnected) return;
+    const joined = joinedMatchesRef.current;
+
+    matches.forEach((m) => {
+      const idStr = String(m.id);
+      if (joined.has(idStr)) return;
+      socketRef.current.emit('join_chat', { matchId: m.id, mode });
+      joined.add(idStr);
+    });
+  }, [matches, mode, socketConnected]);
 
   // Set initial mode once when profile is loaded, and update if modes change
   useEffect(() => {
@@ -248,6 +302,7 @@ export default function InboxScreen({ navigation }) {
       display_name: chatOrMatch.display_name,
       avatar_url: chatOrMatch.avatar_url,
       matched_at: chatOrMatch.created_at || '5/15/24',
+      chat_id: chatOrMatch.chat_id || null,
       mode: mode, // Pass current mode
     });
   };
@@ -270,7 +325,7 @@ export default function InboxScreen({ navigation }) {
     const unread = !!item.unread;
 
     return (
-      <Pressable onPress={() => onOpenChat(item)} style={styles.chatRow} hitSlop={6}>
+      <Pressable onPress={() => onOpenChat(item)} style={styles.chatCard} hitSlop={6}>
         <Image source={{ uri: item.avatar_url }} style={styles.chatAvatar} />
 
         <View style={styles.chatText}>
@@ -278,37 +333,35 @@ export default function InboxScreen({ navigation }) {
             {item.display_name}
           </Text>
 
-          <View style={styles.previewRow}>
-            <Text
-              style={[
-                styles.chatPreview,
-                unread ? styles.unreadPreview : styles.readPreview,
-              ]}
-              numberOfLines={1}
-            >
-              {item.last_message}
-            </Text>
-
-            {!!item.time && (
-              <Text
-                style={[
-                  styles.timeText,
-                  unread ? styles.unreadTime : styles.readTime,
-                ]}
-              >
-                {' '}
-                · {item.time}
-              </Text>
-            )}
-          </View>
+          <Text
+            style={[
+              styles.chatPreview,
+              unread ? styles.unreadPreview : styles.readPreview,
+            ]}
+            numberOfLines={1}
+          >
+            {item.last_message}
+          </Text>
         </View>
 
-        {unread ? <View style={styles.unreadDot} /> : <View style={styles.dotSpacer} />}
+        <View style={styles.timeWrap}>
+          {!!item.time && (
+            <Text
+              style={[
+                styles.timeText,
+                unread ? styles.unreadTime : styles.readTime,
+              ]}
+            >
+              {item.time}
+            </Text>
+          )}
+          {unread ? <View style={styles.unreadDot} /> : <View style={styles.dotSpacer} />}
+        </View>
       </Pressable>
     );
   };
 
-  if (loading || !hasLoadedMatches) {
+  if (loading || !hasLoadedMatches || !hasLoadedChats) {
     return (
       <SafeAreaView style={mainStyles.container}>
         <ActivityIndicator style={{ flex: 1 }} />

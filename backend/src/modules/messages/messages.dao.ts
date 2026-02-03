@@ -81,13 +81,20 @@ export async function sendFirstMessage(
   matchId: number,
   senderUserId: number,
   messageBody: string,
-  mode: 'romantic' | 'platonic' = 'romantic'
-): Promise<{ chatId: number; messageId: number }> {
+  mode: 'romantic' | 'platonic' = 'romantic',
+  useSharedTables: boolean = false
+): Promise<{ chatId: number; message: MessageRow }> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
+    // Some databases may have friend_matches.chat_id still pointing to chats (shared).
+    // If useSharedTables is true, force using the shared chats/messages tables even in platonic mode.
     const matchTable = mode === 'platonic' ? 'friend_matches' : 'dating_matches';
+    const chatsTable =
+      mode === 'platonic' && !useSharedTables ? 'friend_chats' : 'chats';
+    const messagesTable =
+      mode === 'platonic' && !useSharedTables ? 'friend_messages' : 'messages';
 
     // Lock the match row and check if chat_id exists
     const matchResult = await client.query(
@@ -107,11 +114,36 @@ export async function sendFirstMessage(
     const match = matchResult.rows[0];
     let chatId = match.chat_id;
 
-    const chatsTable = mode === 'platonic' ? 'friend_chats' : 'chats';
-    const messagesTable = mode === 'platonic' ? 'friend_messages' : 'messages';
-
-    // If no chat_id yet, create one and update the match
-    if (!chatId) {
+    // If there is a chatId, make sure it exists in the correct chats table; if missing or null, create one.
+    if (chatId) {
+      const existingChat = await client.query(
+        `
+        SELECT id FROM ${chatsTable}
+        WHERE id = $1
+        `,
+        [chatId]
+      );
+      if (existingChat.rows.length === 0) {
+        // The chat_id points to a non-existent chat (possibly from the other mode). Create a fresh chat.
+        const chatResult = await client.query(
+          `
+          INSERT INTO ${chatsTable} (created_at, last_message_at, last_message_preview)
+          VALUES (NOW(), NULL, NULL)
+          RETURNING id
+          `
+        );
+        chatId = chatResult.rows[0].id;
+        await client.query(
+          `
+          UPDATE ${matchTable}
+          SET chat_id = $1
+          WHERE id = $2
+          `,
+          [chatId, matchId]
+        );
+      }
+    } else {
+      // No chat yet; create one.
       const chatResult = await client.query(
         `
         INSERT INTO ${chatsTable} (created_at, last_message_at, last_message_preview)
@@ -121,7 +153,6 @@ export async function sendFirstMessage(
       );
       chatId = chatResult.rows[0].id;
 
-      // Update the match with the new chat_id
       await client.query(
         `
         UPDATE ${matchTable}
@@ -133,16 +164,16 @@ export async function sendFirstMessage(
     }
 
     // Insert the message
-    const messageResult = await client.query(
+    const messageResult = await client.query<MessageRow>(
       `
       INSERT INTO ${messagesTable} (chat_id, sender_user_id, body, created_at)
       VALUES ($1, $2, $3, NOW())
-      RETURNING id
+      RETURNING id, chat_id, sender_user_id, body, created_at
       `,
       [chatId, senderUserId, messageBody]
     );
 
-    const messageId = messageResult.rows[0].id;
+    const messageRow = messageResult.rows[0];
 
     // Update chat preview
     const preview = messageBody.substring(0, 120);
@@ -157,9 +188,20 @@ export async function sendFirstMessage(
     );
 
     await client.query("COMMIT");
-    return { chatId, messageId };
+    return { chatId, message: messageRow };
   } catch (error) {
     await client.query("ROLLBACK");
+    const err = error as any;
+    // If the schema still points friend_matches.chat_id to the shared chats table,
+    // retry once using the shared chats/messages tables to satisfy FK constraint.
+    const fkMsg = err?.message || '';
+    const needsSharedTables =
+      mode === 'platonic' &&
+      !useSharedTables &&
+      fkMsg.includes('friend_matches_chat_id_fkey');
+    if (needsSharedTables) {
+      return sendFirstMessage(matchId, senderUserId, messageBody, mode, true);
+    }
     throw error;
   } finally {
     client.release();
@@ -175,7 +217,7 @@ export async function getChatMessages(
   mode: 'romantic' | 'platonic' = 'romantic'
 ): Promise<MessageRow[]> {
   const messagesTable = mode === 'platonic' ? 'friend_messages' : 'messages';
-  const rows = await dbQuery<MessageRow>(
+  let rows = await dbQuery<MessageRow>(
     `
     SELECT id, chat_id, sender_user_id, body, created_at
     FROM ${messagesTable}
@@ -185,5 +227,20 @@ export async function getChatMessages(
     `,
     [chatId, limit]
   );
+
+  // Fallback: if platonic chat was stored in shared messages table (legacy / mixed schema), read from messages
+  if (rows.length === 0 && mode === 'platonic') {
+    rows = await dbQuery<MessageRow>(
+      `
+      SELECT id, chat_id, sender_user_id, body, created_at
+      FROM messages
+      WHERE chat_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2
+      `,
+      [chatId, limit]
+    );
+  }
+
   return rows;
 }

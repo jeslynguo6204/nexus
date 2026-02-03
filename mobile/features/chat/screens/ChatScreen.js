@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,16 +15,28 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { sendMessage as sendMessageAPI } from '../../../api/messagesAPI';
+import { useFocusEffect } from '@react-navigation/native';
+import { sendMessage as sendMessageAPI, getMessages } from '../../../api/messagesAPI';
 import { unmatchUser as unmatchUserAPI } from '../../../api/matchesAPI';
 import { blockUser } from '../../../api/blocksAPI';
 import BlockReportSheet from '../../home/components/BlockReportSheet';
 import UserProfilePreviewModal from '../../profile/components/UserProfilePreviewModal';
 import { getIdToken } from '../../../auth/tokens';
+import { getMyProfile } from '../../../api/profileAPI';
+import { fetchMyPhotos } from '../../../api/photosAPI';
+import Constants from 'expo-constants';
+import io from 'socket.io-client';
 
 const DEFAULT_AVATAR = 'https://picsum.photos/200?88';
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+const formatTimeLabel = (ts) => {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
 
 const formatMatchDate = (dateString) => {
   if (!dateString) return '5/15/24';
@@ -55,9 +67,17 @@ export default function ChatScreen({ navigation, route }) {
   const avatarUrl = route?.params?.avatar_url ?? DEFAULT_AVATAR;
   const matchedAtRaw = route?.params?.matched_at ?? '5/15/24';
   const matchedAt = formatMatchDate(matchedAtRaw);
+  const initialChatId = route?.params?.chat_id || null;
 
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [chatId, setChatId] = useState(initialChatId);
+  const [messages, setMessages] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [myUserId, setMyUserId] = useState(null);
+  const [myAvatarUrl, setMyAvatarUrl] = useState(DEFAULT_AVATAR);
+  const [socketConnected, setSocketConnected] = useState(false);
+  const socketRef = useRef(null);
   
   // Menu popover state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -69,23 +89,6 @@ export default function ChatScreen({ navigation, route }) {
   const [blockReportMode, setBlockReportMode] = useState(null); // 'block' or 'report'
 
   const [profileModalVisible, setProfileModalVisible] = useState(false);
-
-  // Hard-coded starter conversation
-  // Note: Array gets reversed before passing to inverted FlatList, so first item appears at top
-  const [messages, setMessages] = useState(() => [
-    {
-      id: 'm1',
-      type: 'system',
-      text: `YOU MATCHED WITH ${displayName.toUpperCase()} ON ${matchedAt}`,
-    },
-    {
-      id: 'm2',
-      type: 'incoming',
-      text: "Sample chat message! This is an example of how your messages will look.",
-    },
-    // Add an outgoing sample if you want:
-    // { id: 'm3', type: 'outgoing', text: "haha thank you 😭 how's your day going?" },
-  ]);
 
   const listRef = useRef(null);
 
@@ -210,42 +213,297 @@ export default function ChatScreen({ navigation, route }) {
     setProfileModalVisible(true);
   };
 
+  const addMessageFromServer = (msg) => {
+    if (!msg) return;
+    const getId = (m) => {
+      if (m.id != null) return String(m.id);
+      if (m.tempId) return String(m.tempId);
+      return null;
+    };
+
+    const baseId = getId(msg);
+    const id = baseId || `m_${Date.now()}`;
+    const normalized = {
+      id,
+      tempId: msg.tempId,
+      body: msg.body,
+      created_at: msg.created_at,
+      sender_user_id: msg.sender_user_id,
+      status: 'sent',
+    };
+
+    setMessages((prev) => {
+      // If this incoming message matches an optimistic pending one (same body, same sender, pending), replace it.
+      const pendingIdx = prev.findIndex(
+        (m) =>
+          m.status === 'pending' &&
+          m.sender_user_id === normalized.sender_user_id &&
+          m.body === normalized.body
+      );
+      if (pendingIdx >= 0) {
+        const next = prev.slice();
+        next[pendingIdx] = { ...prev[pendingIdx], ...normalized };
+        return next;
+      }
+
+      // If this is fulfilling an optimistic message, replace by tempId
+      if (normalized.tempId) {
+        const replaced = prev.map((m) =>
+          m.tempId === normalized.tempId ? { ...m, ...normalized } : m
+        );
+        const exists = replaced.some((m) => {
+          const mid = getId(m);
+          return mid && mid === id;
+        });
+        return exists ? replaced : [...replaced, { ...normalized, id }];
+      }
+
+      const exists = prev.some((m) => {
+        const mid = getId(m);
+        return mid && mid === id;
+      });
+      if (exists) return prev;
+      return [...prev, { ...normalized, id }];
+    });
+  };
+
   const dataForList = useMemo(() => {
-    // FlatList inverted wants newest first (index 0)
-    // We'll invert ourselves so it still renders naturally.
-    return [...messages].reverse();
-  }, [messages]);
+    return [...messages].reverse().map((m) => ({
+      key: m.id || m.tempId,
+      id: m.id || m.tempId,
+      text: m.body,
+      created_at: m.created_at,
+      type: myUserId && m.sender_user_id === myUserId ? 'outgoing' : 'incoming',
+      status: m.status,
+    }));
+  }, [messages, myUserId]);
 
   const sendMessage = async () => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
+    console.log('[chat] send tapped', { matchId, mode, len: trimmed.length, socketConnected });
     setSending(true);
-    try {
-      // Call backend to send message (creates chat if needed)
-      const result = await sendMessageAPI(matchId, trimmed, mode);
-      
-      // Create local message object
-      const newMsg = {
-        id: `m_${Date.now()}`,
-        type: 'outgoing',
-        text: trimmed,
-      };
+    const tempId = `tmp_${Date.now()}`;
+    const optimisticMsg = {
+      id: tempId,
+      tempId,
+      body: trimmed,
+      created_at: new Date().toISOString(),
+      sender_user_id: myUserId,
+      status: 'pending',
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
 
-      setMessages((prev) => [...prev, newMsg]);
+    const markStatus = (status) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.tempId === tempId ? { ...m, status } : m))
+      );
+    };
+
+    try {
+      const socket = socketRef.current;
+      if (socket && socket.connected) {
+        console.log('[chat] sending via socket', { matchId, mode, tempId });
+        let acked = false;
+        const fallbackTimer = setTimeout(async () => {
+          if (acked) return;
+          console.log('[chat] socket ack timeout; falling back to HTTP', { matchId, mode, tempId });
+          try {
+            const result = await sendMessageAPI(matchId, trimmed, mode);
+            if (result.message) {
+              addMessageFromServer({ ...result.message, sender_user_id: myUserId, tempId });
+              markStatus('sent');
+            } else {
+              markStatus('failed');
+            }
+          } catch (err) {
+            console.warn('[chat] http fallback failed', err);
+            markStatus('failed');
+            Alert.alert('Error', 'Failed to send message. Please try again.');
+          } finally {
+            setSending(false);
+          }
+        }, 3000);
+
+        socket.emit(
+          'send_message',
+          { matchId, body: trimmed, mode, tempId },
+          (resp) => {
+            acked = true;
+            clearTimeout(fallbackTimer);
+            if (!resp?.ok) {
+              console.warn('[chat] socket send failed', resp);
+              markStatus('failed');
+              Alert.alert('Error', resp?.error || 'Failed to send message.');
+              setSending(false);
+              return;
+            }
+            const msg = { ...resp.message, tempId };
+            setChatId(resp.chatId || chatId);
+            addMessageFromServer(msg);
+            console.log('[chat] socket ack', { chatId: resp.chatId, messageId: resp.message?.id });
+            markStatus('sent');
+            setSending(false);
+          }
+        );
+      } else {
+        // Fallback to HTTP (still works, but no realtime)
+        console.log('[chat] sending via HTTP', { matchId, mode, tempId });
+        const result = await sendMessageAPI(matchId, trimmed, mode);
+        setChatId(result.chatId || chatId);
+        if (result.message) {
+          addMessageFromServer({ ...result.message, sender_user_id: myUserId, tempId });
+          console.log('[chat] http response', { chatId: result.chatId, messageId: result.message?.id });
+          markStatus('sent');
+        } else {
+          const newMsg = {
+            id: tempId,
+            tempId,
+            body: trimmed,
+            created_at: new Date().toISOString(),
+            sender_user_id: myUserId,
+            status: 'pending',
+          };
+          addMessageFromServer(newMsg);
+        }
+      }
       setText('');
 
-      // Optionally scroll to bottom (works well with inverted list)
       requestAnimationFrame(() => {
         listRef.current?.scrollToOffset?.({ offset: 0, animated: true });
       });
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
+      // Mark optimistic message as failed
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.tempId === tempId ? { ...m, status: 'failed' } : m
+        )
+      );
     } finally {
       setSending(false);
     }
   };
+
+  const API_BASE = useMemo(() => {
+    return Constants?.expoConfig?.extra?.apiBaseUrl || 'https://sixdegrees.dev';
+  }, []);
+
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const profile = await getMyProfile();
+        setMyUserId(profile?.user_id);
+        let avatar = null;
+        // Prefer primary photo from photos API (sorted by sort_order)
+        try {
+          const token = await getIdToken();
+          if (token) {
+            const photos = await fetchMyPhotos(token);
+            const primary = photos.find((p) => p.is_primary);
+            avatar = primary?.url || photos[0]?.url || null;
+          }
+        } catch (photoErr) {
+          console.warn('Failed to load photos for chat avatar', photoErr);
+        }
+        if (!avatar && Array.isArray(profile?.photos)) {
+          avatar = profile.photos[0] || null;
+        }
+        setMyAvatarUrl(avatar || DEFAULT_AVATAR);
+      } catch (e) {
+        console.warn('Failed to load profile for chat', e);
+      }
+    };
+    fetchMe();
+  }, []);
+
+  const loadHistory = useCallback(async () => {
+    if (!chatId || !myUserId) return;
+    setLoadingHistory(true);
+    try {
+      const rows = await getMessages(chatId, mode);
+      const normalized = rows
+        .slice()
+        .reverse()
+        .map((m) => ({
+          id: m.id.toString(),
+          body: m.body,
+          created_at: m.created_at,
+          sender_user_id: m.sender_user_id,
+        }));
+      setMessages(normalized);
+    } catch (e) {
+      console.warn('Failed to load messages', e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [chatId, mode, myUserId]);
+
+  // Load history when identifiers change
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  // Keep navigation params updated with resolved chatId so future navigations have it
+  useEffect(() => {
+    if (chatId && route?.params?.chat_id !== chatId) {
+      navigation.setParams({ chat_id: chatId });
+    }
+  }, [chatId, navigation, route?.params?.chat_id]);
+
+  // Reload history whenever the chat screen regains focus (ensures "sticky" history)
+  useFocusEffect(
+    useCallback(() => {
+      loadHistory();
+    }, [loadHistory])
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    const connectSocket = async () => {
+      try {
+        const token = await getIdToken();
+        if (!isMounted) return;
+        const socket = io(API_BASE, {
+          transports: ['websocket'],
+          auth: { token },
+        });
+        socketRef.current = socket;
+
+        socket.on('connect', () => {
+          console.log('[chat] socket connected');
+          setSocketConnected(true);
+        });
+        socket.on('disconnect', () => {
+          console.log('[chat] socket disconnected');
+          setSocketConnected(false);
+        });
+        socket.on('connect_error', (err) => {
+          console.warn('[chat] socket connect_error', err?.message || err);
+        });
+        socket.on('error', (err) => {
+          console.warn('[chat] socket error', err?.message || err);
+        });
+        socket.on('message', addMessageFromServer);
+
+        socket.emit('join_chat', { matchId, mode }, (resp) => {
+          if (resp?.ok && resp.chatId && !chatId) {
+            setChatId(resp.chatId);
+            console.log('[chat] joined room', resp);
+          }
+        });
+      } catch (e) {
+        console.warn('Socket connection failed', e);
+      }
+    };
+    connectSocket();
+    return () => {
+      isMounted = false;
+      socketRef.current?.disconnect();
+    };
+  }, [API_BASE, matchId, mode]);
 
   const renderItem = ({ item }) => {
     if (item.type === 'system') {
@@ -257,28 +515,56 @@ export default function ChatScreen({ navigation, route }) {
     }
 
     const incoming = item.type === 'incoming';
-    return (
-      <View style={[styles.messageRow, incoming ? styles.leftRow : styles.rightRow]}>
-        {incoming ? (
+    const dimmed = item.status === 'pending' || item.status === 'failed';
+    if (incoming) {
+      const timeLabel = formatTimeLabel(item.created_at);
+      return (
+        <View style={[styles.messageRow, styles.leftRow]}>
           <Image source={{ uri: avatarUrl }} style={styles.bubbleAvatar} />
-        ) : (
-          <View style={styles.bubbleAvatarSpacer} />
-        )}
+          <View style={[
+            styles.bubble,
+            styles.incomingBubble,
+            dimmed && styles.pendingBubble
+          ]}>
+            <Text style={[
+              styles.bubbleText,
+              styles.incomingText,
+              dimmed && styles.pendingText
+            ]}>
+              {item.text}
+            </Text>
+            {!!timeLabel && (
+              <Text style={[styles.timestamp, styles.timestampIncoming]}>
+                {timeLabel}
+              </Text>
+            )}
+          </View>
+        </View>
+      );
+    }
 
-        <View style={[styles.bubble, incoming ? styles.incomingBubble : styles.outgoingBubble]}>
-          <Text style={[styles.bubbleText, incoming ? styles.incomingText : styles.outgoingText]}>
+    const timeLabel = formatTimeLabel(item.created_at);
+    return (
+      <View style={[styles.messageRow, styles.rightRow]}>
+        <View style={[
+          styles.bubble,
+          styles.outgoingBubble,
+          dimmed && styles.pendingBubble
+        ]}>
+          <Text style={[
+            styles.bubbleText,
+            styles.outgoingText,
+            dimmed && styles.pendingText
+          ]}>
             {item.text}
           </Text>
+          {!!timeLabel && (
+            <Text style={[styles.timestamp, styles.timestampOutgoing]}>
+              {timeLabel}
+            </Text>
+          )}
         </View>
-
-        {/* Right side (for icons like heart in your screenshot). Keeping subtle placeholder. */}
-        {incoming ? (
-          <Pressable hitSlop={10} style={styles.reactionStub}>
-            <Text style={styles.reactionStubText}>♡</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.reactionStubSpacer} />
-        )}
+        <Image source={{ uri: myAvatarUrl }} style={[styles.bubbleAvatar, styles.bubbleAvatarRight]} />
       </View>
     );
   };
@@ -382,15 +668,21 @@ export default function ChatScreen({ navigation, route }) {
         />
 
         {/* Messages */}
-        <FlatList
-          ref={listRef}
-          data={dataForList}
-          keyExtractor={(x) => x.id}
-          renderItem={renderItem}
-          inverted
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
+        {loadingHistory && messages.length === 0 ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator />
+          </View>
+        ) : (
+          <FlatList
+            ref={listRef}
+            data={dataForList}
+            keyExtractor={(x, idx) => x.id || x.key || `row_${idx}`}
+            renderItem={renderItem}
+            inverted
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         {/* Composer */}
         <View style={styles.composerWrap}>
@@ -452,8 +744,9 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    height: 80,
+    height: 96,
     paddingHorizontal: 12,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -545,6 +838,10 @@ const styles = StyleSheet.create({
     width: 32,
     marginRight: 8,
   },
+  bubbleAvatarRight: {
+    marginLeft: 8,
+    marginRight: 0,
+  },
 
   bubble: {
     maxWidth: '72%',
@@ -579,6 +876,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
   },
+  timestamp: {
+    marginTop: 4,
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: '600',
+    alignSelf: 'flex-end',
+  },
+  timestampIncoming: {
+    color: '#6B7280',
+  },
+  timestampOutgoing: {
+    color: 'rgba(255,255,255,0.7)',
+  },
 
   reactionStub: {
     width: 34,
@@ -595,6 +905,12 @@ const styles = StyleSheet.create({
   reactionStubSpacer: {
     width: 34,
     marginLeft: 8,
+  },
+  pendingBubble: {
+    opacity: 0.7,
+  },
+  pendingText: {
+    opacity: 0.6,
   },
 
   // Composer
