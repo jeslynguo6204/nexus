@@ -87,19 +87,27 @@ export default StyleSheet.create({
 
   // List
   listContent: {
-    paddingBottom: 8,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
     flexGrow: 1,
   },
   separator: {
-    height: 1,
-    backgroundColor: '#F2F2F7',
+    height: 10,
   },
 
-  // Chat rows
-  chatRow: {
+  // Chat rows as cards
+  chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#F7F8FA',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   chatAvatar: {
     width: 56,
@@ -118,17 +126,12 @@ export default StyleSheet.create({
     color: '#111111',
   },
 
-  previewRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 3,
-  },
-
   chatPreview: {
     fontSize: 15,
     color: '#6B7280',
     fontWeight: '600',
     maxWidth: '80%',
+    marginTop: 4,
   },
 
   timeText: {
@@ -165,18 +168,23 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
 
+  timeWrap: {
+    alignItems: 'flex-end',
+    marginLeft: 12,
+  },
+
   // Unread dot (right side)
   unreadDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: '#2F80FF',
-    marginLeft: 10,
+    marginTop: 6,
   },
   dotSpacer: {
     width: 10,
     height: 10,
-    marginLeft: 10,
+    marginTop: 6,
   },
 
   // Empty states

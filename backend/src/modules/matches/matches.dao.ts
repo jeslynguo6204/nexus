@@ -120,7 +120,11 @@ export async function getActiveChatMatches(
     LEFT JOIN profiles p2 ON p2.user_id = dm.matchee_id
     LEFT JOIN photos ph1 ON ph1.user_id = dm.matcher_id AND ph1.is_primary = TRUE
     LEFT JOIN photos ph2 ON ph2.user_id = dm.matchee_id AND ph2.is_primary = TRUE
-    WHERE (dm.matcher_id = $1 OR dm.matchee_id = $1) AND dm.is_active = TRUE AND dm.unmatched_at IS NULL
+    WHERE (dm.matcher_id = $1 OR dm.matchee_id = $1)
+      AND dm.is_active = TRUE
+      AND dm.unmatched_at IS NULL
+      AND c.last_message_at IS NOT NULL
+      AND c.last_message_at >= NOW() - INTERVAL '30 days'
     ORDER BY c.last_message_at DESC NULLS LAST
     `,
     [userId]

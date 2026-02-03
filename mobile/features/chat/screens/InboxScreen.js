@@ -46,6 +46,7 @@ const formatTimeAgo = (dateString) => {
 export default function InboxScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [hasLoadedMatches, setHasLoadedMatches] = useState(false);
+  const [hasLoadedChats, setHasLoadedChats] = useState(false);
 
   const [matches, setMatches] = useState([]);
   const [chats, setChats] = useState([]);
@@ -162,12 +163,18 @@ export default function InboxScreen({ navigation }) {
             'https://picsum.photos/200?99',
           chat_id: c.chat_id,
           last_message: c.last_message_preview || 'No messages yet',
-          time: c.last_message_at ? formatTimeAgo(c.last_message_at) : null,
+          time: c.last_message_at ? new Date(c.last_message_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : null,
           unread: false, // TODO: implement unread status when messages are fetched
         })
       );
 
-      setChats(formattedChats);
+      // Sticky cards: only replace with non-empty results; otherwise keep existing unless first load
+      setChats((prev) => {
+        if (formattedChats.length > 0) return formattedChats;
+        if (!hasLoadedChats) return formattedChats; // first load can be empty
+        return prev; // keep previous cards if new fetch is empty
+      });
+      setHasLoadedChats(true);
     } catch (e) {
       console.warn('Error loading inbox:', e);
       // Don't show alert for network errors - they're expected if server isn't running
@@ -318,7 +325,7 @@ export default function InboxScreen({ navigation }) {
     const unread = !!item.unread;
 
     return (
-      <Pressable onPress={() => onOpenChat(item)} style={styles.chatRow} hitSlop={6}>
+      <Pressable onPress={() => onOpenChat(item)} style={styles.chatCard} hitSlop={6}>
         <Image source={{ uri: item.avatar_url }} style={styles.chatAvatar} />
 
         <View style={styles.chatText}>
@@ -326,37 +333,35 @@ export default function InboxScreen({ navigation }) {
             {item.display_name}
           </Text>
 
-          <View style={styles.previewRow}>
-            <Text
-              style={[
-                styles.chatPreview,
-                unread ? styles.unreadPreview : styles.readPreview,
-              ]}
-              numberOfLines={1}
-            >
-              {item.last_message}
-            </Text>
-
-            {!!item.time && (
-              <Text
-                style={[
-                  styles.timeText,
-                  unread ? styles.unreadTime : styles.readTime,
-                ]}
-              >
-                {' '}
-                · {item.time}
-              </Text>
-            )}
-          </View>
+          <Text
+            style={[
+              styles.chatPreview,
+              unread ? styles.unreadPreview : styles.readPreview,
+            ]}
+            numberOfLines={1}
+          >
+            {item.last_message}
+          </Text>
         </View>
 
-        {unread ? <View style={styles.unreadDot} /> : <View style={styles.dotSpacer} />}
+        <View style={styles.timeWrap}>
+          {!!item.time && (
+            <Text
+              style={[
+                styles.timeText,
+                unread ? styles.unreadTime : styles.readTime,
+              ]}
+            >
+              {item.time}
+            </Text>
+          )}
+          {unread ? <View style={styles.unreadDot} /> : <View style={styles.dotSpacer} />}
+        </View>
       </Pressable>
     );
   };
 
-  if (loading || !hasLoadedMatches) {
+  if (loading || !hasLoadedMatches || !hasLoadedChats) {
     return (
       <SafeAreaView style={mainStyles.container}>
         <ActivityIndicator style={{ flex: 1 }} />

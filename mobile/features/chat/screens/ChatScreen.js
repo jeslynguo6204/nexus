@@ -23,12 +23,20 @@ import BlockReportSheet from '../../home/components/BlockReportSheet';
 import UserProfilePreviewModal from '../../profile/components/UserProfilePreviewModal';
 import { getIdToken } from '../../../auth/tokens';
 import { getMyProfile } from '../../../api/profileAPI';
+import { fetchMyPhotos } from '../../../api/photosAPI';
 import Constants from 'expo-constants';
 import io from 'socket.io-client';
 
 const DEFAULT_AVATAR = 'https://picsum.photos/200?88';
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+const formatTimeLabel = (ts) => {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
 
 const formatMatchDate = (dateString) => {
   if (!dateString) return '5/15/24';
@@ -67,6 +75,7 @@ export default function ChatScreen({ navigation, route }) {
   const [messages, setMessages] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [myUserId, setMyUserId] = useState(null);
+  const [myAvatarUrl, setMyAvatarUrl] = useState(DEFAULT_AVATAR);
   const [socketConnected, setSocketConnected] = useState(false);
   const socketRef = useRef(null);
   
@@ -387,6 +396,22 @@ export default function ChatScreen({ navigation, route }) {
       try {
         const profile = await getMyProfile();
         setMyUserId(profile?.user_id);
+        let avatar = null;
+        // Prefer primary photo from photos API (sorted by sort_order)
+        try {
+          const token = await getIdToken();
+          if (token) {
+            const photos = await fetchMyPhotos(token);
+            const primary = photos.find((p) => p.is_primary);
+            avatar = primary?.url || photos[0]?.url || null;
+          }
+        } catch (photoErr) {
+          console.warn('Failed to load photos for chat avatar', photoErr);
+        }
+        if (!avatar && Array.isArray(profile?.photos)) {
+          avatar = profile.photos[0] || null;
+        }
+        setMyAvatarUrl(avatar || DEFAULT_AVATAR);
       } catch (e) {
         console.warn('Failed to load profile for chat', e);
       }
@@ -491,36 +516,55 @@ export default function ChatScreen({ navigation, route }) {
 
     const incoming = item.type === 'incoming';
     const dimmed = item.status === 'pending' || item.status === 'failed';
-    return (
-      <View style={[styles.messageRow, incoming ? styles.leftRow : styles.rightRow]}>
-        {incoming ? (
+    if (incoming) {
+      const timeLabel = formatTimeLabel(item.created_at);
+      return (
+        <View style={[styles.messageRow, styles.leftRow]}>
           <Image source={{ uri: avatarUrl }} style={styles.bubbleAvatar} />
-        ) : (
-          <View style={styles.bubbleAvatarSpacer} />
-        )}
+          <View style={[
+            styles.bubble,
+            styles.incomingBubble,
+            dimmed && styles.pendingBubble
+          ]}>
+            <Text style={[
+              styles.bubbleText,
+              styles.incomingText,
+              dimmed && styles.pendingText
+            ]}>
+              {item.text}
+            </Text>
+            {!!timeLabel && (
+              <Text style={[styles.timestamp, styles.timestampIncoming]}>
+                {timeLabel}
+              </Text>
+            )}
+          </View>
+        </View>
+      );
+    }
 
+    const timeLabel = formatTimeLabel(item.created_at);
+    return (
+      <View style={[styles.messageRow, styles.rightRow]}>
         <View style={[
           styles.bubble,
-          incoming ? styles.incomingBubble : styles.outgoingBubble,
+          styles.outgoingBubble,
           dimmed && styles.pendingBubble
         ]}>
           <Text style={[
             styles.bubbleText,
-            incoming ? styles.incomingText : styles.outgoingText,
+            styles.outgoingText,
             dimmed && styles.pendingText
           ]}>
             {item.text}
           </Text>
+          {!!timeLabel && (
+            <Text style={[styles.timestamp, styles.timestampOutgoing]}>
+              {timeLabel}
+            </Text>
+          )}
         </View>
-
-        {/* Right side (for icons like heart in your screenshot). Keeping subtle placeholder. */}
-        {incoming ? (
-          <Pressable hitSlop={10} style={styles.reactionStub}>
-            <Text style={styles.reactionStubText}>♡</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.reactionStubSpacer} />
-        )}
+        <Image source={{ uri: myAvatarUrl }} style={[styles.bubbleAvatar, styles.bubbleAvatarRight]} />
       </View>
     );
   };
@@ -700,8 +744,9 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    height: 80,
+    height: 96,
     paddingHorizontal: 12,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -793,6 +838,10 @@ const styles = StyleSheet.create({
     width: 32,
     marginRight: 8,
   },
+  bubbleAvatarRight: {
+    marginLeft: 8,
+    marginRight: 0,
+  },
 
   bubble: {
     maxWidth: '72%',
@@ -826,6 +875,19 @@ const styles = StyleSheet.create({
   outgoingText: {
     color: '#FFFFFF',
     fontWeight: '700',
+  },
+  timestamp: {
+    marginTop: 4,
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: '600',
+    alignSelf: 'flex-end',
+  },
+  timestampIncoming: {
+    color: '#6B7280',
+  },
+  timestampOutgoing: {
+    color: 'rgba(255,255,255,0.7)',
   },
 
   reactionStub: {
