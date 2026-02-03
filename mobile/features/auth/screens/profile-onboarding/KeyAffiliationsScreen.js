@@ -2,14 +2,15 @@
  * KeyAffiliationsScreen (Section 5.2)
  *
  * Profile onboarding: select up to 2 key affiliations to highlight.
- * Reached from AddAffiliationsScreen. On continue navigates to CompleteSignup.
+ * Same logic as edit profile Key Affiliations: shows all selected affiliations
+ * (from AddAffiliationsScreen), user picks up to 2 as "featured".
+ * Reached from AddAffiliationsScreen with affiliations (IDs), affiliationsByCategory, dorms.
+ * On continue navigates to CompleteSignup with affiliations and featuredAffiliations.
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  ActivityIndicator,
   Alert,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -21,14 +22,20 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient';
 import styles from '../../../../styles/AuthStyles';
 
-function AffiliationChip({ affiliation, selected, onPress }) {
+function isDormAffiliationId(id, dorms) {
+  const n = Number(id);
+  return (dorms || []).some((d) => Number(d.id) === n);
+}
+
+function AffiliationChip({ affiliation, selected, disabled, onPress }) {
   return (
     <TouchableOpacity
       onPress={onPress}
+      disabled={disabled}
       style={{
-        backgroundColor: selected ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
+        backgroundColor: selected ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)',
         borderWidth: selected ? 2 : 1,
-        borderColor: selected ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)',
+        borderColor: selected ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
         borderRadius: 999,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -37,6 +44,7 @@ function AffiliationChip({ affiliation, selected, onPress }) {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '500' }}>
@@ -50,24 +58,35 @@ function AffiliationChip({ affiliation, selected, onPress }) {
 }
 
 export default function KeyAffiliationsScreen({ navigation, route }) {
-  const [selectedKeyAffiliations, setSelectedKeyAffiliations] = useState([]);
-  const [affiliations, setAffiliations] = useState([]);
+  const [featuredAffiliations, setFeaturedAffiliations] = useState([]);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const routeParams = route.params || {};
-  const selectedAffiliationIds = routeParams.selectedAffiliations || [];
+  const selectedIds = routeParams.affiliations || routeParams.selectedAffiliations || [];
+  const affiliationsByCategory = routeParams.affiliationsByCategory || {};
+  const dorms = routeParams.dorms || [];
+
+  const selectedAffiliations = useMemo(() => {
+    const map = new Map();
+    Object.values(affiliationsByCategory || {}).forEach((list) => {
+      (list || []).forEach((aff) => {
+        if (!aff?.id) return;
+        const id = Number(aff.id);
+        if (isDormAffiliationId(id, dorms)) return;
+        if (selectedIds.some((x) => Number(x) === id)) map.set(id, aff);
+      });
+    });
+    return selectedIds.map((id) => map.get(Number(id))).filter(Boolean);
+  }, [affiliationsByCategory, dorms, selectedIds]);
+
+  const featuredSet = useMemo(
+    () => new Set(featuredAffiliations.map(Number)),
+    [featuredAffiliations]
+  );
 
   useEffect(() => {
-    // Convert selected affiliations to display items
-    setAffiliations(
-      selectedAffiliationIds.map((id, idx) => ({
-        id,
-        name: typeof id === 'string' ? id : `Affiliation ${idx + 1}`,
-      }))
-    );
-
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 350,
@@ -75,22 +94,25 @@ export default function KeyAffiliationsScreen({ navigation, route }) {
     }).start();
   }, [fadeAnim]);
 
-  function handleToggleAffiliation(id) {
-    const isSelected = selectedKeyAffiliations.includes(id);
-
-    if (isSelected) {
-      setSelectedKeyAffiliations(selectedKeyAffiliations.filter(aId => aId !== id));
-    } else if (selectedKeyAffiliations.length < 2) {
-      setSelectedKeyAffiliations([...selectedKeyAffiliations, id]);
-    } else {
-      Alert.alert('Limit reached', 'You can only select up to 2 key affiliations.');
+  function handleToggleFeatured(id) {
+    const idNum = Number(id);
+    const exists = featuredSet.has(idNum);
+    if (exists) {
+      setFeaturedAffiliations((prev) => prev.filter((x) => Number(x) !== idNum));
+      return;
     }
+    if (featuredAffiliations.length >= 2) {
+      Alert.alert('Limit reached', 'You can only select up to 2 key affiliations.');
+      return;
+    }
+    setFeaturedAffiliations((prev) => [...prev, idNum]);
   }
 
   function handleContinue() {
     navigation.navigate('CompleteSignup', {
       ...routeParams,
-      keyAffiliations: selectedKeyAffiliations,
+      affiliations: selectedIds,
+      featuredAffiliations: featuredAffiliations.length > 0 ? featuredAffiliations : null,
     });
   }
 
@@ -128,7 +150,7 @@ export default function KeyAffiliationsScreen({ navigation, route }) {
                 These show up front — you can change them anytime.
               </Text>
 
-              {affiliations.length === 0 ? (
+              {selectedAffiliations.length === 0 ? (
                 <View style={{ marginTop: 32, alignItems: 'center' }}>
                   <Text style={{ color: '#C5D0DC', fontSize: 14 }}>
                     No affiliations selected. Go back and add some!
@@ -137,14 +159,20 @@ export default function KeyAffiliationsScreen({ navigation, route }) {
               ) : (
                 <View style={{ marginBottom: 20, marginTop: 16 }}>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                    {affiliations.map(aff => (
-                      <AffiliationChip
-                        key={aff.id}
-                        affiliation={aff}
-                        selected={selectedKeyAffiliations.includes(aff.id)}
-                        onPress={() => handleToggleAffiliation(aff.id)}
-                      />
-                    ))}
+                    {selectedAffiliations.map((aff) => {
+                      const id = Number(aff.id);
+                      const isSelected = featuredSet.has(id);
+                      const disabled = !isSelected && featuredAffiliations.length >= 2;
+                      return (
+                        <AffiliationChip
+                          key={String(aff.id)}
+                          affiliation={aff}
+                          selected={isSelected}
+                          disabled={disabled}
+                          onPress={() => handleToggleFeatured(id)}
+                        />
+                      );
+                    })}
                   </View>
 
                   <Text
@@ -155,7 +183,7 @@ export default function KeyAffiliationsScreen({ navigation, route }) {
                       fontStyle: 'italic',
                     }}
                   >
-                    Selected: {selectedKeyAffiliations.length} / 2
+                    Selected: {featuredAffiliations.length} / 2
                   </Text>
                 </View>
               )}

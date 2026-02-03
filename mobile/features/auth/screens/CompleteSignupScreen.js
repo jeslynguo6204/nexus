@@ -1,11 +1,11 @@
 /**
  * CompleteSignupScreen
  *
- * Final step of account creation. Receives all collected signup data via
- * route.params (from Romantic/PlatonicPreferences). Calls backend signup API,
- * then Cognito login; on success calls onSignedIn() and user enters the app.
- * Flow: Reached from RomanticPreferences or PlatonicPreferences → (API + login)
- *       → onSignedIn → main app (BottomTabs).
+ * Final step of onboarding. Account and profile were already created when the user
+ * verified their email (ConfirmOtpScreen → createUserProfileFromOtp + login).
+ * This screen only saves all onboarding data to the profile via PATCH /profiles/me,
+ * then calls onSignedIn() so the user enters the app.
+ * Flow: KeyAffiliationsScreen → CompleteSignupScreen → updateMyProfile() → onSignedIn.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -15,34 +15,42 @@ import {
   Platform,
   ScrollView,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
-import { signup as signupToBackend } from '../../../api/authAPI';
-import { login } from '../../../auth/cognito';
+import { updateMyProfile } from '../../../api/profileAPI';
+
+function trimArray(arr, max = 3) {
+  const list = Array.isArray(arr) ? arr : [];
+  const trimmed = list.map((s) => String(s ?? '').trim()).filter((s) => s.length > 0);
+  const uniq = [...new Set(trimmed)];
+  return uniq.slice(0, max);
+}
 
 export default function CompleteSignupScreen({ navigation, route, onSignedIn }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const params = route.params || {};
 
   const {
     fullName,
-    email,
-    phoneNumber,
-    password,
     gender,
-    dateOfBirth,
     graduationYear,
     wantsRomantic,
     wantsPlatonic,
     romanticPreference,
     platonicPreference,
-  } = route.params || {};
+    major,
+    academicYear,
+    likes,
+    dislikes,
+    affiliations,
+    featuredAffiliations,
+  } = params;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -51,7 +59,6 @@ export default function CompleteSignupScreen({ navigation, route, onSignedIn }) 
       useNativeDriver: true,
     }).start();
 
-    // Automatically complete signup when screen loads
     handleCompleteSignup();
   }, []);
 
@@ -60,58 +67,69 @@ export default function CompleteSignupScreen({ navigation, route, onSignedIn }) 
       setError('');
       setLoading(true);
 
-      // Prepare preferences for backend (arrays: male, female, non-binary; at least one, up to 3)
-      const datingPreferences = wantsRomantic && Array.isArray(romanticPreference) && romanticPreference.length > 0
-        ? {
-            preference: romanticPreference,
-            notLooking: false,
-          }
-        : {
-            preference: null,
-            notLooking: true,
-          };
+      // Build profile update from onboarding data (same shape as edit-profile PATCH)
+      const payload = {};
 
-      const friendsPreferences = wantsPlatonic && Array.isArray(platonicPreference) && platonicPreference.length > 0
-        ? {
-            preference: platonicPreference,
-          }
-        : null;
+      if (fullName != null && String(fullName).trim()) {
+        payload.displayName = String(fullName).trim();
+      }
+      if (gender != null && String(gender).trim()) {
+        payload.gender = String(gender).trim();
+      }
+      if (graduationYear != null) {
+        const year = Number(graduationYear);
+        if (Number.isInteger(year) && year >= 2020 && year <= 2040) {
+          payload.graduationYear = year;
+        }
+      }
+      if (major != null && String(major).trim()) {
+        payload.major = String(major).trim();
+      }
+      if (academicYear != null && String(academicYear).trim()) {
+        const ay = String(academicYear).trim();
+        if (['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'].includes(ay)) {
+          payload.academicYear = ay;
+        }
+      }
 
-      await signupToBackend({
-        fullName,
-        email,
-        password,
-        dateOfBirth,
-        gender,
-        phoneNumber,
-        graduationYear,
-        datingPreferences,
-        friendsPreferences,
-      });
+      payload.isDatingEnabled = !!(wantsRomantic && Array.isArray(romanticPreference) && romanticPreference.length > 0);
+      payload.isFriendsEnabled = !!(wantsPlatonic && Array.isArray(platonicPreference) && platonicPreference.length > 0);
+      if (payload.isDatingEnabled && Array.isArray(romanticPreference)) {
+        payload.datingGenderPreference = romanticPreference.slice(0, 3);
+      } else {
+        payload.datingGenderPreference = null;
+      }
+      if (payload.isFriendsEnabled && Array.isArray(platonicPreference)) {
+        payload.friendsGenderPreference = platonicPreference.slice(0, 3);
+      } else {
+        payload.friendsGenderPreference = null;
+      }
 
-      // Login after successful signup
-      await login(email, password);
+      const likesClean = trimArray(likes, 3);
+      const dislikesClean = trimArray(dislikes, 3);
+      if (likesClean.length > 0) payload.likes = likesClean;
+      if (dislikesClean.length > 0) payload.dislikes = dislikesClean;
+
+      const affiliationIds = Array.isArray(affiliations)
+        ? affiliations.map((id) => Number(id)).filter((n) => !Number.isNaN(n) && n > 0)
+        : [];
+      const featuredIds = Array.isArray(featuredAffiliations)
+        ? featuredAffiliations.map((id) => Number(id)).filter((n) => !Number.isNaN(n) && n > 0)
+        : [];
+      if (affiliationIds.length > 0) payload.affiliations = affiliationIds;
+      if (featuredIds.length > 0) payload.featuredAffiliations = featuredIds.slice(0, 2);
+
+      if (Object.keys(payload).length > 0) {
+        await updateMyProfile(payload);
+      }
 
       if (onSignedIn) {
         onSignedIn();
       }
     } catch (e) {
-      const errorMessage = String(e.message || e);
-      let displayError = errorMessage;
-      
-      // Handle specific error types with user-friendly messages
-      if (errorMessage === "Must be a school email" || errorMessage.includes('Must be a school email')) {
-        displayError = 'Must be a school email';
-      } else if (errorMessage === "That school isn't supported yet" || errorMessage.includes("isn't supported yet")) {
-        displayError = "That school isn't supported yet";
-      } else if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
-        displayError = 'An account with this email already exists';
-      } else if (errorMessage.includes('Missing required')) {
-        displayError = 'Please fill in all required fields';
-      }
-      
-      setError(displayError);
-      Alert.alert('Error', displayError);
+      const errorMessage = String(e?.message || e);
+      setError(errorMessage);
+      Alert.alert('Error', errorMessage);
       setLoading(false);
     }
   }
@@ -135,7 +153,7 @@ export default function CompleteSignupScreen({ navigation, route, onSignedIn }) 
               <Text style={styles.title}>Setting up your account...</Text>
               {loading && (
                 <Text style={[styles.subtitle, { marginTop: 16 }]}>
-                  Please wait while we finish creating your profile.
+                  Saving your profile…
                 </Text>
               )}
               {error && (
