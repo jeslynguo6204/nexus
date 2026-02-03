@@ -1,3 +1,12 @@
+/**
+ * WelcomeScreen
+ *
+ * Profile onboarding: choose which modes to use (Romantic and/or Platonic).
+ * Reached after ConfirmOtp. On continue navigates to RomanticPreferences
+ * and/or PlatonicPreferences, then to CompleteSignup with collected prefs.
+ * Flow: ConfirmOtp → Welcome → RomanticPreferences / PlatonicPreferences →
+ *       CompleteSignup → onSignedIn.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -10,7 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles from '../../../styles/AuthStyles';
+import styles from '../../../../styles/AuthStyles';
 
 // Chip styles matching EntryScreen vibe - white chips on gradient
 function SelectChip({ label, selected, onPress, style }) {
@@ -20,22 +29,22 @@ function SelectChip({ label, selected, onPress, style }) {
       activeOpacity={0.85}
         style={[
         {
-          paddingHorizontal: 20,
-          paddingVertical: 12,
+          paddingHorizontal: 24,
+          paddingVertical: 14,
           minHeight: 48,
           borderRadius: 999,
           backgroundColor: selected ? '#FFFFFF' : 'rgba(255,255,255,0.2)',
           borderWidth: 1,
           borderColor: selected ? 'transparent' : 'rgba(255,255,255,0.4)',
-          marginHorizontal: 6,
           justifyContent: 'center',
+          alignItems: 'center',
         },
         style,
       ]}
     >
       <Text
         style={{
-          fontSize: 15,
+          fontSize: 16,
           fontWeight: '600',
           color: selected ? '#1F6299' : '#FFFFFF',
         }}
@@ -46,25 +55,14 @@ function SelectChip({ label, selected, onPress, style }) {
   );
 }
 
-export default function RomanticPreferencesScreen({ navigation, route }) {
-  const [men, setMen] = useState(false);
-  const [women, setWomen] = useState(false);
-  const [nonBinary, setNonBinary] = useState(false);
+export default function WelcomeScreen({ navigation, route }) {
+  const [romantic, setRomantic] = useState(false);
+  const [platonic, setPlatonic] = useState(false);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const {
-    fullName,
-    email,
-    phoneNumber,
-    password,
-    gender,
-    dateOfBirth,
-    graduationYear,
-    wantsPlatonic,
-    skipPlatonic,
-  } = route.params || {};
+  const { fullName, email, phoneNumber, password, gender, dateOfBirth, graduationYear } = route.params || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -74,21 +72,11 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
     }).start();
   }, [fadeAnim]);
 
-  // Convert to backend format: array of 'male' | 'female' | 'non-binary' (at least one, up to 3)
-  const getPreference = () => {
-    const arr = [];
-    if (men) arr.push('male');
-    if (women) arr.push('female');
-    if (nonBinary) arr.push('non-binary');
-    return arr;
-  };
-
   function handleContinue() {
-    if (!men && !women && !nonBinary) {
+    if (!romantic && !platonic) {
       return; // At least one must be selected
     }
 
-    const romanticPreference = getPreference();
     const params = {
       fullName,
       email,
@@ -97,22 +85,25 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
       gender,
       dateOfBirth,
       graduationYear,
-      wantsRomantic: true,
-      wantsPlatonic,
-      romanticPreference,
+      wantsRomantic: romantic,
+      wantsPlatonic: platonic,
     };
 
-    if (skipPlatonic || !wantsPlatonic) {
-      // Finish signup - navigate to completion
-      navigation.navigate('CompleteSignup', params);
+    // Navigate based on what was selected
+    if (romantic && platonic) {
+      // Go to romantic first, then platonic
+      navigation.navigate('RomanticPreferences', params);
+    } else if (romantic) {
+      // Only romantic
+      navigation.navigate('RomanticPreferences', { ...params, skipPlatonic: true });
     } else {
-      // Go to platonic preferences
+      // Only platonic
       navigation.navigate('PlatonicPreferences', params);
     }
   }
 
   function handleSkip() {
-    // Skip with default romantic preference: all three
+    // Skip with default preferences: both romantic and platonic with all three options
     const params = {
       fullName,
       email,
@@ -122,17 +113,11 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
       dateOfBirth,
       graduationYear,
       wantsRomantic: true,
-      wantsPlatonic,
+      wantsPlatonic: true,
       romanticPreference: ['male', 'female', 'non-binary'],
+      platonicPreference: ['male', 'female', 'non-binary'],
     };
-
-    if (skipPlatonic || !wantsPlatonic) {
-      // Finish signup - navigate to completion
-      navigation.navigate('CompleteSignup', params);
-    } else {
-      // Go to platonic preferences
-      navigation.navigate('PlatonicPreferences', params);
-    }
+    navigation.navigate('CompleteSignup', params);
   }
 
   return (
@@ -170,31 +155,31 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
               <Text style={styles.entryAppName}>SIXDEGREES</Text>
 
               <Text style={styles.entryTagline}>
-                Who would you like to meet romantically?
+                Let&apos;s personalize your experience.
               </Text>
             </View>
 
             <Animated.View style={[{ width: '100%', paddingHorizontal: 24, opacity: fadeAnim }]}>
               <View style={{ marginTop: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: '#FFFFFF', textAlign: 'center', marginBottom: 16 }}>
+                  What type of connections are you interested in?
+                </Text>
                 <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 40 }}>
-                  Select all that apply. This only affects your <Text style={{ fontWeight: '700' }}>romantic</Text> matches.
+                  Select one or both. You can change this anytime.
                 </Text>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 24 }}>
                   <SelectChip
-                    label="Men"
-                    selected={men}
-                    onPress={() => setMen(!men)}
+                    label="Romantic"
+                    selected={romantic}
+                    onPress={() => setRomantic(!romantic)}
+                    style={{ flex: 1, maxWidth: 140 }}
                   />
                   <SelectChip
-                    label="Women"
-                    selected={women}
-                    onPress={() => setWomen(!women)}
-                  />
-                  <SelectChip
-                    label="Non-Binary"
-                    selected={nonBinary}
-                    onPress={() => setNonBinary(!nonBinary)}
+                    label="Platonic"
+                    selected={platonic}
+                    onPress={() => setPlatonic(!platonic)}
+                    style={{ flex: 1, maxWidth: 140 }}
                   />
                 </View>
               </View>
@@ -203,15 +188,13 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={[
                     styles.entryPrimaryButton,
-                    (!men && !women && !nonBinary) && { opacity: 0.5 },
+                    (!romantic && !platonic) && { opacity: 0.5 },
                   ]}
                   onPress={handleContinue}
-                  disabled={!men && !women && !nonBinary}
+                  disabled={!romantic && !platonic}
                   activeOpacity={0.9}
                 >
-                  <Text style={styles.entryPrimaryButtonText}>
-                    {skipPlatonic || !wantsPlatonic ? 'Finish' : 'Continue'}
-                  </Text>
+                  <Text style={styles.entryPrimaryButtonText}>Continue</Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>

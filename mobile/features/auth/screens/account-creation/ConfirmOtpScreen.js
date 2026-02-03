@@ -1,3 +1,11 @@
+/**
+ * ConfirmOtpScreen
+ *
+ * Email OTP verification after Cognito signup. User enters code sent to email;
+ * on success navigates to profile onboarding (Welcome) with all signup params.
+ * Flow: SignupStep2 → (Cognito signup) → ConfirmOtp → Welcome →
+ *       RomanticPreferences / PlatonicPreferences → CompleteSignup.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -13,8 +21,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import styles from '../../../styles/AuthStyles';
-import { confirmEmailOtp, resendOtp } from '../../../auth/cognito';
+import styles from '../../../../styles/AuthStyles';
+import { confirmEmailOtp, resendOtp } from '../../../../auth/cognito';
 
 export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   const [code, setCode] = useState('');

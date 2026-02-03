@@ -1,15 +1,15 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import EntryScreen from '../features/auth/screens/EntryScreen';
-import LoginScreen from '../features/auth/screens/LoginScreen';
+import LoginScreen from '../features/auth/screens/existing-users/LoginScreen';
 import SignupScreen from '../features/auth/screens/SignupScreen';
-import SignupStep1Screen from '../features/auth/screens/SignupStep1Screen';
-import SignupStep2Screen from '../features/auth/screens/SignupStep2Screen';
-import ConfirmOtpScreen from '../features/auth/screens/ConfirmOtpScreen';
-import ForgotPasswordScreen from '../features/auth/screens/ForgotPasswordScreen';
-import WelcomeScreen from '../features/auth/screens/WelcomeScreen';
-import RomanticPreferencesScreen from '../features/auth/screens/RomanticPreferencesScreen';
-import PlatonicPreferencesScreen from '../features/auth/screens/PlatonicPreferencesScreen';
+import SignupStep1Screen from '../features/auth/screens/account-creation/SignupStep1Screen';
+import SignupStep2Screen from '../features/auth/screens/account-creation/SignupStep2Screen';
+import ConfirmOtpScreen from '../features/auth/screens/account-creation/ConfirmOtpScreen';
+import ForgotPasswordScreen from '../features/auth/screens/existing-users/ForgotPasswordScreen';
+import WelcomeScreen from '../features/auth/screens/profile-onboarding/WelcomeScreen';
+import RomanticPreferencesScreen from '../features/auth/screens/profile-onboarding/RomanticPreferencesScreen';
+import PlatonicPreferencesScreen from '../features/auth/screens/profile-onboarding/PlatonicPreferencesScreen';
 import CompleteSignupScreen from '../features/auth/screens/CompleteSignupScreen';
 
 const Stack = createNativeStackNavigator();

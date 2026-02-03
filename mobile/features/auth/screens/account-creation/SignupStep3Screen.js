@@ -1,3 +1,11 @@
+/**
+ * SignupStep3Screen
+ *
+ * Optional third step in an alternate signup path: dating/friends preferences
+ * (who you want to meet). May be used in a flow that goes Step1 → Step2 →
+ * Step3 → ... before OTP. Check navigator usage; current primary flow is
+ * Step1 → Step2 → ConfirmOtp → Welcome → Romantic/Platonic → CompleteSignup.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -10,8 +18,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import styles from '../../../styles/AuthStyles.v2';
-import { startEmailSignup } from '../../../auth/cognito';
+import styles from '../../../../styles/AuthStyles.v2';
+import { startEmailSignup } from '../../../../auth/cognito';
 
 function SelectChip({ label, selected, onPress, style }) {
   return (

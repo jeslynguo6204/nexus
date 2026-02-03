@@ -1,3 +1,12 @@
+/**
+ * CompleteSignupScreen
+ *
+ * Final step of account creation. Receives all collected signup data via
+ * route.params (from Romantic/PlatonicPreferences). Calls backend signup API,
+ * then Cognito login; on success calls onSignedIn() and user enters the app.
+ * Flow: Reached from RomanticPreferences or PlatonicPreferences → (API + login)
+ *       → onSignedIn → main app (BottomTabs).
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,

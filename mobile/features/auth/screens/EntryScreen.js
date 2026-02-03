@@ -1,3 +1,10 @@
+/**
+ * EntryScreen
+ *
+ * First screen of the auth flow. Shown when the user is not signed in.
+ * Purpose: Landing with app branding; offers "Log in" and "Sign up here!".
+ * Flow: Log in → LoginScreen | Sign up → SignupStep1 (account-creation).
+ */
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

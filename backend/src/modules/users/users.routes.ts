@@ -1,8 +1,19 @@
 import { Router } from "express";
 import { authMiddleware, AuthedRequest } from "../../middleware/authMiddleware";
-import { findUserWithProfileById } from "./users.dao";
+import { findUserWithProfileById, countUsers } from "./users.dao";
 
 const router = Router();
+
+/** Public: count of rows in users table (e.g. for launch / coming-soon screens) */
+router.get("/count", async (_req, res) => {
+  try {
+    const count = await countUsers();
+    return res.json({ count });
+  } catch (err) {
+    console.error("GET /users/count error:", err);
+    return res.status(500).json({ error: "Failed to get user count" });
+  }
+});
 
 router.get("/me", authMiddleware, async (req: AuthedRequest, res) => {
   if (!req.userId) {

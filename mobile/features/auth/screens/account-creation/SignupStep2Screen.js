@@ -1,3 +1,12 @@
+/**
+ * SignupStep2Screen
+ *
+ * Second step of account creation. Collects: gender, date of birth,
+ * graduation year (from Step1 params). On continue calls Cognito startEmailSignup
+ * and navigates to ConfirmOtp with params (email, password, etc.) for
+ * post-OTP completion.
+ * Flow: SignupStep1 → SignupStep2 → (Cognito signup) → ConfirmOtp → ...
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -13,9 +22,9 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
-import ChipRow from '../../profile/components/form-editor-components/ChipRow';
-import { startEmailSignup } from '../../../auth/cognito';
+import styles, { AUTH_GRADIENT_CONFIG } from '../../../../styles/AuthStyles.v3';
+import ChipRow from '../../../profile/components/form-editor-components/ChipRow';
+import { startEmailSignup } from '../../../../auth/cognito';
 
 const GRAD_YEARS = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
 

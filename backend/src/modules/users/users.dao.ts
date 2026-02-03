@@ -9,6 +9,14 @@ export interface UserRow {
   phone_number?: string | null;
 }
 
+export async function countUsers(): Promise<number> {
+  const rows = await dbQuery<{ count: string }>(
+    "SELECT COUNT(*) AS count FROM users",
+    []
+  );
+  return parseInt(rows[0]?.count ?? "0", 10);
+}
+
 export async function findUserByEmail(email: string): Promise<UserRow | null> {
   const rows = await dbQuery<UserRow>(
     "SELECT id, email, password_hash, full_name, school_id FROM users WHERE email = $1",

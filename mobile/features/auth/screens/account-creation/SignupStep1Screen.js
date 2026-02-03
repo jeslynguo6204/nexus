@@ -1,3 +1,12 @@
+/**
+ * SignupStep1Screen
+ *
+ * First step of multi-step account creation. Collects: full name, phone,
+ * email, password. Validates and checks email availability; on continue
+ * navigates to SignupStep2 with params.
+ * Flow: Entry → Sign up → SignupStep1 → SignupStep2 → (Cognito signup) →
+ *       ConfirmOtp → ...
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -13,8 +22,8 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
-import { checkEmail } from '../../../api/authAPI';
+import styles, { AUTH_GRADIENT_CONFIG } from '../../../../styles/AuthStyles.v3';
+import { checkEmail } from '../../../../api/authAPI';
 
 export default function SignupStep1Screen({ navigation }) {
   const [fullName, setFullName] = useState('');

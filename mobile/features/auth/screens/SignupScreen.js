@@ -1,3 +1,15 @@
+/**
+ * SignupScreen
+ *
+ * Entry point for new-account signup. Currently a stub: immediately replaces
+ * with SignupStep1 (multi-step account-creation flow).
+ * Flow: SignupScreen → SignupStep1 → SignupStep2 → ConfirmOtp → (post-OTP)
+ *       Welcome → RomanticPreferences / PlatonicPreferences → CompleteSignup.
+ *
+ * LEGACY: The component body below (return null) is dead code. It was the
+ * original single-screen signup (name, phone, email, password, gender, DOB);
+ * that flow has been replaced by SignupStep1 + SignupStep2 + ConfirmOtp.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,

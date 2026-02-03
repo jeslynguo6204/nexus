@@ -1,3 +1,10 @@
+/**
+ * ForgotPasswordScreen
+ *
+ * Password reset for existing users. Step 1: request reset (email) via Cognito;
+ * step 2: enter code + new password and confirm. Accessed from LoginScreen.
+ * Flow: Login → Forgot password → ForgotPasswordScreen (request → confirm).
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -12,9 +19,9 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import authStyles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
-import styles from '../../../styles/AuthStyles';
-import { confirmPasswordReset, startPasswordReset } from '../../../auth/cognito';
+import authStyles, { AUTH_GRADIENT_CONFIG } from '../../../../styles/AuthStyles.v3';
+import styles from '../../../../styles/AuthStyles';
+import { confirmPasswordReset, startPasswordReset } from '../../../../auth/cognito';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');

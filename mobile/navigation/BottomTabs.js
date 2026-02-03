@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { isLaunchA } from '../config/launchPhase';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
@@ -11,6 +12,7 @@ import ChatScreen from '../features/chat/screens/ChatScreen';
 import LikesScreen from '../features/likes/screens/LikesScreen';
 import LikesSwipeScreen from '../features/likes/screens/LikesSwipeScreen';
 import FriendsScreen from '../features/friends/screens/FriendsScreen';
+import ComingSoonScreen from '../features/launch-specific/ComingSoonScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -61,6 +63,7 @@ const ICON_MAP = {
   Chat: "paper-plane",
   Friends: "user-group",
   Profile: "address-card",
+  ComingSoon: "hourglass-half",
 };
 
 export default function BottomTabs({ onSignOut }) {
@@ -94,15 +97,24 @@ export default function BottomTabs({ onSignOut }) {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Likes" component={LikesStack} />
-      <Tab.Screen name="Chat" component={ChatStack} />
-      <Tab.Screen name="Friends" component={FriendsScreen} />
-      <Tab.Screen
-        name="Profile"
-      >
-        {(props) => <ProfileScreen {...props} onSignOut={onSignOut} />}
-      </Tab.Screen>
+      {isLaunchA ? (
+        <>
+          <Tab.Screen name="ComingSoon" component={ComingSoonScreen} />
+          <Tab.Screen name="Profile">
+            {(props) => <ProfileScreen {...props} onSignOut={onSignOut} />}
+          </Tab.Screen>
+        </>
+      ) : (
+        <>
+          <Tab.Screen name="Home" component={HomeScreen} />
+          <Tab.Screen name="Likes" component={LikesStack} />
+          <Tab.Screen name="Chat" component={ChatStack} />
+          <Tab.Screen name="Friends" component={FriendsScreen} />
+          <Tab.Screen name="Profile">
+            {(props) => <ProfileScreen {...props} onSignOut={onSignOut} />}
+          </Tab.Screen>
+        </>
+      )}
     </Tab.Navigator>
   );
 }

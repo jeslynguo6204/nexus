@@ -1,4 +1,11 @@
-// mobile/screens/LoginScreen.js (AuthStyles.v3)
+/**
+ * LoginScreen
+ *
+ * Log-in for existing users. Email + password; calls Cognito login. On success
+ * calls onSignedIn() and user enters the app. Links to SignupStep1 and
+ * ForgotPassword.
+ * Flow: Entry → Login | or Entry → Sign up → SignupStep1...
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -14,9 +21,9 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles, { AUTH_GRADIENT_CONFIG, SPACE } from '../../../styles/AuthStyles.v3';
-import { login } from '../../../auth/cognito';
-import { checkEmail } from '../../../api/authAPI';
+import styles, { AUTH_GRADIENT_CONFIG, SPACE } from '../../../../styles/AuthStyles.v3';
+import { login } from '../../../../auth/cognito';
+import { checkEmail } from '../../../../api/authAPI';
 
 export default function LoginScreen({ navigation, onSignedIn }) {
   console.log("LoginScreen render");

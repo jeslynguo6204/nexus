@@ -1,3 +1,12 @@
+/**
+ * RomanticPreferencesScreen
+ *
+ * Profile onboarding: select who you want to meet romantically (e.g. men,
+ * women, non-binary). Reached from Welcome when user chose romantic mode.
+ * On continue navigates to PlatonicPreferences (if platonic also chosen) or
+ * CompleteSignup. Passes romanticPreference (and other params) forward.
+ * Flow: Welcome → RomanticPreferences → [PlatonicPreferences] → CompleteSignup.
+ */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -10,7 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles from '../../../styles/AuthStyles';
+import styles from '../../../../styles/AuthStyles';
 
 // Chip styles matching EntryScreen vibe - white chips on gradient
 function SelectChip({ label, selected, onPress, style }) {
@@ -46,7 +55,7 @@ function SelectChip({ label, selected, onPress, style }) {
   );
 }
 
-export default function PlatonicPreferencesScreen({ navigation, route }) {
+export default function RomanticPreferencesScreen({ navigation, route }) {
   const [men, setMen] = useState(false);
   const [women, setWomen] = useState(false);
   const [nonBinary, setNonBinary] = useState(false);
@@ -62,7 +71,8 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
     gender,
     dateOfBirth,
     graduationYear,
-    romanticPreference,
+    wantsPlatonic,
+    skipPlatonic,
   } = route.params || {};
 
   useEffect(() => {
@@ -82,12 +92,12 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
     return arr;
   };
 
-  function handleFinish() {
+  function handleContinue() {
     if (!men && !women && !nonBinary) {
       return; // At least one must be selected
     }
 
-    const platonicPreference = getPreference();
+    const romanticPreference = getPreference();
     const params = {
       fullName,
       email,
@@ -96,18 +106,22 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
       gender,
       dateOfBirth,
       graduationYear,
-      wantsRomantic: !!romanticPreference,
-      wantsPlatonic: true,
+      wantsRomantic: true,
+      wantsPlatonic,
       romanticPreference,
-      platonicPreference,
     };
 
-    // Finish signup
-    navigation.navigate('CompleteSignup', params);
+    if (skipPlatonic || !wantsPlatonic) {
+      // Finish signup - navigate to completion
+      navigation.navigate('CompleteSignup', params);
+    } else {
+      // Go to platonic preferences
+      navigation.navigate('PlatonicPreferences', params);
+    }
   }
 
   function handleSkip() {
-    // Skip with default platonic preference: all three
+    // Skip with default romantic preference: all three
     const params = {
       fullName,
       email,
@@ -116,14 +130,18 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
       gender,
       dateOfBirth,
       graduationYear,
-      wantsRomantic: !!romanticPreference,
-      wantsPlatonic: true,
-      romanticPreference,
-      platonicPreference: ['male', 'female', 'non-binary'],
+      wantsRomantic: true,
+      wantsPlatonic,
+      romanticPreference: ['male', 'female', 'non-binary'],
     };
 
-    // Finish signup
-    navigation.navigate('CompleteSignup', params);
+    if (skipPlatonic || !wantsPlatonic) {
+      // Finish signup - navigate to completion
+      navigation.navigate('CompleteSignup', params);
+    } else {
+      // Go to platonic preferences
+      navigation.navigate('PlatonicPreferences', params);
+    }
   }
 
   return (
@@ -161,14 +179,14 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
               <Text style={styles.entryAppName}>SIXDEGREES</Text>
 
               <Text style={styles.entryTagline}>
-                Who would you like to connect with as friends?
+                Who would you like to meet romantically?
               </Text>
             </View>
 
             <Animated.View style={[{ width: '100%', paddingHorizontal: 24, opacity: fadeAnim }]}>
               <View style={{ marginTop: 16 }}>
                 <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 40 }}>
-                  Select all that apply. This only affects your <Text style={{ fontWeight: '700' }}>friends</Text> connections.
+                  Select all that apply. This only affects your <Text style={{ fontWeight: '700' }}>romantic</Text> matches.
                 </Text>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
@@ -196,11 +214,13 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
                     styles.entryPrimaryButton,
                     (!men && !women && !nonBinary) && { opacity: 0.5 },
                   ]}
-                  onPress={handleFinish}
+                  onPress={handleContinue}
                   disabled={!men && !women && !nonBinary}
                   activeOpacity={0.9}
                 >
-                  <Text style={styles.entryPrimaryButtonText}>Finish</Text>
+                  <Text style={styles.entryPrimaryButtonText}>
+                    {skipPlatonic || !wantsPlatonic ? 'Finish' : 'Continue'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>

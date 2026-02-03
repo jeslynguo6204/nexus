@@ -23,6 +23,7 @@
     "aws-amplify": "^6.4.3",
     "expo": "^54.0.25",
     "expo-blur": "~15.0.8",
+    "expo-clipboard": "~8.0.8",
     "expo-dev-client": "^6.0.20",
     "expo-font": "~14.0.10",
     "expo-image-picker": "~17.0.8",
