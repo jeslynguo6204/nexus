@@ -760,7 +760,7 @@ export default function ProfileCard({
                           <FontAwesome5
                             name="user-friends"
                             size={11}
-                            color="rgba(255,255,255,0.78)"
+                            color="white"
                             style={styles.contextLineMutualsIcon}
                           />
                         </Pressable>

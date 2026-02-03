@@ -141,6 +141,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
   },
+  // Mutuals chip: background only; number + icon use contextLineBold and contextLineMutualsIcon
   contextLineMutualsWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -158,26 +159,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
     fontWeight: '700',
   },
+  // Number and "+" in mutuals chip (bold)
   contextLineBold: {
-    color: 'rgba(255,255,255,0.78)',
+    color: 'white',
     fontSize: 13,
     letterSpacing: 0.1,
     fontWeight: '900',
-  },
-
-  mutualsChip: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.20)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.30)',
-  },
-  mutualsChipText: {
-    color: 'rgba(255,255,255,0.95)',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.1,
   },
 
   bioText: {
