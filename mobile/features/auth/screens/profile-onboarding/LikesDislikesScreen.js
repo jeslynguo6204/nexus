@@ -4,7 +4,7 @@
  * Profile onboarding: add likes and dislikes. At least 1 like required.
  * Reached from AcademicsScreen. On continue navigates to AddAffiliationsScreen.
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   KeyboardAvoidingView,
@@ -17,59 +17,117 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import styles from '../../../../styles/AuthStyles';
 
-function ItemInput({ value, onChangeText, placeholder, onRemovePress }) {
-  return (
-    <View style={{ marginBottom: 12, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-      <TextInput
-        placeholder={placeholder}
-        placeholderTextColor="rgba(255,255,255,0.4)"
-        value={value}
-        onChangeText={onChangeText}
-        style={{
-          flex: 1,
-          backgroundColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.2)',
-          borderRadius: 12,
-          paddingHorizontal: 12,
-          paddingVertical: 12,
-          color: '#FFFFFF',
-          fontSize: 14,
-          fontWeight: '500',
-          minHeight: 44,
-        }}
-      />
-      {value.trim() !== '' && (
-        <TouchableOpacity
-          onPress={onRemovePress}
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            backgroundColor: 'rgba(255,59,48,0.2)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: '#FF3B30', fontSize: 18, fontWeight: 'bold' }}>×</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-}
+import styles, { AUTH_GRADIENT_CONFIG } from '../../../../styles/AuthStyles.v3';
+import PrimaryCTA from '../../components/PrimaryCTA'; // adjust path if needed
 
 function padToThree(arr) {
   const a = Array.isArray(arr) ? arr.filter((s) => String(s ?? '').trim() !== '') : [];
   return [a[0] ?? '', a[1] ?? '', a[2] ?? ''];
 }
 
+const LIKE_EXAMPLES = [
+  'iced coffee',
+  'baking',
+  'lifting',
+  'sports',
+  'late-night wawa',
+  'cooking',
+  "mcgillin’s open mic night",
+  'cold brew',
+  'farmers’ markets',
+  'new deck quizzo',
+  'running',
+];
+
+const DISLIKE_EXAMPLES = [
+  '8:30s',
+  'slow walkers',
+  'vp basement',
+  'crowded gyms',
+  'people who don’t rerack weights',
+  'being late',
+  'bad wi-fi',
+  'flaky plans',
+  'long lines',
+  'meetings that could have been emails',
+  'loud eaters',
+  'small talk',
+  'traffic',
+];
+
+function useRotatingPlaceholders(examples, count = 3) {
+  // Stable shuffled pool per mount so it doesn’t feel repetitive
+  const pool = useMemo(() => {
+    const copy = [...examples];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }, [examples]);
+
+  const idxRef = useRef(0);
+  const next = () => {
+    const value = pool[idxRef.current % pool.length];
+    idxRef.current += 1;
+    return value;
+  };
+
+  const [placeholders, setPlaceholders] = useState(() =>
+    Array.from({ length: count }, () => next())
+  );
+
+  const bumpOne = (slotIndex) => {
+    setPlaceholders((prev) => {
+      const copy = [...prev];
+      copy[slotIndex] = next();
+      return copy;
+    });
+  };
+
+  return { placeholders, bumpOne };
+}
+
+function SlotInput({
+  value,
+  onChangeText,
+  placeholder,
+  onFocus,
+}) {
+  return (
+    <View style={{ marginBottom: 10 }}>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={onFocus}
+        placeholder={placeholder}
+        placeholderTextColor={styles.tokens?.placeholder ?? 'rgba(255,255,255,0.5)'}
+        style={[
+          styles.input,
+          {
+            // slightly flatter than default input so it feels “slot-like”
+            backgroundColor: 'rgba(255,255,255,0.07)',
+            borderColor: 'rgba(255,255,255,0.14)',
+          },
+        ]}
+        autoCapitalize="sentences"
+        returnKeyType="done"
+      />
+    </View>
+  );
+}
+
 export default function LikesDislikesScreen({ navigation, route }) {
   const routeParams = route.params || {};
   const backPayloadRef = useRef({});
+
   const [likes, setLikes] = useState(() => padToThree(routeParams.likes));
   const [dislikes, setDislikes] = useState(() => padToThree(routeParams.dislikes));
+  const [likeError, setLikeError] = useState('');
+
+  const { placeholders: likePH, bumpOne: bumpLikePH } = useRotatingPlaceholders(LIKE_EXAMPLES, 3);
+  const { placeholders: dislikePH, bumpOne: bumpDislikePH } = useRotatingPlaceholders(DISLIKE_EXAMPLES, 3);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -87,16 +145,24 @@ export default function LikesDislikesScreen({ navigation, route }) {
     }).start();
   }, [fadeAnim]);
 
-  const filledLikes = likes.filter((l) => l.trim() !== '');
-  const filledDislikes = dislikes.filter((d) => d.trim() !== '');
+  const filledLikes = likes.map((l) => l.trim()).filter(Boolean);
+  const filledDislikes = dislikes.map((d) => d.trim()).filter(Boolean);
 
   function handleContinue() {
+    setLikeError('');
+    if (filledLikes.length < 1) {
+      setLikeError('Add at least one');
+      return;
+    }
+
     navigation.navigate('AddAffiliationsScreen', {
       ...routeParams,
       ...backPayloadRef.current,
       likes: filledLikes,
       dislikes: filledDislikes,
-      onBackWithData: (data) => { backPayloadRef.current = data; },
+      onBackWithData: (data) => {
+        backPayloadRef.current = data;
+      },
     });
   }
 
@@ -104,7 +170,9 @@ export default function LikesDislikesScreen({ navigation, route }) {
     navigation.navigate('AddAffiliationsScreen', {
       ...routeParams,
       ...backPayloadRef.current,
-      onBackWithData: (data) => { backPayloadRef.current = data; },
+      onBackWithData: (data) => {
+        backPayloadRef.current = data;
+      },
     });
   }
 
@@ -115,101 +183,127 @@ export default function LikesDislikesScreen({ navigation, route }) {
 
   return (
     <LinearGradient
-      colors={['#1F6299', '#34A4FF']}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={{ flex: 1 }}
+      colors={AUTH_GRADIENT_CONFIG.colors}
+      start={AUTH_GRADIENT_CONFIG.start}
+      end={AUTH_GRADIENT_CONFIG.end}
+      style={styles.gradientFill}
     >
-      <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
-        <TouchableOpacity
-          onPress={handleBack}
-          style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
-        >
-          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
+      <SafeAreaView style={styles.authContainer} edges={['top', 'left', 'right']}>
+        {/* Back */}
+        <TouchableOpacity onPress={handleBack} style={[styles.backButton, { top: insets.top + 4 }]}>
+          <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
+
+        {/* Skip */}
         <TouchableOpacity
           onPress={handleSkip}
-          style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: insets.top + 4,
+            zIndex: 30,
+            paddingHorizontal: 8,
+            paddingVertical: 8,
+          }}
         >
-          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>Skip →</Text>
+          <Text style={[styles.backText, { opacity: 0.9 }]}>Skip →</Text>
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1, paddingTop: 12, paddingBottom: 32 }}
+            contentContainerStyle={{ flexGrow: 1 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={[styles.entryTop, { marginTop: 12 }]}>
-              <Text style={styles.entryTagline}>What are you into?</Text>
-            </View>
-
-            <Animated.View style={[{ width: '100%', paddingHorizontal: 24, opacity: fadeAnim }]}>
-              <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 32 }}>
-                A few things that make you… you.
+            <View style={[styles.authContent, { paddingTop: 8 }]}>
+              {/* Small app name at top */}
+              <Text
+                style={{
+                  fontSize: 14,
+                  letterSpacing: 3,
+                  textTransform: 'uppercase',
+                  fontWeight: '600',
+                  color: '#E5F2FF',
+                  opacity: 0.75,
+                  marginBottom: 10,
+                  textAlign: 'center',
+                }}
+              >
+                SIX DEGREES
               </Text>
 
-              <View style={{ marginBottom: 28 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#E5F2FF', marginBottom: 12 }}>
-                  Likes
-                </Text>
-                <ItemInput
-                  value={likes[0]}
-                  onChangeText={(v) => setLikes([v, likes[1], likes[2]])}
-                  placeholder="e.g. Sushi"
-                  onRemovePress={() => setLikes(['', likes[1], likes[2]])}
-                />
-                <ItemInput
-                  value={likes[1]}
-                  onChangeText={(v) => setLikes([likes[0], v, likes[2]])}
-                  placeholder="e.g. AirPods"
-                  onRemovePress={() => setLikes([likes[0], '', likes[2]])}
-                />
-                <ItemInput
-                  value={likes[2]}
-                  onChangeText={(v) => setLikes([likes[0], likes[1], v])}
-                  placeholder="e.g. Candlelit dinners"
-                  onRemovePress={() => setLikes([likes[0], likes[1], ''])}
-                />
+              <View style={{ alignItems: 'center', marginTop: 2 }}>
+                <Text style={styles.title}>It’s the little things.</Text>
+                <Text style={styles.subtitle}>The good, the bad — and the occasional dealbreaker.</Text>
               </View>
 
-              <View style={{ marginBottom: 28 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#E5F2FF', marginBottom: 12 }}>
-                  Dislikes
-                </Text>
-                <Text style={{ fontSize: 12, color: '#C5D0DC', marginBottom: 12 }}>
-                  Optional — but fair game.
-                </Text>
-                <ItemInput
-                  value={dislikes[0]}
-                  onChangeText={(v) => setDislikes([v, dislikes[1], dislikes[2]])}
-                  placeholder="e.g. Studying late"
-                  onRemovePress={() => setDislikes(['', dislikes[1], dislikes[2]])}
-                />
-                <ItemInput
-                  value={dislikes[1]}
-                  onChangeText={(v) => setDislikes([dislikes[0], v, dislikes[2]])}
-                  placeholder="e.g. Crowded buses"
-                  onRemovePress={() => setDislikes([dislikes[0], '', dislikes[2]])}
-                />
-                <ItemInput
-                  value={dislikes[2]}
-                  onChangeText={(v) => setDislikes([dislikes[0], dislikes[1], v])}
-                  placeholder="e.g. Rainy days"
-                  onRemovePress={() => setDislikes([dislikes[0], dislikes[1], ''])}
-                />
-              </View>
+              <Animated.View style={[styles.formWrap, { opacity: fadeAnim, marginTop: 14 }]}>
+                {/* Likes */}
+                <View style={[styles.fieldBlock, { marginBottom: 22 }]}>
+                  <View style={styles.fieldHeaderRow}>
+                    <Text style={styles.label}>Likes</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.65)' }}>
+                      Up to 3
+                    </Text>
+                  </View>
 
-              <View style={{ alignItems: 'center', width: '100%', marginTop: 12 }}>
-                <TouchableOpacity
-                  style={styles.entryPrimaryButton}
-                  onPress={handleContinue}
-                  activeOpacity={0.9}
-                >
-                  <Text style={styles.entryPrimaryButtonText}>Continue</Text>
-                </TouchableOpacity>
-              </View>
-            </Animated.View>
+                  {!!likeError && (
+                    <Text style={[styles.inlineError, { marginTop: 6 }]}>{likeError}</Text>
+                  )}
+
+                  {likes.map((val, idx) => (
+                    <SlotInput
+                      key={`like-${idx}`}
+                      value={val}
+                      onChangeText={(v) => {
+                        const next = [...likes];
+                        next[idx] = v;
+                        setLikes(next);
+                        if (likeError) setLikeError('');
+                      }}
+                      onFocus={() => bumpLikePH(idx)}
+                      placeholder={`Add a like (e.g. ${likePH[idx]})`}
+                    />
+                  ))}
+                </View>
+
+                {/* Dislikes */}
+                <View style={[styles.fieldBlock, { marginBottom: 18 }]}>
+                  <View style={styles.fieldHeaderRow}>
+                    <Text style={styles.label}>Dislikes</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.65)' }}>
+                      Optional
+                    </Text>
+                  </View>
+
+                  {dislikes.map((val, idx) => (
+                    <SlotInput
+                      key={`dislike-${idx}`}
+                      value={val}
+                      onChangeText={(v) => {
+                        const next = [...dislikes];
+                        next[idx] = v;
+                        setDislikes(next);
+                      }}
+                      onFocus={() => bumpDislikePH(idx)}
+                      placeholder={`Add a dislike (e.g. ${dislikePH[idx]})`}
+                    />
+                  ))}
+
+                  <Text style={{ marginTop: 8, fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>
+                    You can always edit these later.
+                  </Text>
+                </View>
+
+                <PrimaryCTA
+  label="Continue"
+  onPress={handleContinue}
+  buttonStyle={styles.primaryButton}
+  textStyle={styles.primaryButtonText}
+/>
+
+              </Animated.View>
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
