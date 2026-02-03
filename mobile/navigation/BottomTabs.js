@@ -99,8 +99,37 @@ export default function BottomTabs({ onSignOut }) {
     >
       {isLaunchA ? (
         <>
-          <Tab.Screen name="ComingSoon" component={ComingSoonScreen} />
-          <Tab.Screen name="Profile">
+          <Tab.Screen 
+            name="ComingSoon" 
+            component={ComingSoonScreen}
+            options={{
+              tabBarActiveTintColor: '#FFFFFF',
+              tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
+              tabBarStyle: {
+                position: 'absolute',
+                backgroundColor: 'transparent',
+                borderTopWidth: 1,
+                borderTopColor: 'rgba(242, 242, 247, 0.3)',
+                elevation: 0,
+                height: 49 + insets.bottom,
+                paddingBottom: insets.bottom,
+                paddingTop: 0,
+              },
+            }}
+          />
+          <Tab.Screen 
+            name="Profile"
+            options={{
+              tabBarStyle: {
+                backgroundColor: '#FFFFFF',
+                borderTopWidth: 1,
+                borderTopColor: '#F2F2F7',
+                height: 49 + insets.bottom,
+                paddingBottom: insets.bottom,
+                paddingTop: 0,
+              },
+            }}
+          >
             {(props) => <ProfileScreen {...props} onSignOut={onSignOut} />}
           </Tab.Screen>
         </>

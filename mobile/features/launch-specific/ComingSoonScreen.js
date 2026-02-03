@@ -79,7 +79,7 @@ export default function ComingSoonScreen() {
       end={AUTH_GRADIENT_CONFIG.end}
       style={styles.gradientFill}
     >
-      <SafeAreaView style={cs.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={cs.container} edges={['top']}>
         <View style={cs.content}>
 
           {/* ---------- TOP ---------- */}
@@ -141,7 +141,7 @@ const cs = {
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 72,      // ⬅️ key fix: logo comes DOWN
-    paddingBottom: 32,
+    paddingBottom: 100,  // Extra padding for transparent tab bar
     justifyContent: 'space-between',
   },
 
