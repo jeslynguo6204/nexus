@@ -23,6 +23,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../../styles/AuthStyles';
 import { confirmEmailOtp, resendOtp } from '../../../../auth/cognito';
+import { createUserProfileFromOtp } from '../../../../api/authAPI';
 
 export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
   const [code, setCode] = useState('');
@@ -75,6 +76,22 @@ export default function ConfirmOtpScreen({ navigation, route, onSignedIn }) {
       setError('');
       setLoading(true);
       await confirmEmailOtp(email, code);
+      
+      // Create user and profile in backend with all signup data
+      try {
+        await createUserProfileFromOtp({
+          email,
+          password,
+          fullName,
+          dateOfBirth,
+          gender,
+          phoneNumber,
+          graduationYear,
+        });
+      } catch (profileErr) {
+        console.warn('Warning: Profile creation during OTP verification failed:', profileErr);
+        // Continue anyway - user might retry in profile setup
+      }
       
       // Navigate to welcome screen after OTP verification
       // Signup will happen after preferences are collected

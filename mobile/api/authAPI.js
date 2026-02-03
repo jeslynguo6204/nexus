@@ -93,6 +93,18 @@ export function signup({ fullName, email, password, dateOfBirth, gender, phoneNu
   });
 }
 
+export function createUserProfileFromOtp({ email, password, fullName, dateOfBirth, gender, phoneNumber, graduationYear }) {
+  return request('/auth/create-profile-from-otp', {
+    email,
+    password,
+    fullName,
+    dateOfBirth,
+    gender,
+    phoneNumber,
+    graduationYear,
+  });
+}
+
 export function checkEmail(email) {
   return request('/auth/check-email', { email });
 }

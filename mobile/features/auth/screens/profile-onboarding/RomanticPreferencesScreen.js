@@ -112,8 +112,8 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
     };
 
     if (skipPlatonic || !wantsPlatonic) {
-      // Finish signup - navigate to completion
-      navigation.navigate('CompleteSignup', params);
+      // Only romantic - skip to profile onboarding
+      navigation.navigate('AddPhotosScreen', params);
     } else {
       // Go to platonic preferences
       navigation.navigate('PlatonicPreferences', params);
@@ -136,8 +136,8 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
     };
 
     if (skipPlatonic || !wantsPlatonic) {
-      // Finish signup - navigate to completion
-      navigation.navigate('CompleteSignup', params);
+      // Only romantic - skip to profile onboarding
+      navigation.navigate('AddPhotosScreen', params);
     } else {
       // Go to platonic preferences
       navigation.navigate('PlatonicPreferences', params);

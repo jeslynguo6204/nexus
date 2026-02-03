@@ -96,3 +96,29 @@ export async function checkEmail(req: Request, res: Response, next: NextFunction
     next(err);
   }
 }
+export async function createProfileFromOtp(req: Request, res: Response, next: NextFunction) {
+  try {
+    console.log("📝 Create profile from OTP received");
+    const { email, password, fullName, dateOfBirth, gender, phoneNumber, graduationYear } = req.body;
+
+    if (!email || !password || !fullName) {
+      console.log("❌ Create profile failed: Missing required fields");
+      return res.status(400).json({ error: "Missing required fields: email, password, fullName" });
+    }
+
+    const result = await AuthService.createProfileFromOtp({
+      email,
+      password,
+      fullName,
+      dateOfBirth: dateOfBirth || null,
+      gender: gender || null,
+      phoneNumber: phoneNumber || null,
+      graduationYear: graduationYear || null,
+    });
+    console.log(`✅ Profile created from OTP for: ${email}, userId: ${result.userId}`);
+    return res.status(201).json(result);
+  } catch (err) {
+    console.error("❌ Create profile from OTP error:", err);
+    next(err);
+  }
+}

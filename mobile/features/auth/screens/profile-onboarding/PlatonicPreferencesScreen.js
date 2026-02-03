@@ -111,8 +111,8 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
       platonicPreference,
     };
 
-    // Finish signup
-    navigation.navigate('CompleteSignup', params);
+    // Continue to profile onboarding
+    navigation.navigate('AddPhotosScreen', params);
   }
 
   function handleSkip() {
@@ -131,8 +131,8 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
       platonicPreference: ['male', 'female', 'non-binary'],
     };
 
-    // Finish signup
-    navigation.navigate('CompleteSignup', params);
+    // Continue to profile onboarding
+    navigation.navigate('AddPhotosScreen', params);
   }
 
   return (

@@ -128,12 +128,7 @@ export default function WelcomeScreen({ navigation, route }) {
       style={{ flex: 1 }}
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
-        >
-          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
-        </TouchableOpacity>
+        {/* No back button - can't go back from welcome */}
         <TouchableOpacity
           onPress={handleSkip}
           style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}

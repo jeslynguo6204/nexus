@@ -105,3 +105,48 @@ export async function checkEmailExists(email: string): Promise<boolean> {
   const user = await findUserByEmail(email);
   return user !== null;
 }
+export async function createProfileFromOtp(input: {
+  email: string;
+  password: string;
+  fullName: string;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  phoneNumber?: string | null;
+  graduationYear?: number | null;
+}) {
+  const { email, password, fullName, dateOfBirth, gender, phoneNumber, graduationYear } = input;
+
+  // Check if user already exists
+  const existing = await findUserByEmail(email);
+  if (existing) {
+    const err = new Error("Email is already registered");
+    (err as any).statusCode = 409;
+    throw err;
+  }
+
+  // Resolve school from email
+  const school = await resolveSchoolForEmail(email);
+
+  // Hash password
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  // Create user with complete signup data
+  const userId = await createUserWithDefaults({
+    schoolId: school.id,
+    email,
+    passwordHash,
+    fullName,
+    dateOfBirth: dateOfBirth ?? null,
+    gender: gender ?? null,
+    phoneNumber: phoneNumber ?? null,
+    graduationYear: graduationYear ?? null,
+    datingGenderPreference: null,
+    friendsGenderPreference: null,
+    isDatingEnabled: false,
+    isFriendsEnabled: false,
+  });
+
+  const token = jwt.sign({ userId }, config.jwtSecret, { expiresIn: "7d" });
+
+  return { userId, token };
+}
