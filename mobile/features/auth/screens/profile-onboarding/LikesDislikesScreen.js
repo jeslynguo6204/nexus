@@ -1,7 +1,7 @@
 /**
  * LikesDislikesScreen (Section 4.3)
  *
- * Profile onboarding: add likes and dislikes. At least 1 like required.
+ * Profile onboarding: add likes and dislikes (optional).
  * Reached from AcademicsScreen. On continue navigates to AddAffiliationsScreen.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -11,7 +11,6 @@ import {
   Platform,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -19,7 +18,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient';
 
 import styles, { AUTH_GRADIENT_CONFIG } from '../../../../styles/AuthStyles.v3';
-import PrimaryCTA from '../../components/PrimaryCTA'; // adjust path if needed
+import PrimaryCTA from '../../components/PrimaryCTA';
+import SlotInput from '../../components/SlotInput';
 
 function padToThree(arr) {
   const a = Array.isArray(arr) ? arr.filter((s) => String(s ?? '').trim() !== '') : [];
@@ -27,33 +27,32 @@ function padToThree(arr) {
 }
 
 const LIKE_EXAMPLES = [
-  'iced coffee',
-  'baking',
-  'lifting',
-  'sports',
-  'late-night wawa',
-  'cooking',
-  "mcgillin’s open mic night",
-  'cold brew',
-  'farmers’ markets',
-  'new deck quizzo',
-  'running',
+  'Iced coffee',
+  'Baking',
+  'Lifting',
+  'Sports',
+  'Late-night Wawa',
+  'Cooking',
+  "McGillin’s open mic night",
+  'Cold brew',
+  'Farmers’ markets',
+  'New Deck quizzo',
+  'Running',
 ];
 
 const DISLIKE_EXAMPLES = [
   '8:30s',
-  'slow walkers',
-  'vp basement',
-  'crowded gyms',
-  'people who don’t rerack weights',
-  'being late',
-  'bad wi-fi',
-  'flaky plans',
-  'long lines',
-  'meetings that could have been emails',
-  'loud eaters',
-  'small talk',
-  'traffic',
+  'Slow walkers',
+  'VP basement',
+  'Crowded gyms',
+  'Being late',
+  'Bad wi-fi',
+  'Flaky plans',
+  'Long lines',
+  'Meetings that could have been emails',
+  'Loud eaters',
+  'Small talk',
+  'Traffic',
 ];
 
 function useRotatingPlaceholders(examples, count = 3) {
@@ -89,42 +88,12 @@ function useRotatingPlaceholders(examples, count = 3) {
   return { placeholders, bumpOne };
 }
 
-function SlotInput({
-  value,
-  onChangeText,
-  placeholder,
-  onFocus,
-}) {
-  return (
-    <View style={{ marginBottom: 10 }}>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        onFocus={onFocus}
-        placeholder={placeholder}
-        placeholderTextColor={styles.tokens?.placeholder ?? 'rgba(255,255,255,0.5)'}
-        style={[
-          styles.input,
-          {
-            // slightly flatter than default input so it feels “slot-like”
-            backgroundColor: 'rgba(255,255,255,0.07)',
-            borderColor: 'rgba(255,255,255,0.14)',
-          },
-        ]}
-        autoCapitalize="sentences"
-        returnKeyType="done"
-      />
-    </View>
-  );
-}
-
 export default function LikesDislikesScreen({ navigation, route }) {
   const routeParams = route.params || {};
   const backPayloadRef = useRef({});
 
   const [likes, setLikes] = useState(() => padToThree(routeParams.likes));
   const [dislikes, setDislikes] = useState(() => padToThree(routeParams.dislikes));
-  const [likeError, setLikeError] = useState('');
 
   const { placeholders: likePH, bumpOne: bumpLikePH } = useRotatingPlaceholders(LIKE_EXAMPLES, 3);
   const { placeholders: dislikePH, bumpOne: bumpDislikePH } = useRotatingPlaceholders(DISLIKE_EXAMPLES, 3);
@@ -149,12 +118,6 @@ export default function LikesDislikesScreen({ navigation, route }) {
   const filledDislikes = dislikes.map((d) => d.trim()).filter(Boolean);
 
   function handleContinue() {
-    setLikeError('');
-    if (filledLikes.length < 1) {
-      setLikeError('Add at least one');
-      return;
-    }
-
     navigation.navigate('AddAffiliationsScreen', {
       ...routeParams,
       ...backPayloadRef.current,
@@ -180,6 +143,25 @@ export default function LikesDislikesScreen({ navigation, route }) {
     routeParams.onBackWithData?.({ likes: filledLikes, dislikes: filledDislikes });
     navigation.goBack();
   }
+
+  const cleanInput = (s) => (s ?? '').replace(/^\s+/, '');
+
+  const slotInputStyle = [
+    styles.input,
+    {
+      backgroundColor: 'rgba(255,255,255,0.07)',
+      borderColor: 'rgba(255,255,255,0.14)',
+    },
+  ];
+
+  const sectionLabelStyle = {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+  };
+
+  const phColor = styles.tokens?.placeholder ?? 'rgba(255,255,255,0.5)';
 
   return (
     <LinearGradient
@@ -216,7 +198,6 @@ export default function LikesDislikesScreen({ navigation, route }) {
             showsVerticalScrollIndicator={false}
           >
             <View style={[styles.authContent, { paddingTop: 8 }]}>
-              {/* Small app name at top */}
               <Text
                 style={{
                   fontSize: 14,
@@ -241,15 +222,8 @@ export default function LikesDislikesScreen({ navigation, route }) {
                 {/* Likes */}
                 <View style={[styles.fieldBlock, { marginBottom: 22 }]}>
                   <View style={styles.fieldHeaderRow}>
-                    <Text style={styles.label}>Likes</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.65)' }}>
-                      Up to 3
-                    </Text>
+                    <Text style={sectionLabelStyle}>Likes</Text>
                   </View>
-
-                  {!!likeError && (
-                    <Text style={[styles.inlineError, { marginTop: 6 }]}>{likeError}</Text>
-                  )}
 
                   {likes.map((val, idx) => (
                     <SlotInput
@@ -257,12 +231,15 @@ export default function LikesDislikesScreen({ navigation, route }) {
                       value={val}
                       onChangeText={(v) => {
                         const next = [...likes];
-                        next[idx] = v;
+                        next[idx] = cleanInput(v);
                         setLikes(next);
-                        if (likeError) setLikeError('');
                       }}
                       onFocus={() => bumpLikePH(idx)}
-                      placeholder={`Add a like (e.g. ${likePH[idx]})`}
+                      placeholder={`Like #${idx + 1} (ex. ${likePH[idx]})`}
+                      placeholderTextColor={phColor}
+                      inputStyle={slotInputStyle}
+                      autoCapitalize="sentences"
+                      autoCorrect={true}
                     />
                   ))}
                 </View>
@@ -270,10 +247,7 @@ export default function LikesDislikesScreen({ navigation, route }) {
                 {/* Dislikes */}
                 <View style={[styles.fieldBlock, { marginBottom: 18 }]}>
                   <View style={styles.fieldHeaderRow}>
-                    <Text style={styles.label}>Dislikes</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.65)' }}>
-                      Optional
-                    </Text>
+                    <Text style={sectionLabelStyle}>Dislikes</Text>
                   </View>
 
                   {dislikes.map((val, idx) => (
@@ -282,11 +256,15 @@ export default function LikesDislikesScreen({ navigation, route }) {
                       value={val}
                       onChangeText={(v) => {
                         const next = [...dislikes];
-                        next[idx] = v;
+                        next[idx] = cleanInput(v);
                         setDislikes(next);
                       }}
                       onFocus={() => bumpDislikePH(idx)}
-                      placeholder={`Add a dislike (e.g. ${dislikePH[idx]})`}
+                      placeholder={`Dislike #${idx + 1} (ex. ${dislikePH[idx]})`}
+                      placeholderTextColor={phColor}
+                      inputStyle={slotInputStyle}
+                      autoCapitalize="sentences"
+                      autoCorrect={true}
                     />
                   ))}
 
@@ -296,12 +274,11 @@ export default function LikesDislikesScreen({ navigation, route }) {
                 </View>
 
                 <PrimaryCTA
-  label="Continue"
-  onPress={handleContinue}
-  buttonStyle={styles.primaryButton}
-  textStyle={styles.primaryButtonText}
-/>
-
+                  label="Continue"
+                  onPress={handleContinue}
+                  buttonStyle={styles.primaryButton}
+                  textStyle={styles.primaryButtonText}
+                />
               </Animated.View>
             </View>
           </ScrollView>
