@@ -20,6 +20,7 @@ import mainStyles from '../../../styles/MainPagesStyles';
 import { getChats, getAllMatches } from '../../../api/matchesAPI';
 import { getMyProfile } from '../../../api/profileAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
+import { useMode } from '../../../contexts/ModeContext';
 import { getIdToken } from '../../../auth/tokens';
 
 // Helper to format time ago
@@ -52,9 +53,8 @@ export default function InboxScreen({ navigation }) {
   const [chats, setChats] = useState([]);
   const [myProfile, setMyProfile] = useState(null);
   const [socketConnected, setSocketConnected] = useState(false);
-  
-  const [mode, setMode] = useState('romantic'); // romantic | platonic
-  const hasSetInitialMode = useRef(false);
+
+  const { mode, setMode, hasSetInitialMode, setHasSetInitialMode } = useMode();
   const isLoadingRef = useRef(false);
   const socketRef = useRef(null);
   const joinedMatchesRef = useRef(new Set());
@@ -246,8 +246,8 @@ export default function InboxScreen({ navigation }) {
       return;
     }
     
-    if (!hasSetInitialMode.current) {
-      hasSetInitialMode.current = true;
+    if (!hasSetInitialMode) {
+      setHasSetInitialMode(true);
       if (myProfile.is_dating_enabled && !myProfile.is_friends_enabled) {
         setMode('romantic');
       } else if (myProfile.is_friends_enabled && !myProfile.is_dating_enabled) {
@@ -269,7 +269,7 @@ export default function InboxScreen({ navigation }) {
         return currentMode;
       });
     }
-  }, [myProfile]);
+  }, [myProfile, hasSetInitialMode, setMode, setHasSetInitialMode]);
 
   // Load data on mount (with loading spinner)
   useEffect(() => {
@@ -289,7 +289,7 @@ export default function InboxScreen({ navigation }) {
 
   // Reload inbox data when mode changes
   useEffect(() => {
-    if (!loading && myProfile && hasSetInitialMode.current) {
+    if (!loading && myProfile && hasSetInitialMode) {
       loadInboxData(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

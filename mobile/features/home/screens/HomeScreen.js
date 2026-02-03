@@ -16,6 +16,7 @@ import { getMyProfile } from '../../../api/profileAPI';
 import { trackPhotoLike, trackPhotoPass, fetchMyPhotos } from '../../../api/photosAPI';
 import { likeUser, passUser } from '../../../api/swipesAPI';
 import ModeToggleButton from '../../../navigation/ModeToggleButton';
+import { useMode } from '../../../contexts/ModeContext';
 import mainStyles from '../../../styles/MainPagesStyles';
 import styles from '../../../styles/ChatStyles'; // Keep for emptyStateButton
 import { getIdToken } from '../../../auth/tokens';
@@ -32,8 +33,7 @@ export default function HomeScreen({ navigation, route }) {
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
 
-  const [mode, setMode] = useState('romantic'); // romantic | platonic
-  const [hasSetInitialMode, setHasSetInitialMode] = useState(false);
+  const { mode, setMode, hasSetInitialMode, setHasSetInitialMode } = useMode();
   const isLoadingFeedRef = useRef(false);
   const lastLoadedModeRef = useRef(null);
   const isMountedRef = useRef(false);
@@ -221,8 +221,7 @@ export default function HomeScreen({ navigation, route }) {
         return currentMode;
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myProfile]);
+  }, [myProfile, hasSetInitialMode, setMode, setHasSetInitialMode]);
 
   // Load feed once when profile and mode are ready
   useEffect(() => {
