@@ -19,6 +19,23 @@ export type MatchWithUserRow = MatchRow & {
   last_message_preview: string | null;
 };
 
+export async function getMatchByIdForUser(
+  matchId: number,
+  userId: number,
+  mode: 'romantic' | 'platonic' = 'romantic'
+): Promise<MatchRow | null> {
+  const matchTable = mode === 'platonic' ? 'friend_matches' : 'dating_matches';
+  const rows = await dbQuery<MatchRow>(
+    `
+    SELECT id, matcher_id, matchee_id, chat_id, created_at, last_message_at, is_active, unmatched_at
+    FROM ${matchTable}
+    WHERE id = $1 AND (matcher_id = $2 OR matchee_id = $2) AND is_active = TRUE AND unmatched_at IS NULL
+    `,
+    [matchId, userId]
+  );
+  return rows[0] ?? null;
+}
+
 /**
  * Get all matches for a user (even if no chat started yet)
  * Used for the top row of the inbox - shows all potential conversations

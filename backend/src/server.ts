@@ -1,6 +1,8 @@
 import { app } from "./app";
 import { config } from "./config/env";
 import { pool } from "./db/pool";
+import http from "http";
+import { initSocketServer } from "./realtime/socket";
 
 async function startServer() {
   console.log("\n" + "=".repeat(50));
@@ -24,8 +26,11 @@ async function startServer() {
   }
 
   // Start server
-  console.log("🌐 Starting HTTP server...");
-  app.listen(config.port, "0.0.0.0", () => {
+  console.log("🌐 Starting HTTP & WebSocket server...");
+  const server = http.createServer(app);
+  initSocketServer(server);
+
+  server.listen(config.port, "0.0.0.0", () => {
     console.log("\n" + "=".repeat(50));
     console.log("✅ Server is running and ready!");
     console.log("=".repeat(50));
