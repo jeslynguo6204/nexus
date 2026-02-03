@@ -148,7 +148,7 @@ const PhotoProgressBar = React.memo(function PhotoProgressBar({ count, activeInd
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-export default function ProfileCard({
+function ProfileCardInner({
   profile,
   photos,
   onDetailsOpenChange,
@@ -156,6 +156,7 @@ export default function ProfileCard({
   onPhotoIndexChange,
   isOwnProfile = false,
   disableUpwardExpansion = false,
+  currentUserId = null,
 }) {
   const safePhotos = useMemo(() => normalizePhotos(photos), [photos]);
   const hasPhotos = safePhotos.length > 0;
@@ -431,8 +432,20 @@ export default function ProfileCard({
     }
     return null;
   })();
-  if (__DEV__ && !isOwnProfile && profile?.user_id) {
-    console.log('[ProfileCard] mutual_count debug', { userId: profile.user_id, rawMutual, mutualCount });
+  // Log mutual_count only when this profile first appears (not on expand/collapse re-renders)
+  const lastLoggedProfileIdRef = useRef(null);
+  const shouldLogMutuals =
+    __DEV__ &&
+    !isOwnProfile &&
+    profile?.user_id &&
+    lastLoggedProfileIdRef.current !== profile.user_id;
+  if (shouldLogMutuals) {
+    lastLoggedProfileIdRef.current = profile.user_id;
+    console.log('[ProfileCard] mutual_count', {
+      currentUserId: currentUserId ?? '(not passed)',
+      viewingProfileId: profile.user_id,
+      mutualCount,
+    });
   }
 
   const openMutuals = useCallback(async () => {
@@ -1027,3 +1040,15 @@ export default function ProfileCard({
     </>
   );
 }
+
+// Skip re-render when props unchanged (e.g. back cards when only top card expands — avoids choppy animation)
+function areEqual(prev, next) {
+  if (prev.profile?.user_id !== next.profile?.user_id) return false;
+  if (prev.profile !== next.profile || prev.photos !== next.photos) return false;
+  if (prev.currentUserId !== next.currentUserId) return false;
+  if (prev.isOwnProfile !== next.isOwnProfile || prev.disableUpwardExpansion !== next.disableUpwardExpansion) return false;
+  if (prev.photoIndex !== next.photoIndex) return false;
+  return true;
+}
+
+export default React.memo(ProfileCardInner, areEqual);

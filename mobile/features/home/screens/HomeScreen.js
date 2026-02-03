@@ -21,19 +21,36 @@ import styles from '../../../styles/ChatStyles'; // Keep for emptyStateButton
 import { getIdToken } from '../../../auth/tokens';
 import { getPreferencesUpdated, setPreferencesUpdated } from '../preferencesUpdatedFlag';
 
-export default function HomeScreen({ navigation, route }) {
-  console.log("HomeScreen render");
-  const [loading, setLoading] = useState(true);
-  const [profiles, setProfiles] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [myUserId, setMyUserId] = useState(null);
-  const [myProfile, setMyProfile] = useState(null);
-  const [myPhotos, setMyPhotos] = useState([]);
-  const [loadingFeed, setLoadingFeed] = useState(false);
-  const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
+const initialProfileSlice = {
+  profile: null,
+  userId: null,
+  photos: [],
+  needsProfileSetup: false,
+  hasSetInitialMode: false,
+  mode: 'romantic',
+};
 
-  const [mode, setMode] = useState('romantic'); // romantic | platonic
-  const [hasSetInitialMode, setHasSetInitialMode] = useState(false);
+const initialFeedState = {
+  profiles: [],
+  currentIndex: 0,
+  loading: true,
+  loadingFeed: false,
+};
+
+export default function HomeScreen({ navigation, route }) {
+  // Single state objects so one setState per "phase" = fewer re-renders (RN may not batch async setState)
+  const [profileSlice, setProfileSlice] = useState(initialProfileSlice);
+  const [feedState, setFeedState] = useState(initialFeedState);
+
+  const { profile: myProfile, userId: myUserId, photos: myPhotos, needsProfileSetup, hasSetInitialMode, mode } = profileSlice;
+  const { profiles, currentIndex, loading, loadingFeed } = feedState;
+
+  const setMode = useCallback((valueOrUpdater) => {
+    setProfileSlice((prev) => ({
+      ...prev,
+      mode: typeof valueOrUpdater === 'function' ? valueOrUpdater(prev.mode) : valueOrUpdater,
+    }));
+  }, []);
   const isLoadingFeedRef = useRef(false);
   const lastLoadedModeRef = useRef(null);
   const isMountedRef = useRef(false);
@@ -46,26 +63,30 @@ export default function HomeScreen({ navigation, route }) {
     school_id: null,
   });
 
-  const loadFeed = useCallback(async () => {
-    // Prevent multiple simultaneous loads or loading the same mode twice
+  const loadFeed = useCallback(async (isInitialLoad = false) => {
     if (isLoadingFeedRef.current || lastLoadedModeRef.current === mode) {
       return;
     }
     if (needsProfileSetup) {
       return;
     }
-    
+
     isLoadingFeedRef.current = true;
-    setLoadingFeed(true);
+    if (!isInitialLoad) setFeedState((prev) => ({ ...prev, loadingFeed: true }));
     lastLoadedModeRef.current = mode;
     try {
       const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
 
-      // Fetch feed profiles with current mode (default scope: school)
       const fetchedProfiles = await getFeedProfiles(token, mode, 'school');
-      setProfiles(Array.isArray(fetchedProfiles) ? fetchedProfiles : []);
-      setCurrentIndex(0);
+      const list = Array.isArray(fetchedProfiles) ? fetchedProfiles : [];
+      setFeedState((prev) => ({
+        ...prev,
+        profiles: list,
+        currentIndex: 0,
+        loading: isInitialLoad ? false : prev.loading,
+        loadingFeed: false,
+      }));
     } catch (e) {
       console.warn('Error loading feed:', e);
       console.warn('Error details:', e.message);
@@ -88,9 +109,13 @@ export default function HomeScreen({ navigation, route }) {
       }
       // Reset on error so we can retry
       lastLoadedModeRef.current = null;
+      setFeedState((prev) => ({
+        ...prev,
+        loading: isInitialLoad ? false : prev.loading,
+        loadingFeed: false,
+      }));
     } finally {
       isLoadingFeedRef.current = false;
-      setLoadingFeed(false);
     }
   }, [mode, needsProfileSetup]);
 
@@ -104,16 +129,18 @@ export default function HomeScreen({ navigation, route }) {
       const photos = await fetchMyPhotos(token);
       
       if (isMountedRef.current) {
-        // Check if profile needs setup:
-        // - Must have gender
-        // - Must have at least one photo
-        // - Must have at least one mode enabled
         const hasNoPhotos = !photos || photos.length === 0;
         const hasNoModes = !profile?.is_dating_enabled && !profile?.is_friends_enabled;
         const hasNoGender = !profile?.gender;
-        
-        setNeedsProfileSetup(hasNoGender || hasNoPhotos || hasNoModes);
-        setMyPhotos(photos || []);
+        const needsProfileSetupVal = hasNoGender || hasNoPhotos || hasNoModes;
+
+        const initialMode =
+          profile?.is_dating_enabled && !profile?.is_friends_enabled
+            ? 'romantic'
+            : profile?.is_friends_enabled && !profile?.is_dating_enabled
+              ? 'platonic'
+              : 'romantic';
+
         const prevState = previousProfileStateRef.current;
         const newState = {
           gender: profile?.gender,
@@ -122,24 +149,28 @@ export default function HomeScreen({ navigation, route }) {
           location_description: profile?.location_description,
           school_id: profile?.school_id,
         };
-        
-        // Check if ANY eligibility-affecting field changed
         const eligibilityChanged =
           prevState.gender !== newState.gender ||
           prevState.dating_gender_preference !== newState.dating_gender_preference ||
           prevState.friends_gender_preference !== newState.friends_gender_preference ||
           prevState.location_description !== newState.location_description ||
           prevState.school_id !== newState.school_id;
-        
-        // If eligibility changed and this isn't the first load, reload feed
+
         if (eligibilityChanged && prevState.gender !== null && !loading && hasSetInitialMode) {
-          lastLoadedModeRef.current = null; // Force reload
+          lastLoadedModeRef.current = null;
           loadFeed();
         }
-        
         previousProfileStateRef.current = newState;
-        setMyProfile(profile);
-        setMyUserId(profile?.user_id);
+
+        setProfileSlice({
+          profile,
+          userId: profile?.user_id ?? null,
+          photos: photos || [],
+          needsProfileSetup: needsProfileSetupVal,
+          hasSetInitialMode: true,
+          mode: initialMode,
+        });
+        if (needsProfileSetupVal) setFeedState((prev) => ({ ...prev, loading: false }));
       }
     } catch (e) {
       console.warn('Error loading profile:', e);
@@ -156,12 +187,7 @@ export default function HomeScreen({ navigation, route }) {
 
   useEffect(() => {
     isMountedRef.current = true;
-    loadProfile().finally(() => {
-      if (isMountedRef.current) {
-        setLoading(false);
-      }
-    });
-    
+    loadProfile();
     return () => {
       isMountedRef.current = false;
     };
@@ -190,36 +216,17 @@ export default function HomeScreen({ navigation, route }) {
     }, [loading, myProfile, hasSetInitialMode, loadFeed])
   );
 
-  // Set initial mode once when profile is loaded, and update if modes change
+  // After first load, validate mode when profile updates (e.g. user disabled a mode on Profile)
   useEffect(() => {
-    if (!myProfile) {
-      return;
-    }
-    
-    // Set initial mode on first load
-    if (!hasSetInitialMode) {
-      setHasSetInitialMode(true);
-      setMode((currentMode) => {
-        if (myProfile.is_dating_enabled && !myProfile.is_friends_enabled) {
-          return 'romantic';
-        } else if (myProfile.is_friends_enabled && !myProfile.is_dating_enabled) {
-          return 'platonic';
-        }
-        return currentMode;
-      });
-    } else {
-      // After initial load, check if current mode is still valid
-      // If current mode was disabled, switch to the other one
-      setMode((currentMode) => {
-        if (currentMode === 'romantic' && !myProfile.is_dating_enabled) {
-          // Romantic mode disabled, switch to platonic if available
-          return myProfile.is_friends_enabled ? 'platonic' : currentMode;
-        } else if (currentMode === 'platonic' && !myProfile.is_friends_enabled) {
-          // Platonic mode disabled, switch to romantic if available
-          return myProfile.is_dating_enabled ? 'romantic' : currentMode;
-        }
-        return currentMode;
-      });
+    if (!myProfile || !hasSetInitialMode) return;
+    const nextMode =
+      mode === 'romantic' && !myProfile.is_dating_enabled
+        ? (myProfile.is_friends_enabled ? 'platonic' : mode)
+        : mode === 'platonic' && !myProfile.is_friends_enabled
+          ? (myProfile.is_dating_enabled ? 'romantic' : mode)
+          : mode;
+    if (nextMode !== mode) {
+      setProfileSlice((prev) => ({ ...prev, mode: nextMode }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myProfile]);
@@ -227,20 +234,16 @@ export default function HomeScreen({ navigation, route }) {
   // Load feed once when profile and mode are ready
   useEffect(() => {
     if (!isMountedRef.current) return;
-    
-    // Only load feed if:
-    // 1. Initial loading is complete
-    // 2. Profile is loaded
-    // 3. Initial mode has been set (to prevent running during initial setup)
-    // 4. Mode is different from what we last loaded
-    if (!loading && myProfile && hasSetInitialMode && lastLoadedModeRef.current !== mode) {
-      loadFeed();
-    }
+    if (needsProfileSetup) return;
+    if (!myProfile || !hasSetInitialMode || lastLoadedModeRef.current === mode) return;
+    loadFeed(loading);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, myProfile, mode, hasSetInitialMode, needsProfileSetup]);
 
+  if (__DEV__) console.log('HomeScreen render', { currentUserId: myUserId });
+
   function moveToNextCard() {
-    setCurrentIndex((prev) => prev + 1);
+    setFeedState((prev) => ({ ...prev, currentIndex: prev.currentIndex + 1 }));
   }
 
   async function handleSwipeRight(profile, photoIndex = 0) {
@@ -248,7 +251,7 @@ export default function HomeScreen({ navigation, route }) {
       const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
       
-      console.log(`✅ Profile ${myUserId} LIKED profile ${profile?.user_id} (mode: ${mode})`);
+      if (__DEV__) console.log('Like', { currentUserId: myUserId, viewingProfileId: profile?.user_id, mode });
       
       // Record the like (dating_likes or friend_likes depending on mode)
       const likeResult = await likeUser(token, profile?.user_id, mode);
@@ -260,7 +263,7 @@ export default function HomeScreen({ navigation, route }) {
       
       // Check if it's a match
       if (likeResult?.isMatch) {
-        console.log('🎉 It\'s a match!');
+        if (__DEV__) console.log('Match', { currentUserId: myUserId, matchedProfileId: profile?.user_id });
         Alert.alert(
           'It\'s a Match! 🎉', 
           `You and ${profile?.display_name || 'this user'} liked each other!`
@@ -284,7 +287,7 @@ export default function HomeScreen({ navigation, route }) {
       const token = await getIdToken();
       if (!token) throw new Error('Not signed in');
       
-      console.log(`⏭️  Profile ${myUserId} PASSED ON profile ${profile?.user_id} (mode: ${mode})`);
+      if (__DEV__) console.log('Pass', { currentUserId: myUserId, viewingProfileId: profile?.user_id, mode });
       
       // Record the pass (dating_passes or friend_passes depending on mode)
       await passUser(token, profile?.user_id, mode);
@@ -361,6 +364,7 @@ export default function HomeScreen({ navigation, route }) {
         <SwipeDeck
           profiles={profiles}
           currentIndex={currentIndex}
+          currentUserId={myUserId}
           onSwipeRight={handleSwipeRight}
           onSwipeLeft={handleSwipeLeft}
           onNext={moveToNextCard}
