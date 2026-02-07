@@ -2,6 +2,7 @@ import { dbQuery } from "../../db/pool";
 
 export interface ProfileRow {
   user_id: number;
+  email?: string | null;
   display_name: string | null;
   bio: string | null;
   major: string | null;
@@ -55,6 +56,7 @@ export async function getProfileByUserId(
     `
     SELECT
       p.user_id,
+      u.email AS email,
       p.display_name,
       p.bio,
       p.major,

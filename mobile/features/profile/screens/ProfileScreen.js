@@ -517,6 +517,15 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
                       return parts.join(' · ');
                     })()}
                   </Text>
+                  {profile?.email ? (
+                    <View style={[styles.chipRow, { marginTop: 8, marginBottom: 0 }]}>
+                      <View style={[styles.chip, styles.usernameChip]}>
+                        <Text style={[styles.chipText, styles.usernameChipText]}>
+                          {String(profile.email).split('@')[0]}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : null}
                 </View>
               </View>
 

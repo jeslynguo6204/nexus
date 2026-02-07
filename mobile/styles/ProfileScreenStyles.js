@@ -126,6 +126,13 @@ const styles = {
   chipText: {
     color: COLORS.text, fontSize: 14, fontWeight: "600",
   },
+  usernameChip: {
+    borderColor: "#1F6299",
+    backgroundColor: "#E9F4FF",
+  },
+  usernameChipText: {
+    color: "#1F6299",
+  },
   addChip: {
     borderColor: COLORS.primary,
     backgroundColor: "#E9F4FF",

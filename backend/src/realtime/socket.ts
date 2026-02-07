@@ -2,8 +2,7 @@ import http from "http";
 import { Server, Socket } from "socket.io";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { config } from "../config/env";
-import { findUserByEmail, createUserWithDefaults } from "../modules/users/users.dao";
-import { resolveSchoolForEmail } from "../modules/schools/schools.service";
+import { findUserByEmail } from "../modules/users/users.dao";
 import { sendMessage as sendMessageService } from "../modules/messages/messages.service";
 import { getMatchByIdForUser } from "../modules/matches/matches.dao";
 
@@ -15,35 +14,8 @@ const cognitoVerifier = CognitoJwtVerifier.create({
   clientId: config.cognitoAppClientId,
 });
 
-const deriveNameFromEmail = (email: string) => {
-  const base = email.split("@")[0] || "Student";
-  const withSpaces = base.replace(/[._-]+/g, " ");
-  return withSpaces.replace(/\b\w/g, (c) => c.toUpperCase());
-};
-
-async function getOrCreateUser(email: string) {
-  let user = await findUserByEmail(email);
-  if (!user) {
-    const school = await resolveSchoolForEmail(email);
-    const fullName = deriveNameFromEmail(email);
-    const userId = await createUserWithDefaults({
-      schoolId: school?.id ?? null,
-      email,
-      passwordHash: null,
-      fullName,
-      dateOfBirth: null,
-      gender: null,
-      phoneNumber: null,
-    });
-    user = {
-      id: userId,
-      email,
-      password_hash: null,
-      full_name: fullName,
-      school_id: school?.id ?? null,
-    };
-  }
-  return user;
+async function getExistingUser(email: string) {
+  return findUserByEmail(email);
 }
 
 async function verifyToken(token: string) {
@@ -68,7 +40,7 @@ export function initSocketServer(server: http.Server) {
     },
   });
 
-  io.use(async (socket, next) => {
+  io.use(async (socket: Socket, next: (err?: Error) => void) => {
     try {
       const token =
         (socket.handshake.auth as any)?.token ||
@@ -77,7 +49,10 @@ export function initSocketServer(server: http.Server) {
         return next(new Error("Unauthorized"));
       }
       const { email } = await verifyToken(token);
-      const user = await getOrCreateUser(email);
+      const user = await getExistingUser(email);
+      if (!user) {
+        return next(new Error("Unauthorized"));
+      }
       (socket.data as any).userId = user.id;
       (socket.data as any).email = email;
       next();
