@@ -17,6 +17,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { COLORS } from '../../../styles/themeNEW';
 import { blockUser, reportUser } from '../../../api/blocksAPI';
 import { getIdToken } from '../../../auth/tokens';
+import { formatUserError, logAppError } from '../../../utils/errors';
 
 const REPORT_REASONS = [
   { value: 'spam', label: 'Spam' },
@@ -87,7 +88,8 @@ export default function BlockReportSheet({
               ]);
             } catch (error) {
               console.error('Error blocking user:', error);
-              Alert.alert('Error', error.message || 'Failed to block user');
+              logAppError(error, { screen: 'BlockReport', action: 'block' });
+              Alert.alert('Error', formatUserError(error, 'Failed to block user'));
             } finally {
               setLoading(false);
             }
@@ -126,7 +128,8 @@ export default function BlockReportSheet({
       ]);
     } catch (error) {
       console.error('Error reporting user:', error);
-      Alert.alert('Error', error.message || 'Failed to submit report');
+      logAppError(error, { screen: 'BlockReport', action: 'report' });
+      Alert.alert('Error', formatUserError(error, 'Failed to submit report'));
     } finally {
       setLoading(false);
     }

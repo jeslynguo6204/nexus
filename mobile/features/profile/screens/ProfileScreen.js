@@ -65,6 +65,7 @@ import { getMyProfile, updateMyProfile } from '../../../api/profileAPI';
 import { getMySchoolAffiliations } from '../../../api/affiliationsAPI';
 import { getFriendsList, removeFriend } from '../../../api/friendsAPI';
 import { getIdToken } from '../../../auth/tokens';
+import { formatUserError, logAppError } from '../../../utils/errors';
 
 const MAX_INTERESTS = 6;
 
@@ -159,7 +160,8 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
         setPhotos(photoRows);
       } catch (e) {
         console.warn(e);
-        Alert.alert('Error', String(e.message || e));
+        logAppError(e, { screen: 'Profile', action: 'loadProfile' });
+        Alert.alert('Error', formatUserError(e, 'Failed to load profile.'));
       } finally {
         setLoading(false);
         hasInitiallyLoaded.current = true;
@@ -205,7 +207,8 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
         Alert.alert('Saved', 'Profile updated');
       }
     } catch (e) {
-      Alert.alert('Error', String(e.message || e));
+      logAppError(e, { screen: 'Profile', action: 'saveProfile' });
+      Alert.alert('Error', formatUserError(e, 'Failed to save changes. Please try again.'));
     }
   }
 
@@ -323,7 +326,8 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
       setPhotos((prev) => [...prev, created]);
     } catch (e) {
       console.warn(e);
-      Alert.alert('Error', String(e.message || e));
+      logAppError(e, { screen: 'Profile', action: 'addPhoto' });
+      Alert.alert('Error', formatUserError(e, 'Failed to add photo. Please try again.'));
     } finally {
       setPhotoBusy(false);
     }
@@ -340,7 +344,8 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
       setPhotos((prev) => prev.filter((p) => p.id !== photoId));
     } catch (e) {
       console.warn(e);
-      Alert.alert('Error', String(e.message || e));
+      logAppError(e, { screen: 'Profile', action: 'deletePhoto' });
+      Alert.alert('Error', formatUserError(e, 'Failed to delete photo. Please try again.'));
     } finally {
       setPhotoBusy(false);
     }
@@ -373,7 +378,8 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
       const updatedProfile = await getMyProfile();
       setProfile((p) => (p ? { ...p, ...updatedProfile } : updatedProfile));
     } catch (e) {
-      Alert.alert('Error', e.message || 'Failed to unfriend.');
+      logAppError(e, { screen: 'Profile', action: 'unfriend' });
+      Alert.alert('Error', formatUserError(e, 'Failed to unfriend.'));
     }
   }
 
@@ -403,7 +409,8 @@ export default function ProfileScreen({ onSignOut, navigation, route }) {
     } catch (e) {
       console.warn(e);
       setPhotos(previous);
-      Alert.alert('Error', String(e.message || e));
+      logAppError(e, { screen: 'Profile', action: 'reorderPhotos' });
+      Alert.alert('Error', formatUserError(e, 'Failed to reorder photos.'));
     } finally {
       setPhotoBusy(false);
     }

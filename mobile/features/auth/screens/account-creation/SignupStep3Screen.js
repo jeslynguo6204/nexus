@@ -20,6 +20,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../../styles/AuthStyles.v2';
 import { startEmailSignup } from '../../../../auth/cognito';
+import { formatUserError, logAppError } from '../../../../utils/errors';
 
 function SelectChip({ label, selected, onPress, style }) {
   return (
@@ -130,9 +131,10 @@ export default function SignupStep3Screen({ navigation, route }) {
         },
       });
     } catch (e) {
-      const errorMessage = String(e.message || e);
-      setError(errorMessage);
-      Alert.alert('Error', errorMessage);
+      logAppError(e, { screen: 'SignupStep3', action: 'continue' });
+      const userMessage = formatUserError(e, 'Unable to continue. Please try again.');
+      setError(userMessage);
+      Alert.alert('Error', userMessage);
     } finally {
       setLoading(false);
     }

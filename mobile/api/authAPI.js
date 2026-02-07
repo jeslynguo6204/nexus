@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { authHeaders } from "../auth/tokens";
 
 const getApiBase = () => {
   console.log("API_BASE:", Constants?.expoConfig?.extra?.apiBaseUrl);
@@ -8,7 +9,7 @@ const getApiBase = () => {
 async function request(path, body) {
   const API_BASE = getApiBase();
   console.log('📡 Making request to:', `${API_BASE}${path}`);
-  console.log('📤 Request body:', body);
+  // Avoid logging sensitive payloads (passwords, tokens).
   
   try {
     // Add timeout to prevent hanging
@@ -28,12 +29,11 @@ async function request(path, body) {
     console.log('📥 Response status:', res.status, res.statusText);
 
     const text = await res.text();
-    console.log('📥 Response text:', text);
 
     let json;
     try {
       json = JSON.parse(text);
-      console.log('📥 Response data:', json);
+      // Avoid logging response payloads (may include tokens).
     } catch (parseError) {
       console.error('❌ Failed to parse response as JSON:', parseError);
       throw new Error(`Invalid response: ${text.substring(0, 100)}`);
@@ -75,6 +75,54 @@ async function request(path, body) {
   }
 }
 
+async function requestAuth(path, body, options = {}) {
+  const API_BASE = getApiBase();
+  const headers = await authHeaders(options);
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 10000);
+
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (res.status === 204) {
+      return null;
+    }
+
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (parseError) {
+      throw new Error(`Invalid response: ${text.substring(0, 100)}`);
+    }
+
+    if (!res.ok) {
+      const errorMsg = json.error || `Request failed with status ${res.status}`;
+      const error = new Error(errorMsg);
+      error.status = res.status;
+      error.response = json;
+      throw error;
+    }
+
+    return json;
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("Request timeout - please check your connection and try again");
+    }
+    throw error;
+  }
+}
+
 export function login({ email, password }) {
   return request('/auth/login', { email, password });
 }
@@ -95,4 +143,12 @@ export function signup({ fullName, email, password, dateOfBirth, gender, phoneNu
 
 export function checkEmail(email) {
   return request('/auth/check-email', { email });
+}
+
+export function cleanupSignup() {
+  return requestAuth('/auth/cleanup-signup', null, { forceRefresh: true });
+}
+
+export function authStatus() {
+  return requestAuth('/auth/status', null, { forceRefresh: true });
 }

@@ -1,15 +1,13 @@
 /**
  * SignupStep2Screen
  *
- * Second step of account creation. Collects: gender, date of birth,
- * graduation year (from Step1 params). On continue calls Cognito startEmailSignup
- * and navigates to ConfirmOtp with params (email, password, etc.) for
- * post-OTP completion.
- * Flow: SignupStep1 → SignupStep2 → (Cognito signup) → ConfirmOtp → ...
+ * About-you step of account creation. Collects: gender, date of birth,
+ * graduation year (from previous params). On continue navigates to
+ * Welcome with params for profile onboarding.
+ * Flow: SignupStep1 → SignupPassword → ConfirmOtp → SignupStep2 → ...
  */
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   KeyboardAvoidingView,
   Modal,
@@ -24,9 +22,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient';
 import styles, { AUTH_GRADIENT_CONFIG } from '../../../../styles/AuthStyles.v3';
 import ChipRow from '../../../profile/components/form-editor-components/ChipRow';
-import { startEmailSignup } from '../../../../auth/cognito';
 
-const GRAD_YEARS = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
+const currentYear = new Date().getFullYear();
+const GRAD_YEARS = Array.from({ length: 5 }, (_, index) => currentYear + index);
 
 export default function SignupStep2Screen({ navigation, route }) {
   const genderOptions = [
@@ -49,7 +47,7 @@ export default function SignupStep2Screen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const { fullName, email, phoneNumber, password } = route.params || {};
+  const { fullName, email, phoneNumber, password, isVerified } = route.params || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -77,7 +75,11 @@ export default function SignupStep2Screen({ navigation, route }) {
     if (Platform.OS === 'android') {
       if (event?.type === 'set' && selectedDate) {
         setDateOfBirth(selectedDate);
-        if (dateOfBirthError) setDateOfBirthError('');
+        if (getAge(selectedDate) < 18) {
+          setDateOfBirthError('You must be 18 or older');
+        } else if (dateOfBirthError) {
+          setDateOfBirthError('');
+        }
       }
       setShowDatePicker(false);
     } else if (selectedDate) {
@@ -90,10 +92,29 @@ export default function SignupStep2Screen({ navigation, route }) {
   const handleDateDone = () => {
     setDateOfBirth(pendingDate);
     setShowDatePicker(false);
-    if (dateOfBirthError) setDateOfBirthError('');
+    if (getAge(pendingDate) < 18) {
+      setDateOfBirthError('You must be 18 or older');
+    } else if (dateOfBirthError) {
+      setDateOfBirthError('');
+    }
   };
 
   const formatDateOfBirth = (date) => (date ? date.toISOString().slice(0, 10) : '');
+
+  const getAge = (date) => {
+    if (!date) return 0;
+    const today = new Date();
+    let age = today.getFullYear() - date.getFullYear();
+    const monthDiff = today.getMonth() - date.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const isUnderage = dateOfBirth ? getAge(dateOfBirth) < 18 : false;
+  const isMissingInfo = !gender || !dateOfBirth || !graduationYear;
+  const isContinueDisabled = isUnderage || isMissingInfo;
 
   function handleContinue() {
     setGenderError('');
@@ -109,6 +130,9 @@ export default function SignupStep2Screen({ navigation, route }) {
     if (!dateOfBirth) {
       setDateOfBirthError('Required');
       hasErrors = true;
+    } else if (getAge(dateOfBirth) < 18) {
+      setDateOfBirthError('You must be 18 or older');
+      hasErrors = true;
     }
     if (!graduationYear) {
       setGraduationYearError('Required');
@@ -117,22 +141,15 @@ export default function SignupStep2Screen({ navigation, route }) {
 
     if (hasErrors) return;
 
-    // Start email signup to trigger OTP
-    startEmailSignup(email, password)
-      .then((normalizedEmail) => {
-        navigation.navigate('ConfirmOtp', {
-          fullName,
-          email: normalizedEmail,
-          phoneNumber,
-          password,
-          gender,
-          dateOfBirth: formatDateOfBirth(dateOfBirth),
-          graduationYear: Number(graduationYear),
-        });
-      })
-      .catch((error) => {
-        Alert.alert('Error', error.message || 'Failed to start signup');
-      });
+    navigation.navigate('Welcome', {
+      fullName,
+      email,
+      phoneNumber,
+      password,
+      gender,
+      dateOfBirth: formatDateOfBirth(dateOfBirth),
+      graduationYear: Number(graduationYear),
+    });
   }
 
   return (
@@ -144,7 +161,20 @@ export default function SignupStep2Screen({ navigation, route }) {
     >
       <SafeAreaView style={styles.authContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            if (!isVerified) {
+              navigation.goBack();
+              return;
+            }
+
+            navigation.navigate('SignupPassword', {
+              fullName,
+              email,
+              phoneNumber,
+              existingPassword: password,
+              clearSignup: true,
+            });
+          }}
           style={[styles.backButton, { top: insets.top + 4 }]}
         >
           <Text style={styles.backText}>← Back</Text>
@@ -218,7 +248,12 @@ export default function SignupStep2Screen({ navigation, route }) {
                 />
               </View>
 
-              <TouchableOpacity style={styles.primaryButton} onPress={handleContinue} activeOpacity={0.9}>
+              <TouchableOpacity
+                style={[styles.primaryButton, isContinueDisabled && { opacity: 0.6 }]}
+                onPress={handleContinue}
+                disabled={isContinueDisabled}
+                activeOpacity={0.9}
+              >
                 <Text style={styles.primaryButtonText}>Create account</Text>
               </TouchableOpacity>
             </Animated.View>

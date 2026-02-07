@@ -2,10 +2,10 @@
  * SignupStep1Screen
  *
  * First step of multi-step account creation. Collects: full name, phone,
- * email, password. Validates and checks email availability; on continue
- * navigates to SignupStep2 with params.
- * Flow: Entry → Sign up → SignupStep1 → SignupStep2 → (Cognito signup) →
- *       ConfirmOtp → ...
+ * email. Validates and checks email availability; on continue
+ * navigates to SignupPassword with params.
+ * Flow: Entry → Sign up → SignupStep1 → SignupPassword → ConfirmOtp →
+ *       SignupStep2 → ...
  */
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -20,21 +20,21 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import styles, { AUTH_GRADIENT_CONFIG } from '../../../../styles/AuthStyles.v3';
 import { checkEmail } from '../../../../api/authAPI';
+import { formatUserError, logAppError } from '../../../../utils/errors';
 
 export default function SignupStep1Screen({ navigation }) {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
   const [fullNameError, setFullNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(null);
@@ -43,7 +43,6 @@ export default function SignupStep1Screen({ navigation }) {
   const fullNameRef = useRef(null);
   const emailRef = useRef(null);
   const phoneRef = useRef(null);
-  const passwordRef = useRef(null);
   const FIELD_SPACING = 20;
 
   const insets = useSafeAreaInsets();
@@ -72,6 +71,12 @@ export default function SignupStep1Screen({ navigation }) {
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setLoading(false);
+    }, [])
+  );
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -125,32 +130,6 @@ export default function SignupStep1Screen({ navigation }) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
   };
 
-  const getPasswordError = (value) => {
-    if (!value) return 'Required';
-    if (value.length < 8) return 'Must be at least 8 characters';
-    //if (!/[A-Z]/.test(value)) return 'Must include an uppercase letter';
-    //if (!/[a-z]/.test(value)) return 'Must include a lowercase letter';
-    //if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) return 'Must include a special character';
-    return null;
-  };
-
-  const getPasswordStrength = (value) => {
-    if (!value) return 0;
-    let score = 0;
-    if (value.length >= 8) score += 1;
-    // if (/[A-Z]/.test(value)) score += 1;
-    // if (/[a-z]/.test(value)) score += 1;
-    // if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) score += 1;
-    return score;
-  };
-
-  const strengthScore = getPasswordStrength(password);
-  const hasPassword = password.length > 0;
-  const strengthColor = strengthScore >= 1 ? '#34D399' : '#FBBF24';
-  const strengthLabel = strengthScore >= 1 ? 'Strong enough' : 'Too short';
-  const PASSWORD_METER_HEIGHT = 40;
-  const strengthSegments = strengthScore >= 1 ? 2 : hasPassword ? 1 : 0;
-
   const showExistingAccountAlert = () => {
     Alert.alert(
       'Account Already Exists',
@@ -176,7 +155,6 @@ export default function SignupStep1Screen({ navigation }) {
     setFullNameError('');
     setEmailError('');
     setPhoneError('');
-    setPasswordError('');
 
     let hasErrors = false;
 
@@ -202,13 +180,6 @@ export default function SignupStep1Screen({ navigation }) {
       hasErrors = true;
     }
 
-    // Validate password
-    const passwordErr = getPasswordError(password);
-    if (passwordErr) {
-      setPasswordError(passwordErr);
-      hasErrors = true;
-    }
-
     if (hasErrors) return;
 
     try {
@@ -225,11 +196,10 @@ export default function SignupStep1Screen({ navigation }) {
         return;
       }
 
-      navigation.navigate('SignupStep2', {
+      navigation.navigate('SignupPassword', {
         fullName: fullName.trim(),
         email: normalizedEmail,
         phoneNumber: normalizedPhone,
-        password,
       });
     } catch (e) {
       // Extract error message from various possible formats
@@ -251,7 +221,8 @@ export default function SignupStep1Screen({ navigation }) {
       } else if (lowerMessage.includes('already exists') || lowerMessage.includes('already registered')) {
         setEmailError('Account already exists');
       } else {
-        setEmailError(errorMessage);
+        logAppError(e, { screen: 'SignupStep1', action: 'checkEmail' });
+        setEmailError(formatUserError(e, 'Please check your email and try again.'));
       }
       setLoading(false);
     }
@@ -392,7 +363,10 @@ export default function SignupStep1Screen({ navigation }) {
                   onBlur={() => setFocused(null)}
                   placeholder="Jane Doe"
                   placeholderTextColor={styles.tokens.placeholder}
+                  autoCorrect={false}
                   autoCapitalize="sentences"
+                  textContentType="name"
+                  autoComplete="name"
                   returnKeyType="next"
                   onSubmitEditing={() => emailRef.current?.focus()}
                 />
@@ -415,7 +389,10 @@ export default function SignupStep1Screen({ navigation }) {
                   onBlur={() => setFocused(null)}
                   placeholder="pennkey@upenn.edu"
                   placeholderTextColor={styles.tokens.placeholder}
+                  autoCorrect={false}
                   autoCapitalize="none"
+                  textContentType="emailAddress"
+                  autoComplete="email"
                   keyboardType="email-address"
                   returnKeyType="next"
                   onSubmitEditing={() => phoneRef.current?.focus()}
@@ -437,66 +414,11 @@ export default function SignupStep1Screen({ navigation }) {
                   placeholder="(XXX) XXX-XXXX"
                   placeholderTextColor={styles.tokens.placeholder}
                   keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'phone-pad'}
+                  textContentType="telephoneNumber"
+                  autoComplete="tel"
                   showSoftInputOnFocus={true}
                   editable={true}
                 />
-              </View>
-
-              <View style={[styles.fieldBlock, { marginBottom: -75, paddingBottom: PASSWORD_METER_HEIGHT }]}>
-                <View style={styles.fieldHeaderRow}>
-                  <Text style={styles.label}>Password</Text>
-                  {!!passwordError && <Text style={styles.inlineError}>{passwordError}</Text>}
-                </View>
-                <TextInput
-                  style={inputStyle('password', !!passwordError)}
-                  ref={passwordRef}
-                  value={password}
-                  onChangeText={(v) => {
-                    setPassword(v);
-                    if (passwordError) setPasswordError('');
-                  }}
-                  onFocus={() => setFocused('password')}
-                  onBlur={() => setFocused(null)}
-                  placeholder="At least 8 characters"
-                  placeholderTextColor={styles.tokens.placeholder}
-                  secureTextEntry
-                  returnKeyType="go"
-                  onSubmitEditing={handleContinue}
-                />
-                <View
-                  style={{
-                    marginTop: 8,
-                    height: PASSWORD_METER_HEIGHT,
-                  }}
-                  pointerEvents="none"
-                >
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
-                    {[1, 2].map((segment) => (
-                      <View
-                        key={segment}
-                        style={{
-                          flex: 1,
-                          height: 6,
-                          borderRadius: 999,
-                          backgroundColor:
-                            segment <= strengthSegments
-                              ? strengthColor
-                              : 'rgba(255,255,255,0.2)',
-                        }}
-                      />
-                    ))}
-                  </View>
-                  <Text
-                    style={{
-                      marginTop: 6,
-                      fontSize: 12,
-                      fontWeight: '600',
-                      color: strengthScore >= 1 ? '#A7F3D0' : 'rgba(255,255,255,0.6)',
-                    }}
-                  >
-                    {strengthLabel}
-                  </Text>
-                </View>
               </View>
 
               <TouchableOpacity

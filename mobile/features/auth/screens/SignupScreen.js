@@ -27,6 +27,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/AuthStyles';
 import { startEmailSignup } from '../../../auth/cognito';
+import { formatUserError, logAppError } from '../../../utils/errors';
 import ChipRow from '../../profile/components/form-editor-components/ChipRow';
 
 export default function SignupScreen({ navigation }) {
@@ -285,8 +286,9 @@ export default function SignupScreen({ navigation }) {
         setEmailError('An account with this email already exists');
       } else {
         // For other errors (like network issues), show as general error
-        const errorMessage = String(e.message || e);
-        setError(errorMessage);
+        logAppError(e, { screen: 'Signup', action: 'continue' });
+        const userMessage = formatUserError(e, 'Unable to continue. Please try again.');
+        setError(userMessage);
       }
     } finally {
       setLoading(false);

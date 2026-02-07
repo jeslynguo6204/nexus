@@ -23,6 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import styles, { AUTH_GRADIENT_CONFIG } from '../../../styles/AuthStyles.v3';
 import { signup as signupToBackend } from '../../../api/authAPI';
 import { login } from '../../../auth/cognito';
+import { formatUserError, logAppError } from '../../../utils/errors';
 
 export default function CompleteSignupScreen({ navigation, route, onSignedIn }) {
   const [loading, setLoading] = useState(false);
@@ -108,10 +109,13 @@ export default function CompleteSignupScreen({ navigation, route, onSignedIn }) 
         displayError = 'An account with this email already exists';
       } else if (errorMessage.includes('Missing required')) {
         displayError = 'Please fill in all required fields';
+      } else {
+        displayError = formatUserError(e, 'Unable to complete signup. Please try again.');
       }
       
       setError(displayError);
       Alert.alert('Error', displayError);
+      logAppError(e, { screen: 'CompleteSignup', action: 'submit' });
       setLoading(false);
     }
   }

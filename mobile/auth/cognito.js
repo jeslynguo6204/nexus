@@ -1,11 +1,14 @@
 import {
   confirmResetPassword,
   confirmSignUp,
+  deleteUser,
   resendSignUpCode,
   resetPassword,
   signIn,
   signUp,
+  signOut,
 } from 'aws-amplify/auth';
+import { checkEmail, cleanupSignup } from '../api/authAPI';
 
 const ALLOWED_EMAIL_DOMAINS = ['.edu'];
 
@@ -109,6 +112,80 @@ export async function resendOtp(email) {
   } catch (error) {
     console.warn('Amplify resendSignUpCode error:', error);
     console.warn('Amplify resendSignUpCode error details:', serializeAuthError(error));
+    throw new Error(formatAuthError(error));
+  }
+}
+
+export async function deleteSignupUser(email, password) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !password) {
+    throw new Error('Missing account credentials');
+  }
+
+  try {
+    try {
+      await signOut();
+    } catch (error) {
+      // Ignore if there's no active session.
+    }
+    let signedIn = true;
+    try {
+      await signIn({
+        username: normalizedEmail,
+        password,
+      });
+    } catch (error) {
+      const name = error?.name || error?.__type || '';
+      const message = String(error?.message || error);
+      if (name === 'UserAlreadyAuthenticatedException') {
+        await signOut();
+        await signIn({
+          username: normalizedEmail,
+          password,
+        });
+      } else if (name === 'UserNotConfirmedException') {
+        throw new Error('Please verify your email before changing your password.');
+      } else if (
+        name === 'UserNotFoundException' ||
+        message.toLowerCase().includes('user does not exist')
+      ) {
+        signedIn = false;
+      } else {
+        throw error;
+      }
+    }
+    if (!signedIn) {
+      return;
+    }
+    try {
+      await cleanupSignup();
+    } catch (error) {
+      if (error?.status === 409) {
+        throw new Error('Account already completed. Please sign in instead.');
+      }
+
+      let canProceed = false;
+      try {
+        const existsResult = await checkEmail(normalizedEmail);
+        if (existsResult?.exists === false) {
+          canProceed = true;
+        }
+      } catch (existsError) {
+        // If the backend can't confirm, fall through to the generic error.
+      }
+
+      if (!canProceed) {
+        if (error?.message?.toLowerCase?.().includes('timeout')) {
+          throw new Error('Could not reset signup due to a timeout. Check your connection and try again.');
+        }
+        throw new Error('Could not reset signup. Please try again.');
+      }
+    }
+    await deleteUser();
+    await signOut();
+  } catch (error) {
+    console.warn('Amplify deleteUser error:', error);
+    console.warn('Amplify deleteUser error details:', serializeAuthError(error));
     throw new Error(formatAuthError(error));
   }
 }

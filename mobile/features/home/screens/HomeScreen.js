@@ -21,6 +21,7 @@ import mainStyles from '../../../styles/MainPagesStyles';
 import styles from '../../../styles/ChatStyles'; // Keep for emptyStateButton
 import { getIdToken } from '../../../auth/tokens';
 import { getPreferencesUpdated, setPreferencesUpdated } from '../preferencesUpdatedFlag';
+import { formatUserError, logAppError } from '../../../utils/errors';
 
 export default function HomeScreen({ navigation, route }) {
   console.log("HomeScreen render");
@@ -84,7 +85,8 @@ export default function HomeScreen({ navigation, route }) {
                             e.message?.includes('connection') ||
                             e.message?.includes('ECONNREFUSED');
       if (!isNetworkError) {
-        Alert.alert('Error', String(e.message || e));
+        logAppError(e, { screen: 'Home', action: 'loadFeed' });
+        Alert.alert('Error', formatUserError(e, 'Failed to load feed. Please try again.'));
       }
       // Reset on error so we can retry
       lastLoadedModeRef.current = null;
@@ -149,7 +151,8 @@ export default function HomeScreen({ navigation, route }) {
                             e.message?.includes('connection') ||
                             e.message?.includes('ECONNREFUSED');
       if (!isNetworkError && isMountedRef.current) {
-        Alert.alert('Error', String(e.message || e));
+        logAppError(e, { screen: 'Home', action: 'refresh' });
+        Alert.alert('Error', formatUserError(e, 'Failed to refresh feed. Please try again.'));
       }
     }
   }, [loading, hasSetInitialMode, loadFeed]);
@@ -273,7 +276,8 @@ export default function HomeScreen({ navigation, route }) {
       if (e.message !== 'Not signed in') {
         console.warn('Error processing like:', e);
       } else {
-        Alert.alert('Error', String(e.message || e));
+        logAppError(e, { screen: 'Home', action: 'like' });
+        Alert.alert('Error', formatUserError(e, 'Failed to record like.'));
       }
     }
   }
@@ -300,7 +304,8 @@ export default function HomeScreen({ navigation, route }) {
       if (e.message !== 'Not signed in') {
         console.warn('Error processing pass:', e);
       } else {
-        Alert.alert('Error', String(e.message || e));
+        logAppError(e, { screen: 'Home', action: 'pass' });
+        Alert.alert('Error', formatUserError(e, 'Failed to record pass.'));
       }
     }
   }

@@ -18,6 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native';
 import { sendMessage as sendMessageAPI, getMessages } from '../../../api/messagesAPI';
 import { unmatchUser as unmatchUserAPI } from '../../../api/matchesAPI';
+import { formatUserError, logAppError } from '../../../utils/errors';
 import { blockUser } from '../../../api/blocksAPI';
 import BlockReportSheet from '../../home/components/BlockReportSheet';
 import UserProfilePreviewModal from '../../profile/components/UserProfilePreviewModal';
@@ -190,7 +191,8 @@ export default function ChatScreen({ navigation, route }) {
               ]);
             } catch (error) {
               console.error('Error blocking user:', error);
-              Alert.alert('Error', error.message || 'Failed to block user. Please try again.');
+              logAppError(error, { screen: 'Chat', action: 'block' });
+              Alert.alert('Error', formatUserError(error, 'Failed to block user. Please try again.'));
             }
           },
         },
@@ -335,7 +337,8 @@ export default function ChatScreen({ navigation, route }) {
             if (!resp?.ok) {
               console.warn('[chat] socket send failed', resp);
               markStatus('failed');
-              Alert.alert('Error', resp?.error || 'Failed to send message.');
+              logAppError(resp?.error, { screen: 'Chat', action: 'sendMessage' });
+              Alert.alert('Error', formatUserError(resp?.error, 'Failed to send message.'));
               setSending(false);
               return;
             }

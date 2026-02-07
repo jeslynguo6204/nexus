@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Amplify } from 'aws-amplify';
 import { getCurrentUser, signOut } from 'aws-amplify/auth';
+import { authStatus } from './api/authAPI';
 import BottomTabs from './navigation/BottomTabs';
 import AuthStack from './navigation/AuthStack';
 import { ModeProvider } from './contexts/ModeContext';
@@ -71,7 +72,18 @@ export default function App() {
     (async () => {
       try {
         await getCurrentUser();
-        setIsSignedIn(true);
+        try {
+          const status = await authStatus();
+          if (status?.exists && status?.complete) {
+            setIsSignedIn(true);
+          } else {
+            await signOut();
+            setIsSignedIn(false);
+          }
+        } catch (statusError) {
+          await signOut();
+          setIsSignedIn(false);
+        }
       } catch (error) {
         setIsSignedIn(false);
       } finally {

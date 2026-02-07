@@ -10,6 +10,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,6 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import styles from '../../../../styles/AuthStyles';
@@ -71,6 +73,14 @@ export default function WelcomeScreen({ navigation, route }) {
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => true;
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => sub.remove();
+    }, [])
+  );
 
   function handleContinue() {
     if (!romantic && !platonic) {
@@ -128,12 +138,6 @@ export default function WelcomeScreen({ navigation, route }) {
       style={{ flex: 1 }}
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
-        >
-          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
-        </TouchableOpacity>
         <TouchableOpacity
           onPress={handleSkip}
           style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}

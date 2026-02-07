@@ -22,6 +22,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import authStyles, { AUTH_GRADIENT_CONFIG } from '../../../../styles/AuthStyles.v3';
 import styles from '../../../../styles/AuthStyles';
 import { confirmPasswordReset, startPasswordReset } from '../../../../auth/cognito';
+import { formatUserError, logAppError } from '../../../../utils/errors';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -121,8 +122,9 @@ export default function ForgotPasswordScreen({ navigation }) {
       setStep('confirm');
       setResendTimer(30);
     } catch (e) {
-      const message = String(e.message || e);
-      setError(message);
+      logAppError(e, { screen: 'ForgotPassword', action: 'request' });
+      const userMessage = formatUserError(e, 'Unable to send reset code. Please try again.');
+      setError(userMessage);
     } finally {
       setLoading(false);
     }
@@ -138,8 +140,9 @@ export default function ForgotPasswordScreen({ navigation }) {
       await startPasswordReset(email);
       setResendTimer(30);
     } catch (e) {
-      const message = String(e.message || e);
-      setError(message);
+      logAppError(e, { screen: 'ForgotPassword', action: 'resend' });
+      const userMessage = formatUserError(e, 'Unable to resend code. Please try again.');
+      setError(userMessage);
     } finally {
       setResending(false);
     }
@@ -152,8 +155,9 @@ export default function ForgotPasswordScreen({ navigation }) {
       await confirmPasswordReset(email, code, newPassword);
       navigation.navigate('Login');
     } catch (e) {
-      const message = String(e.message || e);
-      setError(message);
+      logAppError(e, { screen: 'ForgotPassword', action: 'confirm' });
+      const userMessage = formatUserError(e, 'Unable to reset password. Please try again.');
+      setError(userMessage);
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import { config } from "../../config/env";
 import {
   findUserByEmail,
   createUserWithDefaults,
+  deleteUserById,
 } from "../users/users.dao";
 import { resolveSchoolForEmail } from "../schools/schools.service"; // ← new import
 
@@ -33,10 +34,13 @@ export async function signup(input: {
   }
 
   const existing = await findUserByEmail(email);
-  if (existing) {
+  if (existing && existing.password_hash) {
     const err = new Error("Email is already registered");
     (err as any).statusCode = 409;
     throw err;
+  }
+  if (existing && !existing.password_hash) {
+    await deleteUserById(existing.id);
   }
 
   // 🔹 NEW: resolve the school from the email using the schools table
@@ -103,5 +107,32 @@ export async function login(input: { email: string; password: string }) {
 
 export async function checkEmailExists(email: string): Promise<boolean> {
   const user = await findUserByEmail(email);
-  return user !== null;
+  return user !== null && user.password_hash !== null;
+}
+
+export async function cleanupSignupByEmail(email: string): Promise<void> {
+  const user = await findUserByEmail(email);
+  if (!user) {
+    return;
+  }
+
+  if (user.password_hash) {
+    const err = new Error("Account has already completed signup");
+    (err as any).statusCode = 409;
+    throw err;
+  }
+
+  await deleteUserById(user.id);
+}
+
+export async function getSignupStatusByEmail(email: string): Promise<{
+  exists: boolean;
+  complete: boolean;
+}> {
+  const user = await findUserByEmail(email);
+  if (!user) {
+    return { exists: false, complete: false };
+  }
+
+  return { exists: true, complete: user.password_hash !== null };
 }

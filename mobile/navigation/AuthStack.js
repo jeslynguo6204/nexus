@@ -4,6 +4,7 @@ import EntryScreen from '../features/auth/screens/EntryScreen';
 import LoginScreen from '../features/auth/screens/existing-users/LoginScreen';
 import SignupScreen from '../features/auth/screens/SignupScreen';
 import SignupStep1Screen from '../features/auth/screens/account-creation/SignupStep1Screen';
+import SignupPasswordScreen from '../features/auth/screens/account-creation/SignupPasswordScreen';
 import SignupStep2Screen from '../features/auth/screens/account-creation/SignupStep2Screen';
 import ConfirmOtpScreen from '../features/auth/screens/account-creation/ConfirmOtpScreen';
 import ForgotPasswordScreen from '../features/auth/screens/existing-users/ForgotPasswordScreen';
@@ -30,12 +31,17 @@ export default function AuthStack({ onSignedIn }) {
         {(props) => <SignupScreen {...props} onSignedIn={onSignedIn} />}
       </Stack.Screen>
       <Stack.Screen name="SignupStep1" component={SignupStep1Screen} />
+      <Stack.Screen name="SignupPassword" component={SignupPasswordScreen} />
       <Stack.Screen name="SignupStep2" component={SignupStep2Screen} />
       <Stack.Screen name="ConfirmOtp">
         {(props) => <ConfirmOtpScreen {...props} onSignedIn={onSignedIn} />}
       </Stack.Screen>
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen
+        name="Welcome"
+        component={WelcomeScreen}
+        options={{ gestureEnabled: false }}
+      />
       <Stack.Screen name="RomanticPreferences" component={RomanticPreferencesScreen} />
       <Stack.Screen name="PlatonicPreferences" component={PlatonicPreferencesScreen} />
       <Stack.Screen name="CompleteSignup">

@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { config } from "../config/env";
-import { findUserByEmail } from "../modules/users/users.dao";
 
-export interface AuthedRequest extends Request {
-  userId?: number;
+export interface CognitoVerifiedRequest extends Request {
   userEmail?: string;
   cognitoSub?: string;
 }
@@ -15,8 +13,8 @@ const cognitoVerifier = CognitoJwtVerifier.create({
   clientId: config.cognitoAppClientId,
 });
 
-export async function authMiddleware(
-  req: AuthedRequest,
+export async function cognitoVerifyMiddleware(
+  req: CognitoVerifiedRequest,
   res: Response,
   next: NextFunction
 ) {
@@ -39,12 +37,6 @@ export async function authMiddleware(
       return res.status(401).json({ error: "Token is missing email claim" });
     }
 
-    const user = await findUserByEmail(email);
-    if (!user) {
-      return res.status(403).json({ error: "User profile not found" });
-    }
-
-    req.userId = user.id;
     req.userEmail = email;
     req.cognitoSub = sub ?? undefined;
     return next();

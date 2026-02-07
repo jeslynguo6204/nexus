@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as AuthService from "./auth.service";
+import type { CognitoVerifiedRequest } from "../../middleware/cognitoVerifyMiddleware";
 
 export async function signup(req: Request, res: Response, next: NextFunction) {
   try {
@@ -93,6 +94,38 @@ export async function checkEmail(req: Request, res: Response, next: NextFunction
     }
   } catch (err) {
     console.error("❌ Check email error:", err);
+    next(err);
+  }
+}
+
+export async function cleanupSignup(req: CognitoVerifiedRequest, res: Response, next: NextFunction) {
+  try {
+    const email = req.userEmail;
+    if (!email) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    console.log(`🧹 Cleanup signup requested for: ${email}`);
+    await AuthService.cleanupSignupByEmail(email);
+    console.log(`🧹 Cleanup signup completed for: ${email}`);
+    return res.status(204).send();
+  } catch (err) {
+    console.error("❌ Cleanup signup error:", err);
+    next(err);
+  }
+}
+
+export async function status(req: CognitoVerifiedRequest, res: Response, next: NextFunction) {
+  try {
+    const email = req.userEmail;
+    if (!email) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const result = await AuthService.getSignupStatusByEmail(email);
+    return res.json(result);
+  } catch (err) {
+    console.error("❌ Auth status error:", err);
     next(err);
   }
 }
