@@ -90,9 +90,10 @@ export async function getActiveChatMatches(
 ): Promise<MatchWithUserRow[]> {
   const matchesTable = mode === 'platonic' ? 'friend_matches' : 'dating_matches';
   const chatsTable = mode === 'platonic' ? 'friend_chats' : 'chats';
+  const messagesTable = mode === 'platonic' ? 'friend_messages' : 'messages';
   const rows = await dbQuery<MatchWithUserRow>(
     `
-    SELECT 
+    SELECT
       dm.id,
       dm.matcher_id,
       dm.matchee_id,
@@ -101,25 +102,34 @@ export async function getActiveChatMatches(
       dm.last_message_at,
       dm.is_active,
       dm.unmatched_at,
-      CASE 
+      CASE
         WHEN dm.matcher_id = $1 THEN p2.user_id
         ELSE p1.user_id
       END as match_user_id,
-      CASE 
+      CASE
         WHEN dm.matcher_id = $1 THEN p2.display_name
         ELSE p1.display_name
       END as display_name,
-      CASE 
+      CASE
         WHEN dm.matcher_id = $1 THEN ph2.url
         ELSE ph1.url
       END as avatar_url,
-      c.last_message_preview
+      c.last_message_preview,
+      lm.sender_user_id as last_message_sender_id,
+      lm.read_at as last_message_read_at
     FROM ${matchesTable} dm
     JOIN ${chatsTable} c ON c.id = dm.chat_id
     LEFT JOIN profiles p1 ON p1.user_id = dm.matcher_id
     LEFT JOIN profiles p2 ON p2.user_id = dm.matchee_id
     LEFT JOIN photos ph1 ON ph1.user_id = dm.matcher_id AND ph1.is_primary = TRUE
     LEFT JOIN photos ph2 ON ph2.user_id = dm.matchee_id AND ph2.is_primary = TRUE
+    LEFT JOIN LATERAL (
+      SELECT sender_user_id, read_at
+      FROM ${messagesTable}
+      WHERE chat_id = dm.chat_id
+      ORDER BY created_at DESC
+      LIMIT 1
+    ) lm ON true
     WHERE (dm.matcher_id = $1 OR dm.matchee_id = $1)
       AND dm.is_active = TRUE
       AND dm.unmatched_at IS NULL
@@ -301,17 +311,26 @@ export async function getActiveFriendChatMatches(
         WHEN fm.matcher_id = $1 THEN p2.display_name
         ELSE p1.display_name
       END as display_name,
-      CASE 
+      CASE
         WHEN fm.matcher_id = $1 THEN ph2.url
         ELSE ph1.url
       END as avatar_url,
-      c.last_message_preview
+      c.last_message_preview,
+      lm.sender_user_id as last_message_sender_id,
+      lm.read_at as last_message_read_at
     FROM friend_matches fm
     JOIN friend_chats c ON c.id = fm.chat_id
     LEFT JOIN profiles p1 ON p1.user_id = fm.matcher_id
     LEFT JOIN profiles p2 ON p2.user_id = fm.matchee_id
     LEFT JOIN photos ph1 ON ph1.user_id = fm.matcher_id AND ph1.is_primary = TRUE
     LEFT JOIN photos ph2 ON ph2.user_id = fm.matchee_id AND ph2.is_primary = TRUE
+    LEFT JOIN LATERAL (
+      SELECT sender_user_id, read_at
+      FROM friend_messages
+      WHERE chat_id = fm.chat_id
+      ORDER BY created_at DESC
+      LIMIT 1
+    ) lm ON true
     WHERE (fm.matcher_id = $1 OR fm.matchee_id = $1) AND fm.is_active = TRUE AND fm.unmatched_at IS NULL
     ORDER BY c.last_message_at DESC NULLS LAST
     `,

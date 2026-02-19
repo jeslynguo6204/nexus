@@ -33,12 +33,19 @@ function roomForMatch(matchId: number) {
   return `match:${matchId}`;
 }
 
+let ioInstance: Server | null = null;
+
+export function getIO(): Server | null {
+  return ioInstance;
+}
+
 export function initSocketServer(server: http.Server) {
   const io = new Server(server, {
     cors: {
       origin: "*",
     },
   });
+  ioInstance = io;
 
   io.use(async (socket: Socket, next: (err?: Error) => void) => {
     try {
@@ -64,6 +71,9 @@ export function initSocketServer(server: http.Server) {
   io.on("connection", (socket: Socket) => {
     const userId: number = (socket.data as any).userId;
 
+    // Join user's personal room for receiving notifications
+    socket.join(`user:${userId}`);
+
     socket.on(
       "join_chat",
       async (
@@ -88,6 +98,29 @@ export function initSocketServer(server: http.Server) {
         }
       }
     );
+
+    // Typing indicator: relay to other users in the same chat/match room
+    socket.on("typing", (payload: { matchId?: number; chatId?: number }) => {
+      const chatId = payload.chatId ? Number(payload.chatId) : null;
+      const matchId = payload.matchId ? Number(payload.matchId) : null;
+
+      if (chatId) {
+        socket.to(roomForChat(chatId)).emit("typing", { userId });
+      } else if (matchId) {
+        socket.to(roomForMatch(matchId)).emit("typing", { userId });
+      }
+    });
+
+    socket.on("stop_typing", (payload: { matchId?: number; chatId?: number }) => {
+      const chatId = payload.chatId ? Number(payload.chatId) : null;
+      const matchId = payload.matchId ? Number(payload.matchId) : null;
+
+      if (chatId) {
+        socket.to(roomForChat(chatId)).emit("stop_typing", { userId });
+      } else if (matchId) {
+        socket.to(roomForMatch(matchId)).emit("stop_typing", { userId });
+      }
+    });
 
     socket.on(
       "send_message",
@@ -124,6 +157,18 @@ export function initSocketServer(server: http.Server) {
           // If there are listeners still sitting in the match room (pre-chat state), emit once there too
           // but skip the sender to prevent duplicate delivery to self.
           socket.to(matchRoom).emit("message", messagePayload);
+
+          // Also notify the recipient's personal room so BottomTabs badge updates
+          // (personal rooms only get messages_read events otherwise)
+          const match = await getMatchByIdForUser(matchId, userId, mode);
+          if (match) {
+            const recipientId = match.matcher_id === userId ? match.matchee_id : match.matcher_id;
+            io.to(`user:${recipientId}`).emit("new_message_notification", {
+              chatId,
+              matchId,
+              senderId: userId,
+            });
+          }
 
           callback?.({ ok: true, chatId, message: messagePayload });
         } catch (error: any) {

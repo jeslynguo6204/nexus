@@ -14,6 +14,7 @@ export type MessageRow = {
   sender_user_id: number;
   body: string;
   created_at: string;
+  read_at: string | null;
 };
 
 export async function createChat(): Promise<ChatRow> {
@@ -66,7 +67,7 @@ export async function createMessage(
     `
     INSERT INTO messages (chat_id, sender_user_id, body, created_at)
     VALUES ($1, $2, $3, NOW())
-    RETURNING id, chat_id, sender_user_id, body, created_at
+    RETURNING id, chat_id, sender_user_id, body, created_at, read_at
     `,
     [chatId, senderUserId, body]
   );
@@ -168,7 +169,7 @@ export async function sendFirstMessage(
       `
       INSERT INTO ${messagesTable} (chat_id, sender_user_id, body, created_at)
       VALUES ($1, $2, $3, NOW())
-      RETURNING id, chat_id, sender_user_id, body, created_at
+      RETURNING id, chat_id, sender_user_id, body, created_at, read_at
       `,
       [chatId, senderUserId, messageBody]
     );
@@ -219,7 +220,7 @@ export async function getChatMessages(
   const messagesTable = mode === 'platonic' ? 'friend_messages' : 'messages';
   let rows = await dbQuery<MessageRow>(
     `
-    SELECT id, chat_id, sender_user_id, body, created_at
+    SELECT id, chat_id, sender_user_id, body, created_at, read_at
     FROM ${messagesTable}
     WHERE chat_id = $1
     ORDER BY created_at DESC
@@ -232,7 +233,7 @@ export async function getChatMessages(
   if (rows.length === 0 && mode === 'platonic') {
     rows = await dbQuery<MessageRow>(
       `
-      SELECT id, chat_id, sender_user_id, body, created_at
+      SELECT id, chat_id, sender_user_id, body, created_at, read_at
       FROM messages
       WHERE chat_id = $1
       ORDER BY created_at DESC
@@ -243,4 +244,60 @@ export async function getChatMessages(
   }
 
   return rows;
+}
+
+/**
+ * Mark all unread messages in a chat as read for the given user
+ * Only marks messages where sender_user_id != userId (don't mark own messages as read)
+ * Returns the count and the unique sender IDs of messages that were marked as read
+ */
+export async function markMessagesAsRead(
+  chatId: number,
+  userId: number,
+  mode: 'romantic' | 'platonic' = 'romantic'
+): Promise<{ count: number; senderIds: number[] }> {
+  const messagesTable = mode === 'platonic' ? 'friend_messages' : 'messages';
+
+  const result = await dbQuery<{ id: number; sender_user_id: number }>(
+    `
+    UPDATE ${messagesTable}
+    SET read_at = NOW()
+    WHERE chat_id = $1
+      AND sender_user_id != $2
+      AND read_at IS NULL
+    RETURNING id, sender_user_id
+    `,
+    [chatId, userId]
+  );
+
+  // Get unique sender IDs
+  const senderIds = [...new Set(result.map((row) => row.sender_user_id))];
+
+  return { count: result.length, senderIds };
+}
+
+/**
+ * Get the count of unique conversations (chats) where the user has unread messages
+ * Only counts chats the user is a participant in (via dating_matches/friend_matches)
+ */
+export async function getUnreadConversationsCount(
+  userId: number,
+  mode: 'romantic' | 'platonic' = 'romantic'
+): Promise<number> {
+  const messagesTable = mode === 'platonic' ? 'friend_messages' : 'messages';
+  const matchesTable = mode === 'platonic' ? 'friend_matches' : 'dating_matches';
+
+  const result = await dbQuery<{ count: string }>(
+    `
+    SELECT COUNT(DISTINCT m.chat_id) as count
+    FROM ${messagesTable} m
+    JOIN ${matchesTable} dm ON dm.chat_id = m.chat_id
+    WHERE m.sender_user_id != $1
+      AND m.read_at IS NULL
+      AND (dm.matcher_id = $1 OR dm.matchee_id = $1)
+    `,
+    [userId]
+  );
+
+  return parseInt(result[0]?.count || '0', 10);
 }

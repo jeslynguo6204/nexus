@@ -2,6 +2,8 @@
 import {
   sendFirstMessage as sendFirstMessageDAO,
   getChatMessages,
+  markMessagesAsRead as markMessagesAsReadDAO,
+  getUnreadConversationsCount as getUnreadConversationsCountDAO,
   MessageRow,
 } from "./messages.dao";
 import { getDatingMatch, getFriendMatch } from "../swipes/swipes.dao";
@@ -70,4 +72,27 @@ export async function getMessages(
   const messages = await getChatMessages(chatId, 50, mode);
   // Just return raw messages for now; you can join with profiles later if needed
   return messages;
+}
+
+export async function markMessagesAsRead(
+  chatId: number,
+  userId: number,
+  mode: 'romantic' | 'platonic' = 'romantic'
+): Promise<{ markedCount: number; senderIds: number[] }> {
+  const result = await markMessagesAsReadDAO(chatId, userId, mode);
+  return { markedCount: result.count, senderIds: result.senderIds };
+}
+
+export async function getUnreadConversationsCount(
+  userId: number
+): Promise<{ romanticCount: number; platonicCount: number; totalCount: number }> {
+  // Get counts for both modes
+  const romanticCount = await getUnreadConversationsCountDAO(userId, 'romantic');
+  const platonicCount = await getUnreadConversationsCountDAO(userId, 'platonic');
+
+  return {
+    romanticCount,
+    platonicCount,
+    totalCount: romanticCount + platonicCount,
+  };
 }

@@ -25,6 +25,8 @@ export interface FormattedChat {
   chat_id: number | null;
   last_message_preview: string | null;
   last_message_at: string | null;
+  last_message_sender_id: number | null;
+  last_message_read_at: string | null;
 }
 
 export async function getAllMatches(userId: number): Promise<FormattedMatch[]> {
@@ -41,7 +43,7 @@ export async function getAllMatches(userId: number): Promise<FormattedMatch[]> {
 
 export async function getChats(userId: number, mode: 'romantic' | 'platonic' = 'romantic'): Promise<FormattedChat[]> {
   const rows = await getActiveChatMatches(userId, mode);
-  return rows.map((row) => ({
+  return rows.map((row: any) => ({
     id: row.id,
     match_user_id: row.match_user_id,
     display_name: row.display_name,
@@ -49,6 +51,8 @@ export async function getChats(userId: number, mode: 'romantic' | 'platonic' = '
     chat_id: row.chat_id,
     last_message_preview: row.last_message_preview,
     last_message_at: row.last_message_at,
+    last_message_sender_id: row.last_message_sender_id ?? null,
+    last_message_read_at: row.last_message_read_at ?? null,
   }));
 }
 
@@ -70,7 +74,7 @@ export async function getAllFriendMatches(userId: number): Promise<FormattedMatc
 
 export async function getFriendChats(userId: number): Promise<FormattedChat[]> {
   const rows = await getActiveFriendChatMatches(userId);
-  return rows.map((row) => ({
+  return rows.map((row: any) => ({
     id: row.id,
     match_user_id: row.match_user_id,
     display_name: row.display_name,
@@ -78,6 +82,8 @@ export async function getFriendChats(userId: number): Promise<FormattedChat[]> {
     chat_id: row.chat_id,
     last_message_preview: row.last_message_preview,
     last_message_at: row.last_message_at,
+    last_message_sender_id: row.last_message_sender_id ?? null,
+    last_message_read_at: row.last_message_read_at ?? null,
   }));
 }
 
