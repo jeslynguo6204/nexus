@@ -7,16 +7,19 @@ import {
   Pressable,
   FlatList,
   TextInput,
+  InputAccessoryView,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
   Modal,
   Dimensions,
+  DeviceEventEmitter,
+  Animated,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { sendMessage as sendMessageAPI, getMessages } from '../../../api/messagesAPI';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { sendMessage as sendMessageAPI, getMessages, markMessagesAsRead } from '../../../api/messagesAPI';
 import { unmatchUser as unmatchUserAPI } from '../../../api/matchesAPI';
 import { formatUserError, logAppError } from '../../../utils/errors';
 import { blockUser } from '../../../api/blocksAPI';
@@ -32,23 +35,81 @@ const DEFAULT_AVATAR = 'https://picsum.photos/200?88';
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
-const formatTimeLabel = (ts) => {
-  if (!ts) return '';
-  const d = new Date(ts);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+// Animated typing dots component
+function TypingDots() {
+  const dot1 = useRef(new Animated.Value(0.3)).current;
+  const dot2 = useRef(new Animated.Value(0.3)).current;
+  const dot3 = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animate = (dot, delay) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0.3, duration: 300, useNativeDriver: true }),
+        ])
+      );
+    const a1 = animate(dot1, 0);
+    const a2 = animate(dot2, 200);
+    const a3 = animate(dot3, 400);
+    a1.start(); a2.start(); a3.start();
+    return () => { a1.stop(); a2.stop(); a3.stop(); };
+  }, [dot1, dot2, dot3]);
+
+  return (
+    <View style={typingStyles.dots}>
+      <Animated.View style={[typingStyles.dot, { opacity: dot1 }]} />
+      <Animated.View style={[typingStyles.dot, { opacity: dot2 }]} />
+      <Animated.View style={[typingStyles.dot, { opacity: dot3 }]} />
+    </View>
+  );
+}
+
+const typingStyles = StyleSheet.create({
+  dots: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#9CA3AF' },
+});
+
+const formatTimestamp = (dateString) => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.floor((today - messageDate) / (1000 * 60 * 60 * 24));
+
+    const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    if (diffDays === 0) {
+      return `Today at ${time}`;
+    } else if (diffDays === 1) {
+      return `Yesterday at ${time}`;
+    } else {
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+      const day = date.getDate();
+      return `${dayName}, ${monthName} ${day} at ${time}`;
+    }
+  } catch (e) {
+    return '';
+  }
 };
 
 const formatMatchDate = (dateString) => {
-  if (!dateString) return '5/15/24';
+  if (!dateString) return '';
   try {
     const date = new Date(dateString);
-    const month = date.getMonth() + 1;
+    if (isNaN(date.getTime())) return '';
+    const monthName = date.toLocaleDateString('en-US', { month: 'long' });
     const day = date.getDate();
-    const year = date.getFullYear().toString().slice(-2);
-    return `${month}/${day}/${year}`;
+    const year = date.getFullYear();
+    return `You matched on ${monthName} ${day}, ${year}`;
   } catch (e) {
-    return dateString;
+    return '';
   }
 };
 
@@ -66,8 +127,10 @@ export default function ChatScreen({ navigation, route }) {
   const displayName = route?.params?.display_name ?? 'Noah';
   const mode = route?.params?.mode || 'romantic'; // Get mode from route params
   const avatarUrl = route?.params?.avatar_url ?? DEFAULT_AVATAR;
-  const matchedAtRaw = route?.params?.matched_at ?? '5/15/24';
-  const matchedAt = formatMatchDate(matchedAtRaw);
+  // Use actual current date/time if no matched_at is provided
+  const matchedAtRaw = route?.params?.matched_at && route?.params?.matched_at !== '5/15/24'
+    ? route?.params?.matched_at
+    : new Date().toISOString();
   const initialChatId = route?.params?.chat_id || null;
 
   const [text, setText] = useState('');
@@ -76,10 +139,18 @@ export default function ChatScreen({ navigation, route }) {
   const [messages, setMessages] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [myUserId, setMyUserId] = useState(null);
+  const myUserIdRef = useRef(null);
+  const chatIdRef = useRef(initialChatId);
+  useEffect(() => { chatIdRef.current = chatId; }, [chatId]);
   const [myAvatarUrl, setMyAvatarUrl] = useState(DEFAULT_AVATAR);
-  const [socketConnected, setSocketConnected] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
   const socketRef = useRef(null);
-  
+  const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+  const isFocused = useIsFocused();
+  const isFocusedRef = useRef(true);
+  useEffect(() => { isFocusedRef.current = isFocused; }, [isFocused]);
+
   // Menu popover state
   const [menuOpen, setMenuOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
@@ -141,7 +212,6 @@ export default function ChatScreen({ navigation, route }) {
               // Navigate back to inbox
               navigation.goBack();
             } catch (error) {
-              console.error('Error unmatching:', error);
               Alert.alert('Error', 'Failed to unmatch. Please try again.');
             }
           },
@@ -176,7 +246,6 @@ export default function ChatScreen({ navigation, route }) {
               try {
                 await unmatchUserAPI(token, matchId, mode);
               } catch (unmatchError) {
-                console.warn('Error unmatching after block:', unmatchError);
                 // Continue even if unmatch fails
               }
               
@@ -191,8 +260,7 @@ export default function ChatScreen({ navigation, route }) {
               ]);
             } catch (error) {
               console.error('Error blocking user:', error);
-              logAppError(error, { screen: 'Chat', action: 'block' });
-              Alert.alert('Error', formatUserError(error, 'Failed to block user. Please try again.'));
+              Alert.alert('Error', error.message || 'Failed to block user. Please try again.');
             }
           },
         },
@@ -231,6 +299,7 @@ export default function ChatScreen({ navigation, route }) {
       body: msg.body,
       created_at: msg.created_at,
       sender_user_id: msg.sender_user_id,
+      read_at: msg.read_at,
       status: 'sent',
     };
 
@@ -270,21 +339,94 @@ export default function ChatScreen({ navigation, route }) {
   };
 
   const dataForList = useMemo(() => {
-    return [...messages].reverse().map((m) => ({
-      key: m.id || m.tempId,
-      id: m.id || m.tempId,
-      text: m.body,
-      created_at: m.created_at,
-      type: myUserId && m.sender_user_id === myUserId ? 'outgoing' : 'incoming',
-      status: m.status,
-    }));
+    const sorted = [...messages].reverse(); // oldest to newest
+    const result = [];
+    const TIME_GAP_THRESHOLD = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+
+    // Find the most recent outgoing message index (sorted is newest-first)
+    let lastOutgoingIdx = -1;
+    for (let i = 0; i < sorted.length; i++) {
+      if (myUserId && String(sorted[i].sender_user_id) === String(myUserId)) {
+        lastOutgoingIdx = i;
+        break;
+      }
+    }
+
+    sorted.forEach((m, index) => {
+      const isOutgoing = myUserId && String(m.sender_user_id) === String(myUserId);
+      // Add the message first
+      result.push({
+        key: m.id || m.tempId,
+        id: m.id || m.tempId,
+        text: m.body,
+        created_at: m.created_at,
+        read_at: m.read_at,
+        type: isOutgoing ? 'outgoing' : 'incoming',
+        status: m.status,
+        isLastOutgoing: index === lastOutgoingIdx,
+      });
+
+      // Then check if we need a divider AFTER this message (which appears ABOVE it when inverted)
+      const nextMessage = sorted[index + 1];
+      if (nextMessage) {
+        const currentTime = new Date(m.created_at).getTime();
+        const nextTime = new Date(nextMessage.created_at).getTime();
+
+        // If there's a 3+ hour gap to the next message, insert a divider
+        if ((nextTime - currentTime) > TIME_GAP_THRESHOLD) {
+          result.push({
+            key: `divider_${nextMessage.id || nextMessage.tempId}`,
+            type: 'date_divider',
+            date: nextMessage.created_at,
+          });
+        }
+      }
+    });
+
+    return result;
   }, [messages, myUserId]);
+
+  // Emit typing/stop_typing events with debouncing
+  const handleTextChange = useCallback((value) => {
+    setText(value);
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    const payload = { chatId, matchId };
+
+    if (value.length > 0 && !isTypingRef.current) {
+      isTypingRef.current = true;
+      socket.emit('typing', payload);
+    }
+
+    // Clear previous timeout and set a new one
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isTypingRef.current) {
+        isTypingRef.current = false;
+        socket.emit('stop_typing', payload);
+      }
+    }, 2000);
+
+    // If user cleared the input, stop typing immediately
+    if (value.length === 0 && isTypingRef.current) {
+      isTypingRef.current = false;
+      socket.emit('stop_typing', payload);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    }
+  }, [chatId, matchId]);
 
   const sendMessage = async () => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    console.log('[chat] send tapped', { matchId, mode, len: trimmed.length, socketConnected });
+    // Stop typing indicator on send
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      socketRef.current?.emit('stop_typing', { chatId, matchId });
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    }
+
     setSending(true);
     const tempId = `tmp_${Date.now()}`;
     const optimisticMsg = {
@@ -306,11 +448,9 @@ export default function ChatScreen({ navigation, route }) {
     try {
       const socket = socketRef.current;
       if (socket && socket.connected) {
-        console.log('[chat] sending via socket', { matchId, mode, tempId });
         let acked = false;
         const fallbackTimer = setTimeout(async () => {
           if (acked) return;
-          console.log('[chat] socket ack timeout; falling back to HTTP', { matchId, mode, tempId });
           try {
             const result = await sendMessageAPI(matchId, trimmed, mode);
             if (result.message) {
@@ -320,7 +460,6 @@ export default function ChatScreen({ navigation, route }) {
               markStatus('failed');
             }
           } catch (err) {
-            console.warn('[chat] http fallback failed', err);
             markStatus('failed');
             Alert.alert('Error', 'Failed to send message. Please try again.');
           } finally {
@@ -335,7 +474,6 @@ export default function ChatScreen({ navigation, route }) {
             acked = true;
             clearTimeout(fallbackTimer);
             if (!resp?.ok) {
-              console.warn('[chat] socket send failed', resp);
               markStatus('failed');
               logAppError(resp?.error, { screen: 'Chat', action: 'sendMessage' });
               Alert.alert('Error', formatUserError(resp?.error, 'Failed to send message.'));
@@ -345,19 +483,15 @@ export default function ChatScreen({ navigation, route }) {
             const msg = { ...resp.message, tempId };
             setChatId(resp.chatId || chatId);
             addMessageFromServer(msg);
-            console.log('[chat] socket ack', { chatId: resp.chatId, messageId: resp.message?.id });
             markStatus('sent');
             setSending(false);
           }
         );
       } else {
-        // Fallback to HTTP (still works, but no realtime)
-        console.log('[chat] sending via HTTP', { matchId, mode, tempId });
         const result = await sendMessageAPI(matchId, trimmed, mode);
         setChatId(result.chatId || chatId);
         if (result.message) {
           addMessageFromServer({ ...result.message, sender_user_id: myUserId, tempId });
-          console.log('[chat] http response', { chatId: result.chatId, messageId: result.message?.id });
           markStatus('sent');
         } else {
           const newMsg = {
@@ -377,7 +511,6 @@ export default function ChatScreen({ navigation, route }) {
         listRef.current?.scrollToOffset?.({ offset: 0, animated: true });
       });
     } catch (error) {
-      console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
       // Mark optimistic message as failed
       setMessages((prev) =>
@@ -399,6 +532,7 @@ export default function ChatScreen({ navigation, route }) {
       try {
         const profile = await getMyProfile();
         setMyUserId(profile?.user_id);
+        myUserIdRef.current = profile?.user_id;
         let avatar = null;
         // Prefer primary photo from photos API (sorted by sort_order)
         try {
@@ -409,14 +543,14 @@ export default function ChatScreen({ navigation, route }) {
             avatar = primary?.url || photos[0]?.url || null;
           }
         } catch (photoErr) {
-          console.warn('Failed to load photos for chat avatar', photoErr);
+          // Silently fail — avatar will use default
         }
         if (!avatar && Array.isArray(profile?.photos)) {
           avatar = profile.photos[0] || null;
         }
         setMyAvatarUrl(avatar || DEFAULT_AVATAR);
       } catch (e) {
-        console.warn('Failed to load profile for chat', e);
+        // Silently fail
       }
     };
     fetchMe();
@@ -435,19 +569,41 @@ export default function ChatScreen({ navigation, route }) {
           body: m.body,
           created_at: m.created_at,
           sender_user_id: m.sender_user_id,
+          read_at: m.read_at,
         }));
       setMessages(normalized);
+
+      // Mark messages as read after loading (only if chatId exists)
+      if (chatId) {
+        try {
+          const result = await markMessagesAsRead(chatId, mode);
+          // Only decrement badge if we actually marked something new
+          if (result?.markedCount > 0) {
+            DeviceEventEmitter.emit('refreshUnreadCount');
+          }
+        } catch (markError) {
+          // Silently fail
+        }
+      }
     } catch (e) {
-      console.warn('Failed to load messages', e);
+      // Silently fail
     } finally {
       setLoadingHistory(false);
     }
   }, [chatId, mode, myUserId]);
 
-  // Load history when identifiers change
+  // Load history when identifiers change, but skip initial chatId creation
+  const prevChatIdRef = useRef(initialChatId);
   useEffect(() => {
+    // Don't reload history if chatId just went from null to a value
+    // (this happens when sending the first message)
+    if (prevChatIdRef.current === null && chatId !== null) {
+      prevChatIdRef.current = chatId;
+      return;
+    }
+    prevChatIdRef.current = chatId;
     loadHistory();
-  }, [loadHistory]);
+  }, [loadHistory, chatId]);
 
   // Keep navigation params updated with resolved chatId so future navigations have it
   useEffect(() => {
@@ -475,30 +631,63 @@ export default function ChatScreen({ navigation, route }) {
         });
         socketRef.current = socket;
 
-        socket.on('connect', () => {
-          console.log('[chat] socket connected');
-          setSocketConnected(true);
+        socket.on('connect', () => {});
+        socket.on('disconnect', () => {});
+        socket.on('message', (msg) => {
+          addMessageFromServer(msg);
+          // Only auto-mark as read if the screen is actually focused (visible)
+          // React Navigation keeps screens mounted in the background
+          if (!isFocusedRef.current) return;
+          const currentChatId = chatIdRef.current;
+          const myId = myUserIdRef.current;
+          if (currentChatId && myId && String(msg.chat_id) === String(currentChatId) && String(msg.sender_user_id) !== String(myId)) {
+            markMessagesAsRead(currentChatId, mode).then((result) => {
+              if (result?.markedCount > 0) {
+                DeviceEventEmitter.emit('refreshUnreadCount');
+              }
+            }).catch(() => {});
+          }
         });
-        socket.on('disconnect', () => {
-          console.log('[chat] socket disconnected');
-          setSocketConnected(false);
+
+        // Listen for read receipts
+        socket.on('messages_read', (data) => {
+          if (String(data.readBy) === String(myUserIdRef.current)) {
+            return;
+          }
+          const currentChatId = chatIdRef.current;
+          if (String(data.chatId) !== String(currentChatId)) {
+            return;
+          }
+          // Only mark OUR outgoing messages as read (not incoming ones)
+          const myId = myUserIdRef.current;
+          setMessages((prev) =>
+            prev.map((m) =>
+              myId && String(m.sender_user_id) === String(myId) && !m.read_at
+                ? { ...m, read_at: new Date().toISOString() }
+                : m
+            )
+          );
         });
-        socket.on('connect_error', (err) => {
-          console.warn('[chat] socket connect_error', err?.message || err);
+
+        // Typing indicator listeners
+        socket.on('typing', (data) => {
+          if (data.userId !== myUserIdRef.current) {
+            setOtherUserTyping(true);
+          }
         });
-        socket.on('error', (err) => {
-          console.warn('[chat] socket error', err?.message || err);
+        socket.on('stop_typing', (data) => {
+          if (data.userId !== myUserIdRef.current) {
+            setOtherUserTyping(false);
+          }
         });
-        socket.on('message', addMessageFromServer);
 
         socket.emit('join_chat', { matchId, mode }, (resp) => {
           if (resp?.ok && resp.chatId && !chatId) {
             setChatId(resp.chatId);
-            console.log('[chat] joined room', resp);
           }
         });
       } catch (e) {
-        console.warn('Socket connection failed', e);
+        // Silently fail
       }
     };
     connectSocket();
@@ -509,6 +698,14 @@ export default function ChatScreen({ navigation, route }) {
   }, [API_BASE, matchId, mode]);
 
   const renderItem = ({ item }) => {
+    if (item.type === 'date_divider') {
+      return (
+        <View style={styles.dateDividerRow}>
+          <Text style={styles.dateDividerText}>{formatTimestamp(item.date)}</Text>
+        </View>
+      );
+    }
+
     if (item.type === 'system') {
       return (
         <View style={styles.systemRow}>
@@ -520,7 +717,6 @@ export default function ChatScreen({ navigation, route }) {
     const incoming = item.type === 'incoming';
     const dimmed = item.status === 'pending' || item.status === 'failed';
     if (incoming) {
-      const timeLabel = formatTimeLabel(item.created_at);
       return (
         <View style={[styles.messageRow, styles.leftRow]}>
           <Image source={{ uri: avatarUrl }} style={styles.bubbleAvatar} />
@@ -536,44 +732,45 @@ export default function ChatScreen({ navigation, route }) {
             ]}>
               {item.text}
             </Text>
-            {!!timeLabel && (
-              <Text style={[styles.timestamp, styles.timestampIncoming]}>
-                {timeLabel}
-              </Text>
-            )}
           </View>
         </View>
       );
     }
 
-    const timeLabel = formatTimeLabel(item.created_at);
+    const isRead = !!item.read_at;
+    const showStatus = item.isLastOutgoing && item.status !== 'pending' && item.status !== 'failed';
+
     return (
-      <View style={[styles.messageRow, styles.rightRow]}>
-        <View style={[
-          styles.bubble,
-          styles.outgoingBubble,
-          dimmed && styles.pendingBubble
-        ]}>
-          <Text style={[
-            styles.bubbleText,
-            styles.outgoingText,
-            dimmed && styles.pendingText
+      <View>
+        <View style={[styles.messageRow, styles.rightRow]}>
+          <View style={[
+            styles.bubble,
+            styles.outgoingBubble,
+            dimmed && styles.pendingBubble
           ]}>
-            {item.text}
-          </Text>
-          {!!timeLabel && (
-            <Text style={[styles.timestamp, styles.timestampOutgoing]}>
-              {timeLabel}
+            <Text style={[
+              styles.bubbleText,
+              styles.outgoingText,
+              dimmed && styles.pendingText
+            ]}>
+              {item.text}
             </Text>
-          )}
+          </View>
+          <Image source={{ uri: myAvatarUrl }} style={[styles.bubbleAvatar, styles.bubbleAvatarRight]} />
         </View>
-        <Image source={{ uri: myAvatarUrl }} style={[styles.bubbleAvatar, styles.bubbleAvatarRight]} />
+        {showStatus && (
+          <View style={styles.readReceiptContainer}>
+            <Text style={styles.readReceiptText}>
+              {isRead ? 'Read' : 'Sent'}
+            </Text>
+          </View>
+        )}
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -679,12 +876,30 @@ export default function ChatScreen({ navigation, route }) {
           <FlatList
             ref={listRef}
             data={dataForList}
-            keyExtractor={(x, idx) => x.id || x.key || `row_${idx}`}
+            keyExtractor={(x, idx) => x.key || `row_${idx}`}
             renderItem={renderItem}
             inverted
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+            ListFooterComponent={
+              <View style={styles.conversationStartContainer}>
+                <Text style={styles.conversationStartText}>
+                  {formatMatchDate(matchedAtRaw)}
+                </Text>
+              </View>
+            }
           />
+        )}
+
+        {/* Typing indicator */}
+        {otherUserTyping && (
+          <View style={styles.typingRow}>
+            <Image source={{ uri: avatarUrl }} style={styles.typingAvatar} />
+            <View style={styles.typingBubble}>
+              <TypingDots />
+            </View>
+          </View>
         )}
 
         {/* Composer */}
@@ -692,11 +907,12 @@ export default function ChatScreen({ navigation, route }) {
           <View style={styles.composer}>
             <TextInput
               value={text}
-              onChangeText={setText}
+              onChangeText={handleTextChange}
               placeholder="Type a message"
               placeholderTextColor="#9CA3AF"
               style={styles.input}
               multiline={false}
+              inputAccessoryViewID="chatInput"
               returnKeyType="send"
               onSubmitEditing={sendMessage}
               editable={!sending}
@@ -718,19 +934,13 @@ export default function ChatScreen({ navigation, route }) {
             </Pressable>
           </View>
 
-          {/* Optional “tools row” placeholder like GIF/music/etc.
-              Keep subtle; remove if you don’t want it.
-          */}
-          <View style={styles.toolsRow}>
-            <View style={styles.toolPill}>
-              <Text style={styles.toolText}>GIF</Text>
-            </View>
-            <View style={styles.toolCircle} />
-            <View style={styles.toolCircle} />
-            <View style={styles.toolCircle} />
-          </View>
         </View>
       </KeyboardAvoidingView>
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID="chatInput">
+          <View />
+        </InputAccessoryView>
+      )}
     </SafeAreaView>
   );
 }
@@ -892,6 +1102,49 @@ const styles = StyleSheet.create({
   timestampOutgoing: {
     color: 'rgba(255,255,255,0.7)',
   },
+  readText: {
+    marginTop: 4,
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+    alignSelf: 'flex-end',
+  },
+  readReceiptContainer: {
+    alignItems: 'flex-end',
+    paddingRight: 40,
+    marginTop: 1,
+    marginBottom: 2,
+  },
+  readReceiptText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  dateDividerRow: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginVertical: 4,
+  },
+  dateDividerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  conversationStartContainer: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingTop: 24,
+  },
+  conversationStartText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
 
   reactionStub: {
     width: 34,
@@ -920,7 +1173,7 @@ const styles = StyleSheet.create({
   composerWrap: {
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 10,
+    paddingBottom: 6,
     borderTopWidth: 1,
     borderTopColor: '#F2F2F7',
     backgroundColor: '#FFFFFF',
@@ -956,32 +1209,6 @@ const styles = StyleSheet.create({
   },
 
   // Optional tools row
-  toolsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-    gap: 10,
-  },
-  toolPill: {
-    height: 34,
-    paddingHorizontal: 14,
-    borderRadius: 17,
-    backgroundColor: '#F2F2F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toolText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#6B7280',
-  },
-  toolCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#F2F2F7',
-  },
-
   // Menu popover
   popoverOverlay: {
     flex: 1,
@@ -1017,5 +1244,24 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F2F2F7',
     marginVertical: 4,
+  },
+  typingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+  },
+  typingAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: 8,
+  },
+  typingBubble: {
+    backgroundColor: '#E9EAEE',
+    borderRadius: 18,
+    borderBottomLeftRadius: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
 });

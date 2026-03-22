@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, View } from 'react-native';
+import { Text, View, StyleSheet, DeviceEventEmitter, AppState } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { isLaunchA } from '../config/launchPhase';
+import { getUnreadConversationsCount } from '../api/messagesAPI';
+import { getIdToken } from '../auth/tokens';
+import Constants from 'expo-constants';
+import io from 'socket.io-client';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
@@ -66,8 +70,102 @@ const ICON_MAP = {
   ComingSoon: "hourglass-half",
 };
 
+// Custom tab icon with badge support
+function TabIconWithBadge({ name, color, size, focused, badgeCount }) {
+  return (
+    <View style={styles.iconContainer}>
+      <FontAwesome6 name={name} size={focused ? 24 : 22} color={color} />
+      {badgeCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function BottomTabs({ onSignOut }) {
   const insets = useSafeAreaInsets();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const socketRef = useRef(null);
+
+  const API_BASE = useMemo(() => {
+    return Constants?.expoConfig?.extra?.apiBaseUrl || 'https://sixdegrees.dev';
+  }, []);
+
+  // Fetch the real unread count from the API
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const result = await getUnreadConversationsCount();
+      if (result?.totalCount != null) {
+        setUnreadCount(result.totalCount);
+      }
+    } catch (e) {
+      // Silently fail — badge just won't update
+    }
+  }, []);
+
+  // Fetch on mount, and when app comes to foreground
+  useEffect(() => {
+    fetchUnreadCount();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') fetchUnreadCount();
+    });
+    return () => sub.remove();
+  }, [fetchUnreadCount]);
+
+  // Connect a socket so we get notified of new messages even if Chat tab isn't visited
+  useEffect(() => {
+    let isMounted = true;
+    const connect = async () => {
+      try {
+        const token = await getIdToken();
+        if (!token || !isMounted) return;
+        const socket = io(API_BASE, {
+          transports: ['websocket'],
+          auth: { token },
+        });
+        socketRef.current = socket;
+
+        // When a new message is sent to us, re-fetch the unread count
+        socket.on('new_message_notification', () => {
+          if (isMounted) fetchUnreadCount();
+        });
+        // When messages are read, re-fetch count
+        socket.on('messages_read', () => {
+          if (isMounted) fetchUnreadCount();
+        });
+      } catch (e) {
+        // Silently fail
+      }
+    };
+    connect();
+    return () => {
+      isMounted = false;
+      socketRef.current?.disconnect();
+    };
+  }, [API_BASE, fetchUnreadCount]);
+
+  useEffect(() => {
+    // Listen for direct count updates from InboxScreen (on load)
+    const sub1 = DeviceEventEmitter.addListener('unreadCountChanged', (count) => {
+      setUnreadCount(count);
+    });
+
+    const sub2 = DeviceEventEmitter.addListener('incrementUnreadCount', () => {
+      setUnreadCount((prev) => prev + 1);
+    });
+
+    const sub3 = DeviceEventEmitter.addListener('refreshUnreadCount', () => {
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    });
+
+    return () => {
+      sub1.remove();
+      sub2.remove();
+      sub3.remove();
+    };
+  }, []);
 
   return (
     <Tab.Navigator
@@ -93,6 +191,18 @@ export default function BottomTabs({ onSignOut }) {
         },
         tabBarIcon: ({ color, size, focused }) => {
           const iconName = ICON_MAP[route.name];
+          // Show badge only on Chat tab
+          if (route.name === 'Chat') {
+            return (
+              <TabIconWithBadge
+                name={iconName}
+                color={color}
+                size={size}
+                focused={focused}
+                badgeCount={unreadCount}
+              />
+            );
+          }
           return <FontAwesome6 name={iconName} size={focused ? 24 : 22} color={color} />;
         },
       })}
@@ -147,3 +257,32 @@ export default function BottomTabs({ onSignOut }) {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: '#1F6299',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 10,
+  },
+});

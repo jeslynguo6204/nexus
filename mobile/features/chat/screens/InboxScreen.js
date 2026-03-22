@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -61,6 +62,7 @@ export default function InboxScreen({ navigation }) {
   const matchesRef = useRef([]);
   const profileRef = useRef(null);
   const modeRef = useRef(mode);
+  const locallyReadRef = useRef(new Set()); // Track chats we locally marked as read
 
   const API_BASE = useMemo(() => {
     return Constants?.expoConfig?.extra?.apiBaseUrl || 'https://sixdegrees.dev';
@@ -95,6 +97,8 @@ export default function InboxScreen({ navigation }) {
       const matchMeta = currentMatches.find((m) => String(m.id) === matchId);
 
       const base = existing || matchMeta || {};
+      const wasAlreadyUnread = existing?.unread;
+      const nowUnread = !isMine;
       const updated = {
         id: matchId,
         match_user_id: base.match_user_id,
@@ -103,8 +107,13 @@ export default function InboxScreen({ navigation }) {
         chat_id: msg.chat_id || base.chat_id || null,
         last_message: preview,
         time: timeLabel,
-        unread: isMine ? false : true,
+        unread: nowUnread,
       };
+
+      // If this is a new unread conversation, increment the badge
+      if (nowUnread && !wasAlreadyUnread) {
+        DeviceEventEmitter.emit('incrementUnreadCount');
+      }
 
       return [updated, ...others];
     });
@@ -154,19 +163,43 @@ export default function InboxScreen({ navigation }) {
       
       // Normalize shape for UI
       const formattedChats = (Array.isArray(fetchedChats) ? fetchedChats : []).map(
-        (c) => ({
-          id: String(c.id),
-          match_user_id: c.match_user_id,
-          display_name: c.display_name || 'Chat',
-          avatar_url:
-            c.avatar_url ||
-            'https://picsum.photos/200?99',
-          chat_id: c.chat_id,
-          last_message: c.last_message_preview || 'No messages yet',
-          time: c.last_message_at ? new Date(c.last_message_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : null,
-          unread: false, // TODO: implement unread status when messages are fetched
-        })
+        (c) => {
+          // Unread = last message was sent by the other user AND is not read
+          const isUnread = c.last_message_sender_id
+            && c.last_message_sender_id !== profile?.user_id
+            && !c.last_message_read_at;
+          return {
+            id: String(c.id),
+            match_user_id: c.match_user_id,
+            display_name: c.display_name || 'Chat',
+            avatar_url:
+              c.avatar_url ||
+              'https://picsum.photos/200?99',
+            chat_id: c.chat_id,
+            last_message: c.last_message_preview || 'No messages yet',
+            time: c.last_message_at ? new Date(c.last_message_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : null,
+            unread: !!isUnread,
+          };
+        }
       );
+
+      // Apply locally-read overlay: if we tapped into a chat, keep it read
+      // even if the backend hasn't caught up yet
+      formattedChats.forEach((c) => {
+        if (locallyReadRef.current.has(c.id)) {
+          if (!c.unread) {
+            // Backend confirms it's read now, remove from tracking
+            locallyReadRef.current.delete(c.id);
+          } else {
+            // Backend still shows unread, override locally
+            c.unread = false;
+          }
+        }
+      });
+
+      // Emit unread count to BottomTabs badge
+      const unreadTotal = formattedChats.filter((c) => c.unread).length;
+      DeviceEventEmitter.emit('unreadCountChanged', unreadTotal);
 
       // Sticky cards: only replace with non-empty results; otherwise keep existing unless first load
       setChats((prev) => {
@@ -176,7 +209,6 @@ export default function InboxScreen({ navigation }) {
       });
       setHasLoadedChats(true);
     } catch (e) {
-      console.warn('Error loading inbox:', e);
       // Don't show alert for network errors - they're expected if server isn't running
       const isNetworkError = e.message?.includes('Network') || 
                             e.message?.includes('fetch') || 
@@ -209,7 +241,7 @@ export default function InboxScreen({ navigation }) {
         socket.on('disconnect', () => setSocketConnected(false));
         socket.on('message', handleIncomingMessage);
       } catch (e) {
-        console.warn('Inbox socket connection failed', e);
+        // Silently fail
       }
     };
 
@@ -296,6 +328,17 @@ export default function InboxScreen({ navigation }) {
   }, [mode]);
 
   const onOpenChat = (chatOrMatch) => {
+    // Immediately mark as read in local state before navigating
+    if (chatOrMatch.unread) {
+      locallyReadRef.current.add(String(chatOrMatch.id));
+      setChats((prev) =>
+        prev.map((c) =>
+          String(c.id) === String(chatOrMatch.id) ? { ...c, unread: false } : c
+        )
+      );
+      DeviceEventEmitter.emit('refreshUnreadCount');
+    }
+
     navigation.navigate('ChatScreen', {
       id: chatOrMatch.id,
       match_user_id: chatOrMatch.match_user_id,
