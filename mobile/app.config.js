@@ -18,6 +18,7 @@ export default {
       cognitoUserPoolId: process.env.EXPO_PUBLIC_COGNITO_USER_POOL_ID,
       cognitoAppClientId: process.env.EXPO_PUBLIC_COGNITO_USER_POOL_CLIENT_ID,
       launchPhase: process.env.EXPO_PUBLIC_LAUNCH_PHASE,
+      showOnboardingTestTab: process.env.EXPO_PUBLIC_SHOW_ONBOARDING_TEST_TAB,
       eas: {
         projectId: "67f082ac-8a77-4269-b117-a3b26235f3bd",
       },

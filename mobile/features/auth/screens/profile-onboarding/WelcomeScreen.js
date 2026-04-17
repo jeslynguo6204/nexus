@@ -55,21 +55,14 @@ function SelectChip({ label, selected, onPress, style }) {
   );
 }
 
-export default function WelcomeScreen({ navigation, route, onSignedIn }) {
-  const params = route.params || {};
-  const { fullName, email, phoneNumber, password, gender, dateOfBirth, graduationYear, fromLogin, wantsRomantic, wantsPlatonic } = params;
-
-  const [romantic, setRomantic] = useState(!!wantsRomantic);
-  const [platonic, setPlatonic] = useState(!!wantsPlatonic);
+export default function WelcomeScreen({ navigation, route }) {
+  const [romantic, setRomantic] = useState(false);
+  const [platonic, setPlatonic] = useState(false);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const backPayloadRef = useRef({});
 
-  useEffect(() => {
-    setRomantic(!!wantsRomantic);
-    setPlatonic(!!wantsPlatonic);
-  }, [wantsRomantic, wantsPlatonic]);
+  const { fullName, email, phoneNumber, password, gender, dateOfBirth, graduationYear } = route.params || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -85,7 +78,6 @@ export default function WelcomeScreen({ navigation, route, onSignedIn }) {
     }
 
     const params = {
-      ...backPayloadRef.current,
       fullName,
       email,
       phoneNumber,
@@ -95,22 +87,24 @@ export default function WelcomeScreen({ navigation, route, onSignedIn }) {
       graduationYear,
       wantsRomantic: romantic,
       wantsPlatonic: platonic,
-      fromLogin: !!fromLogin,
-      onBackWithData: (data) => { backPayloadRef.current = data; },
     };
 
+    // Navigate based on what was selected
     if (romantic && platonic) {
+      // Go to romantic first, then platonic
       navigation.navigate('RomanticPreferences', params);
     } else if (romantic) {
+      // Only romantic
       navigation.navigate('RomanticPreferences', { ...params, skipPlatonic: true });
     } else {
+      // Only platonic
       navigation.navigate('PlatonicPreferences', params);
     }
   }
 
   function handleSkip() {
+    // Skip with default preferences: both romantic and platonic with all three options
     const params = {
-      ...backPayloadRef.current,
       fullName,
       email,
       phoneNumber,
@@ -122,10 +116,8 @@ export default function WelcomeScreen({ navigation, route, onSignedIn }) {
       wantsPlatonic: true,
       romanticPreference: ['male', 'female', 'non-binary'],
       platonicPreference: ['male', 'female', 'non-binary'],
-      fromLogin: !!fromLogin,
-      onBackWithData: (data) => { backPayloadRef.current = data; },
     };
-    navigation.navigate('AddPhotosScreen', params);
+    navigation.navigate('CompleteSignup', params);
   }
 
   return (
@@ -136,6 +128,7 @@ export default function WelcomeScreen({ navigation, route, onSignedIn }) {
       style={{ flex: 1 }}
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
+        {/* No back button - can't go back from welcome */}
         <TouchableOpacity
           onPress={handleSkip}
           style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}

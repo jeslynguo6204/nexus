@@ -55,22 +55,10 @@ function SelectChip({ label, selected, onPress, style }) {
   );
 }
 
-function prefToChips(pref) {
-  if (!Array.isArray(pref) || pref.length === 0) return { men: false, women: false, nonBinary: false };
-  return {
-    men: pref.includes('male'),
-    women: pref.includes('female'),
-    nonBinary: pref.includes('non-binary'),
-  };
-}
-
 export default function RomanticPreferencesScreen({ navigation, route }) {
-  const routeParams = route.params || {};
-  const { romanticPreference } = routeParams;
-  const initial = prefToChips(romanticPreference);
-  const [men, setMen] = useState(initial.men);
-  const [women, setWomen] = useState(initial.women);
-  const [nonBinary, setNonBinary] = useState(initial.nonBinary);
+  const [men, setMen] = useState(false);
+  const [women, setWomen] = useState(false);
+  const [nonBinary, setNonBinary] = useState(false);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -85,15 +73,7 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
     graduationYear,
     wantsPlatonic,
     skipPlatonic,
-    fromLogin,
-  } = routeParams;
-
-  useEffect(() => {
-    const next = prefToChips(romanticPreference);
-    setMen(next.men);
-    setWomen(next.women);
-    setNonBinary(next.nonBinary);
-  }, [romanticPreference]);
+  } = route.params || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -129,18 +109,19 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
       wantsRomantic: true,
       wantsPlatonic,
       romanticPreference,
-      fromLogin: !!fromLogin,
-      onBackWithData: routeParams.onBackWithData,
     };
 
     if (skipPlatonic || !wantsPlatonic) {
+      // Only romantic - skip to profile onboarding
       navigation.navigate('AddPhotosScreen', params);
     } else {
+      // Go to platonic preferences
       navigation.navigate('PlatonicPreferences', params);
     }
   }
 
   function handleSkip() {
+    // Skip with default romantic preference: all three
     const params = {
       fullName,
       email,
@@ -152,13 +133,13 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
       wantsRomantic: true,
       wantsPlatonic,
       romanticPreference: ['male', 'female', 'non-binary'],
-      fromLogin: !!fromLogin,
-      onBackWithData: routeParams.onBackWithData,
     };
 
     if (skipPlatonic || !wantsPlatonic) {
+      // Only romantic - skip to profile onboarding
       navigation.navigate('AddPhotosScreen', params);
     } else {
+      // Go to platonic preferences
       navigation.navigate('PlatonicPreferences', params);
     }
   }
@@ -172,10 +153,7 @@ export default function RomanticPreferencesScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() => {
-            routeParams.onBackWithData?.({ wantsRomantic: true, wantsPlatonic: wantsPlatonic ?? false });
-            navigation.goBack();
-          }}
+          onPress={() => navigation.goBack()}
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>

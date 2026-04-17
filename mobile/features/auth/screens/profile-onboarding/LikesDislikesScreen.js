@@ -1,110 +1,73 @@
 /**
  * LikesDislikesScreen (Section 4.3)
  *
- * Profile onboarding: add likes and dislikes (optional).
+ * Profile onboarding: add likes and dislikes. At least 1 like required.
  * Reached from AcademicsScreen. On continue navigates to AddAffiliationsScreen.
  */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import styles from '../../../../styles/AuthStyles';
 
-import styles, { AUTH_GRADIENT_CONFIG } from '../../../../styles/AuthStyles.v3';
-import PrimaryCTA from '../../components/PrimaryCTA';
-import SlotInput from '../../components/SlotInput';
-
-function padToThree(arr) {
-  const a = Array.isArray(arr) ? arr.filter((s) => String(s ?? '').trim() !== '') : [];
-  return [a[0] ?? '', a[1] ?? '', a[2] ?? ''];
-}
-
-const LIKE_EXAMPLES = [
-  'Iced coffee',
-  'Baking',
-  'Lifting',
-  'Sports',
-  'Late-night Wawa',
-  'Cooking',
-  "McGillin’s open mic night",
-  'Cold brew',
-  'Farmers’ markets',
-  'New Deck quizzo',
-  'Running',
-];
-
-const DISLIKE_EXAMPLES = [
-  '8:30s',
-  'Slow walkers',
-  'VP basement',
-  'Crowded gyms',
-  'Being late',
-  'Bad wi-fi',
-  'Flaky plans',
-  'Long lines',
-  'Meetings that could have been emails',
-  'Loud eaters',
-  'Small talk',
-  'Traffic',
-];
-
-function useRotatingPlaceholders(examples, count = 3) {
-  // Stable shuffled pool per mount so it doesn’t feel repetitive
-  const pool = useMemo(() => {
-    const copy = [...examples];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-  }, [examples]);
-
-  const idxRef = useRef(0);
-  const next = () => {
-    const value = pool[idxRef.current % pool.length];
-    idxRef.current += 1;
-    return value;
-  };
-
-  const [placeholders, setPlaceholders] = useState(() =>
-    Array.from({ length: count }, () => next())
+function ItemInput({ value, onChangeText, placeholder, onRemovePress }) {
+  return (
+    <View style={{ marginBottom: 12, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+      <TextInput
+        placeholder={placeholder}
+        placeholderTextColor="rgba(255,255,255,0.4)"
+        value={value}
+        onChangeText={onChangeText}
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.2)',
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 12,
+          color: '#FFFFFF',
+          fontSize: 14,
+          fontWeight: '500',
+          minHeight: 44,
+        }}
+      />
+      {value.trim() !== '' && (
+        <TouchableOpacity
+          onPress={onRemovePress}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            backgroundColor: 'rgba(255,59,48,0.2)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: '#FF3B30', fontSize: 18, fontWeight: 'bold' }}>×</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
-
-  const bumpOne = (slotIndex) => {
-    setPlaceholders((prev) => {
-      const copy = [...prev];
-      copy[slotIndex] = next();
-      return copy;
-    });
-  };
-
-  return { placeholders, bumpOne };
 }
 
 export default function LikesDislikesScreen({ navigation, route }) {
-  const routeParams = route.params || {};
-  const backPayloadRef = useRef({});
-
-  const [likes, setLikes] = useState(() => padToThree(routeParams.likes));
-  const [dislikes, setDislikes] = useState(() => padToThree(routeParams.dislikes));
-
-  const { placeholders: likePH, bumpOne: bumpLikePH } = useRotatingPlaceholders(LIKE_EXAMPLES, 3);
-  const { placeholders: dislikePH, bumpOne: bumpDislikePH } = useRotatingPlaceholders(DISLIKE_EXAMPLES, 3);
+  const [likes, setLikes] = useState(['', '', '']);
+  const [dislikes, setDislikes] = useState(['', '', '']);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    setLikes(padToThree(routeParams.likes));
-    setDislikes(padToThree(routeParams.dislikes));
-  }, [routeParams.likes, routeParams.dislikes]);
+  const routeParams = route.params || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -114,173 +77,107 @@ export default function LikesDislikesScreen({ navigation, route }) {
     }).start();
   }, [fadeAnim]);
 
-  const filledLikes = likes.map((l) => l.trim()).filter(Boolean);
-  const filledDislikes = dislikes.map((d) => d.trim()).filter(Boolean);
+  const filledLikes = likes.filter(l => l.trim() !== '');
 
   function handleContinue() {
     navigation.navigate('AddAffiliationsScreen', {
       ...routeParams,
-      ...backPayloadRef.current,
       likes: filledLikes,
-      dislikes: filledDislikes,
-      onBackWithData: (data) => {
-        backPayloadRef.current = data;
-      },
+      dislikes: dislikes.filter(d => d.trim() !== ''),
     });
   }
-
-  function handleSkip() {
-    navigation.navigate('AddAffiliationsScreen', {
-      ...routeParams,
-      ...backPayloadRef.current,
-      onBackWithData: (data) => {
-        backPayloadRef.current = data;
-      },
-    });
-  }
-
-  function handleBack() {
-    routeParams.onBackWithData?.({ likes: filledLikes, dislikes: filledDislikes });
-    navigation.goBack();
-  }
-
-  const cleanInput = (s) => (s ?? '').replace(/^\s+/, '');
-
-  const slotInputStyle = [
-    styles.input,
-    {
-      backgroundColor: 'rgba(255,255,255,0.07)',
-      borderColor: 'rgba(255,255,255,0.14)',
-    },
-  ];
-
-  const sectionLabelStyle = {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    letterSpacing: -0.2,
-  };
-
-  const phColor = styles.tokens?.placeholder ?? 'rgba(255,255,255,0.5)';
 
   return (
     <LinearGradient
-      colors={AUTH_GRADIENT_CONFIG.colors}
-      start={AUTH_GRADIENT_CONFIG.start}
-      end={AUTH_GRADIENT_CONFIG.end}
-      style={styles.gradientFill}
+      colors={['#1F6299', '#34A4FF']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={{ flex: 1 }}
     >
-      <SafeAreaView style={styles.authContainer} edges={['top', 'left', 'right']}>
-        {/* Back */}
-        <TouchableOpacity onPress={handleBack} style={[styles.backButton, { top: insets.top + 4 }]}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-
-        {/* Skip */}
+      <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={handleSkip}
-          style={{
-            position: 'absolute',
-            right: 16,
-            top: insets.top + 4,
-            zIndex: 30,
-            paddingHorizontal: 8,
-            paddingVertical: 8,
-          }}
+          onPress={() => navigation.goBack()}
+          style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
-          <Text style={[styles.backText, { opacity: 0.9 }]}>Skip →</Text>
+          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
+            contentContainerStyle={{ flexGrow: 1, paddingTop: 12, paddingBottom: 32 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={[styles.authContent, { paddingTop: 8 }]}>
-              <Text
-                style={{
-                  fontSize: 14,
-                  letterSpacing: 3,
-                  textTransform: 'uppercase',
-                  fontWeight: '600',
-                  color: '#E5F2FF',
-                  opacity: 0.75,
-                  marginBottom: 10,
-                  textAlign: 'center',
-                }}
-              >
-                SIX DEGREES
+            <View style={[styles.entryTop, { marginTop: 12 }]}>
+              <Text style={styles.entryTagline}>What are you into?</Text>
+            </View>
+
+            <Animated.View style={[{ width: '100%', paddingHorizontal: 24, opacity: fadeAnim }]}>
+              <Text style={{ fontSize: 14, color: '#E5E7EB', textAlign: 'center', marginBottom: 32 }}>
+                A few things that make you… you.
               </Text>
 
-              <View style={{ alignItems: 'center', marginTop: 2 }}>
-                <Text style={styles.title}>It’s the little things.</Text>
-                <Text style={styles.subtitle}>The good, the bad — and the occasional dealbreaker.</Text>
+              <View style={{ marginBottom: 28 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#E5F2FF', marginBottom: 12 }}>
+                  Likes
+                </Text>
+                <ItemInput
+                  value={likes[0]}
+                  onChangeText={(v) => setLikes([v, likes[1], likes[2]])}
+                  placeholder="e.g. Sushi"
+                  onRemovePress={() => setLikes(['', likes[1], likes[2]])}
+                />
+                <ItemInput
+                  value={likes[1]}
+                  onChangeText={(v) => setLikes([likes[0], v, likes[2]])}
+                  placeholder="e.g. AirPods"
+                  onRemovePress={() => setLikes([likes[0], '', likes[2]])}
+                />
+                <ItemInput
+                  value={likes[2]}
+                  onChangeText={(v) => setLikes([likes[0], likes[1], v])}
+                  placeholder="e.g. Candlelit dinners"
+                  onRemovePress={() => setLikes([likes[0], likes[1], ''])}
+                />
               </View>
 
-              <Animated.View style={[styles.formWrap, { opacity: fadeAnim, marginTop: 14 }]}>
-                {/* Likes */}
-                <View style={[styles.fieldBlock, { marginBottom: 22 }]}>
-                  <View style={styles.fieldHeaderRow}>
-                    <Text style={sectionLabelStyle}>Likes</Text>
-                  </View>
-
-                  {likes.map((val, idx) => (
-                    <SlotInput
-                      key={`like-${idx}`}
-                      value={val}
-                      onChangeText={(v) => {
-                        const next = [...likes];
-                        next[idx] = cleanInput(v);
-                        setLikes(next);
-                      }}
-                      onFocus={() => bumpLikePH(idx)}
-                      placeholder={`Like #${idx + 1} (ex. ${likePH[idx]})`}
-                      placeholderTextColor={phColor}
-                      inputStyle={slotInputStyle}
-                      autoCapitalize="sentences"
-                      autoCorrect={true}
-                    />
-                  ))}
-                </View>
-
-                {/* Dislikes */}
-                <View style={[styles.fieldBlock, { marginBottom: 18 }]}>
-                  <View style={styles.fieldHeaderRow}>
-                    <Text style={sectionLabelStyle}>Dislikes</Text>
-                  </View>
-
-                  {dislikes.map((val, idx) => (
-                    <SlotInput
-                      key={`dislike-${idx}`}
-                      value={val}
-                      onChangeText={(v) => {
-                        const next = [...dislikes];
-                        next[idx] = cleanInput(v);
-                        setDislikes(next);
-                      }}
-                      onFocus={() => bumpDislikePH(idx)}
-                      placeholder={`Dislike #${idx + 1} (ex. ${dislikePH[idx]})`}
-                      placeholderTextColor={phColor}
-                      inputStyle={slotInputStyle}
-                      autoCapitalize="sentences"
-                      autoCorrect={true}
-                    />
-                  ))}
-
-                  <Text style={{ marginTop: 8, fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>
-                    You can always edit these later.
-                  </Text>
-                </View>
-
-                <PrimaryCTA
-                  label="Continue"
-                  onPress={handleContinue}
-                  buttonStyle={styles.primaryButton}
-                  textStyle={styles.primaryButtonText}
+              <View style={{ marginBottom: 28 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#E5F2FF', marginBottom: 12 }}>
+                  Dislikes
+                </Text>
+                <Text style={{ fontSize: 12, color: '#C5D0DC', marginBottom: 12 }}>
+                  Optional — but fair game.
+                </Text>
+                <ItemInput
+                  value={dislikes[0]}
+                  onChangeText={(v) => setDislikes([v, dislikes[1], dislikes[2]])}
+                  placeholder="e.g. Studying late"
+                  onRemovePress={() => setDislikes(['', dislikes[1], dislikes[2]])}
                 />
-              </Animated.View>
-            </View>
+                <ItemInput
+                  value={dislikes[1]}
+                  onChangeText={(v) => setDislikes([dislikes[0], v, dislikes[2]])}
+                  placeholder="e.g. Crowded buses"
+                  onRemovePress={() => setDislikes([dislikes[0], '', dislikes[2]])}
+                />
+                <ItemInput
+                  value={dislikes[2]}
+                  onChangeText={(v) => setDislikes([dislikes[0], dislikes[1], v])}
+                  placeholder="e.g. Rainy days"
+                  onRemovePress={() => setDislikes([dislikes[0], dislikes[1], ''])}
+                />
+              </View>
+
+              <View style={{ alignItems: 'center', width: '100%', marginTop: 12 }}>
+                <TouchableOpacity
+                  style={styles.entryPrimaryButton}
+                  onPress={handleContinue}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.entryPrimaryButtonText}>Continue</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>

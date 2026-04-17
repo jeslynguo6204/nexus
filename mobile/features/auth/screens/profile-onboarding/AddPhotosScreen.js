@@ -23,24 +23,13 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import styles from '../../../../styles/AuthStyles';
 
-function photosFromParams(params) {
-  const uris = params?.photos;
-  if (!Array.isArray(uris) || uris.length === 0) return [];
-  return uris.map((uri, i) => ({ uri, id: `param-${i}-${uri?.slice(-8) || i}` }));
-}
-
 export default function AddPhotosScreen({ navigation, route }) {
-  const routeParams = route.params || {};
-  const backPayloadRef = useRef({});
-  const [photos, setPhotos] = useState(() => photosFromParams(routeParams));
+  const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const uris = route.params?.photos;
-    if (Array.isArray(uris) && uris.length > 0) setPhotos(photosFromParams(route.params));
-  }, [route.params?.photos]);
+  const routeParams = route.params || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -53,7 +42,7 @@ export default function AddPhotosScreen({ navigation, route }) {
   async function handlePickPhoto() {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaType.Images,
         allowsEditing: true,
         aspect: [3, 4],
         quality: 0.8,
@@ -81,23 +70,8 @@ export default function AddPhotosScreen({ navigation, route }) {
 
     navigation.navigate('AcademicsScreen', {
       ...routeParams,
-      ...backPayloadRef.current,
-      photos: photos.map((p) => p.uri),
-      onBackWithData: (data) => { backPayloadRef.current = data; },
+      photos: photos.map(p => p.uri), // Store URIs for later upload
     });
-  }
-
-  function handleSkip() {
-    navigation.navigate('AcademicsScreen', {
-      ...routeParams,
-      ...backPayloadRef.current,
-      onBackWithData: (data) => { backPayloadRef.current = data; },
-    });
-  }
-
-  function handleBack() {
-    routeParams.onBackWithData?.({ photos: photos.map((p) => p.uri) });
-    navigation.goBack();
   }
 
   return (
@@ -109,16 +83,10 @@ export default function AddPhotosScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={handleBack}
+          onPress={() => navigation.goBack()}
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleSkip}
-          style={{ position: 'absolute', right: 16, top: insets.top + 4, zIndex: 20 }}
-        >
-          <Text style={{ color: '#E5F2FF', fontSize: 15 }}>Skip →</Text>
         </TouchableOpacity>
 
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>

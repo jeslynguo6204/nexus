@@ -55,22 +55,10 @@ function SelectChip({ label, selected, onPress, style }) {
   );
 }
 
-function prefToChips(pref) {
-  if (!Array.isArray(pref) || pref.length === 0) return { men: false, women: false, nonBinary: false };
-  return {
-    men: pref.includes('male'),
-    women: pref.includes('female'),
-    nonBinary: pref.includes('non-binary'),
-  };
-}
-
 export default function PlatonicPreferencesScreen({ navigation, route }) {
-  const routeParams = route.params || {};
-  const { platonicPreference } = routeParams;
-  const initial = prefToChips(platonicPreference);
-  const [men, setMen] = useState(initial.men);
-  const [women, setWomen] = useState(initial.women);
-  const [nonBinary, setNonBinary] = useState(initial.nonBinary);
+  const [men, setMen] = useState(false);
+  const [women, setWomen] = useState(false);
+  const [nonBinary, setNonBinary] = useState(false);
 
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -84,15 +72,7 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
     dateOfBirth,
     graduationYear,
     romanticPreference,
-    fromLogin,
-  } = routeParams;
-
-  useEffect(() => {
-    const next = prefToChips(platonicPreference);
-    setMen(next.men);
-    setWomen(next.women);
-    setNonBinary(next.nonBinary);
-  }, [platonicPreference]);
+  } = route.params || {};
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -129,14 +109,14 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
       wantsPlatonic: true,
       romanticPreference,
       platonicPreference,
-      fromLogin: !!fromLogin,
-      onBackWithData: routeParams.onBackWithData,
     };
 
+    // Continue to profile onboarding
     navigation.navigate('AddPhotosScreen', params);
   }
 
   function handleSkip() {
+    // Skip with default platonic preference: all three
     const params = {
       fullName,
       email,
@@ -149,10 +129,9 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
       wantsPlatonic: true,
       romanticPreference,
       platonicPreference: ['male', 'female', 'non-binary'],
-      fromLogin: !!fromLogin,
-      onBackWithData: routeParams.onBackWithData,
     };
 
+    // Continue to profile onboarding
     navigation.navigate('AddPhotosScreen', params);
   }
 
@@ -165,10 +144,7 @@ export default function PlatonicPreferencesScreen({ navigation, route }) {
     >
       <SafeAreaView style={styles.entryContainer} edges={['top', 'left', 'right']}>
         <TouchableOpacity
-          onPress={() => {
-            routeParams.onBackWithData?.({ platonicPreference: getPreference() });
-            navigation.goBack();
-          }}
+          onPress={() => navigation.goBack()}
           style={{ position: 'absolute', left: 16, top: insets.top + 4, zIndex: 20 }}
         >
           <Text style={{ color: '#E5F2FF', fontSize: 15 }}>← Back</Text>

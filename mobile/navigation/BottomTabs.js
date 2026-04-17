@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { isLaunchA } from '../config/launchPhase';
+import { isLaunchA, SHOW_ONBOARDING_TEST_TAB } from '../config/launchPhase';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import InboxScreen from '../features/chat/screens/InboxScreen';
@@ -119,22 +119,24 @@ export default function BottomTabs({ onSignOut }) {
               },
             }}
           />
-          <Tab.Screen
-            name="OnboardingTest"
-            component={OnboardingTestScreen}
-            options={{
-              tabBarLabel: 'Test',
-              tabBarShowLabel: true,
-              tabBarStyle: {
-                backgroundColor: '#FFFFFF',
-                borderTopWidth: 1,
-                borderTopColor: '#F2F2F7',
-                height: 49 + insets.bottom,
-                paddingBottom: insets.bottom,
-                paddingTop: 0,
-              },
-            }}
-          />
+          {SHOW_ONBOARDING_TEST_TAB && (
+            <Tab.Screen
+              name="OnboardingTest"
+              component={OnboardingTestScreen}
+              options={{
+                tabBarLabel: 'Test',
+                tabBarShowLabel: true,
+                tabBarStyle: {
+                  backgroundColor: '#FFFFFF',
+                  borderTopWidth: 1,
+                  borderTopColor: '#F2F2F7',
+                  height: 49 + insets.bottom,
+                  paddingBottom: insets.bottom,
+                  paddingTop: 0,
+                },
+              }}
+            />
+          )}
           <Tab.Screen 
             name="Profile"
             options={{
@@ -157,11 +159,13 @@ export default function BottomTabs({ onSignOut }) {
           <Tab.Screen name="Likes" component={LikesStack} />
           <Tab.Screen name="Chat" component={ChatStack} />
           <Tab.Screen name="Friends" component={FriendsScreen} />
-          <Tab.Screen
-            name="OnboardingTest"
-            component={OnboardingTestScreen}
-            options={{ tabBarLabel: 'Test', tabBarShowLabel: true }}
-          />
+          {SHOW_ONBOARDING_TEST_TAB && (
+            <Tab.Screen
+              name="OnboardingTest"
+              component={OnboardingTestScreen}
+              options={{ tabBarLabel: 'Test', tabBarShowLabel: true }}
+            />
+          )}
           <Tab.Screen name="Profile">
             {(props) => <ProfileScreen {...props} onSignOut={onSignOut} />}
           </Tab.Screen>

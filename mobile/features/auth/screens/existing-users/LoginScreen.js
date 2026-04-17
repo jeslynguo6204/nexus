@@ -7,9 +7,6 @@
  * Flow: Entry → Login | or Entry → Sign up → SignupStep1...
  */
 
-// TEMP: set to false to restore normal login (go straight into app)
-const LOGIN_GOES_TO_WELCOME = true;
-
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -133,9 +130,7 @@ export default function LoginScreen({ navigation, onSignedIn }) {
       // Email exists (or checkEmail failed but we'll try anyway), attempt login
       await login(email.trim(), password);
 
-      if (LOGIN_GOES_TO_WELCOME) {
-        navigation.navigate('Welcome', { fromLogin: true, email: email.trim(), password });
-      } else if (onSignedIn) {
+      if (onSignedIn) {
         onSignedIn();
       }
     } catch (e) {
